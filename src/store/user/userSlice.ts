@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import axios from 'axios'
+const API_URL = import.meta.env.VITE_APP_API_URL;
 
 type FetchUsersParams = {
   page: number
@@ -17,7 +18,7 @@ export const fetchUsers = createAsyncThunk(
     if (order) params.order = order
     if (search) params.search = search
 
-    const response = await axios.get('https://preview.keenthemes.com/theme-api/api/users/query', { params })
+    const response = await axios.get(API_URL, { params, withCredentials: true  })
     return {
       items: response.data.data,
       total: response.data.payload.pagination.total,
