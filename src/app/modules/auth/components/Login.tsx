@@ -48,6 +48,7 @@ export function Login() {
           throw new Error('Invalid response format')
         }
       } catch (error) {
+        console.error(error)
         setStatus('The login details are incorrect')
         setSubmitting(false)
         setLoading(false)

@@ -2,21 +2,16 @@
 import {FC, useState, useEffect, createContext, useContext, Dispatch, SetStateAction} from 'react'
 import {LayoutSplashScreen} from '../../../../_metronic/layout/core'
 import {AuthModel, UserModel} from './_models'
-import * as authHelper from './AuthHelpers'
 import {getCurrentUser} from './_requests'
 import {WithChildren} from '../../../../_metronic/helpers'
 
 type AuthContextProps = {
-  auth: AuthModel | undefined
-  saveAuth: (auth: AuthModel | undefined) => void
   currentUser: UserModel | undefined
   setCurrentUser: Dispatch<SetStateAction<UserModel | undefined>>
   logout: () => void
 }
 
 const initAuthContextPropsState = {
-  auth: authHelper.getAuth(),
-  saveAuth: () => {},
   currentUser: undefined,
   setCurrentUser: () => {},
   logout: () => {},
@@ -37,8 +32,6 @@ const AuthProvider: FC<WithChildren> = ({children}) => {
 
   return (
     <AuthContext.Provider value={{
-      auth: undefined, // We don't need to track auth state since it's in the cookie
-      saveAuth: () => {}, // No-op since we don't store auth state
       currentUser,
       setCurrentUser,
       logout
