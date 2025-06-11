@@ -1,6 +1,7 @@
 export interface AuthModel {
-  api_token: string
-  refreshToken?: string
+  data?: {
+    user: UserModel
+  }
 }
 
 export interface UserAddressModel {
@@ -44,24 +45,16 @@ export interface UserSocialNetworksModel {
 }
 
 export interface UserModel {
-  id: number
-  username: string
-  password: string | undefined
   email: string
-  first_name: string
-  last_name: string
-  fullname?: string
-  occupation?: string
-  companyName?: string
-  phone?: string
-  roles?: Array<number>
-  pic?: string
-  language?: 'en' | 'de' | 'es' | 'fr' | 'ja' | 'zh' | 'ru'
-  timeZone?: string
-  website?: 'https://keenthemes.com'
-  emailSettings?: UserEmailSettingsModel
-  auth?: AuthModel
-  communication?: UserCommunicationModel
-  address?: UserAddressModel
-  socialNetworks?: UserSocialNetworksModel
+  name?: string
+  role: {
+    role_id: string
+    name: string
+    role_type: number
+  }
+}
+
+export interface ApiResponse<T> {
+  status: string
+  data: T
 }

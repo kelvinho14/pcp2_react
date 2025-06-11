@@ -1,4 +1,3 @@
-
 import {useState} from 'react'
 import * as Yup from 'yup'
 import clsx from 'clsx'
@@ -41,13 +40,15 @@ export function Login() {
     onSubmit: async (values, {setStatus, setSubmitting}) => {
       setLoading(true)
       try {
-        const {data: auth} = await login(values.email, values.password)
-        saveAuth(auth)
-        const {data: user} = await getUserByToken(auth.api_token)
-        setCurrentUser(user)
+        const {data} = await login(values.email, values.password)
+        if (data.status === 'success' && data.data) {
+          const user = data.data
+          setCurrentUser(user)
+        } else {
+          throw new Error('Invalid response format')
+        }
       } catch (error) {
         console.error(error)
-        saveAuth(undefined)
         setStatus('The login details are incorrect')
         setSubmitting(false)
         setLoading(false)
