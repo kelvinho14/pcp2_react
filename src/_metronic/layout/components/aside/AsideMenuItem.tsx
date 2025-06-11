@@ -1,6 +1,6 @@
 import {FC} from 'react'
 import clsx from 'clsx'
-import {Link} from 'react-router-dom'
+import {Link, useNavigate} from 'react-router-dom'
 import {useLocation} from 'react-router'
 import {checkIsActive, KTIcon, WithChildren} from '../../../helpers'
 import {useLayout} from '../../core'
@@ -22,13 +22,28 @@ const AsideMenuItem: FC<Props & WithChildren> = ({
   hasBullet = false,
 }) => {
   const {pathname} = useLocation()
+  const navigate = useNavigate()
   const isActive = checkIsActive(pathname, to)
   const {config} = useLayout()
   const {aside} = config
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    const toggleButton = document.getElementById('kt_aside_toggle')
+    if (toggleButton) {
+      toggleButton.click()
+    }
+    // Navigate to the page
+    navigate(to)
+  }
+
   return (
     <div className='menu-item'>
-      <Link className={clsx('menu-link without-sub', {active: isActive})} to={to}>
+      <Link
+        className={clsx('menu-link without-sub', {active: isActive})}
+        to={to}
+        onClick={handleClick}
+      >
         {hasBullet && (
           <span className='menu-bullet'>
             <span className='bullet bullet-dot'></span>

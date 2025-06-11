@@ -40,38 +40,58 @@ type Props = {
   setLink: Dispatch<SetStateAction<string>>
 }
 
-const AsideTabs: FC<Props> = ({link, setLink}) => (
-  <div
-    className='hover-scroll-y mb-10'
-    data-kt-scroll='true'
-    data-kt-scroll-activate='{default: false, lg: true}'
-    data-kt-scroll-height='auto'
-    data-kt-scroll-wrappers='#kt_aside_nav'
-    data-kt-scroll-dependencies='#kt_aside_logo, #kt_aside_footer'
-    data-kt-scroll-offset='0px'
-  >
-    {/* begin::Nav */}
-    <ul className='nav flex-column' id='kt_aside_nav_tabs'>
-      {/* begin::Nav item */}
-      {tabs.map((t) => (
-        <li key={t.link}>
-          {/* begin::Nav link */}
-          <a
-            className={clsx(
-              'nav-link btn btn-icon btn-active-color-primary btn-color-gray-500 btn-active-light',
-              {active: t.link === link}
-            )}
-            onClick={() => setLink(t.link)}
-          >
-            <KTIcon iconName={t.icon} className='fs-2x' />
-          </a>
-          {/* end::Nav link */}
-        </li>
-      ))}
-      {/* end::Nav link */}
-    </ul>
-    {/* end::Tabs */}
-  </div>
-)
+const AsideTabs: FC<Props> = ({link, setLink}) => {
+  const handleClick = (newLink: string) => {
+    // Check if the aside is minimized by looking at the aside element's width
+    const aside = document.getElementById('kt_aside')
+    if (aside) {
+      const asideWidth = aside.offsetWidth
+      const isMinimized = asideWidth <= 100 // Metronic's minimized width is 100px
+
+      if (isMinimized) {
+        const toggleButton = document.getElementById('kt_aside_toggle')
+        if (toggleButton) {
+          toggleButton.click()
+        }
+      }
+    }
+    // Set the new link
+    setLink(newLink)
+  }
+
+  return (
+    <div
+      className='hover-scroll-y mb-10'
+      data-kt-scroll='true'
+      data-kt-scroll-activate='{default: false, lg: true}'
+      data-kt-scroll-height='auto'
+      data-kt-scroll-wrappers='#kt_aside_nav'
+      data-kt-scroll-dependencies='#kt_aside_logo, #kt_aside_footer'
+      data-kt-scroll-offset='0px'
+    >
+      {/* begin::Nav */}
+      <ul className='nav flex-column' id='kt_aside_nav_tabs'>
+        {/* begin::Nav item */}
+        {tabs.map((t) => (
+          <li key={t.link}>
+            {/* begin::Nav link */}
+            <a
+              className={clsx(
+                'nav-link btn btn-icon btn-active-color-primary btn-color-gray-500 btn-active-light',
+                {active: t.link === link}
+              )}
+              onClick={() => handleClick(t.link)}
+            >
+              <KTIcon iconName={t.icon} className='fs-2x' />
+            </a>
+            {/* end::Nav link */}
+          </li>
+        ))}
+        {/* end::Nav link */}
+      </ul>
+      {/* end::Tabs */}
+    </div>
+  )
+}
 
 export {AsideTabs}
