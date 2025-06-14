@@ -7,6 +7,7 @@ class WebSocketService {
   private reconnectTimeout = 3000 // 3 seconds
   private messageHandlers: Map<string, ((data: any) => void)[]> = new Map()
   private isConnecting = false
+  private isLoggingOut = false // Flag to prevent reconnection after logout
 
   constructor() {
     // Don't auto-connect in constructor
@@ -23,6 +24,8 @@ class WebSocketService {
       return
     }
 
+    // Reset logout flag when starting a new connection
+    this.isLoggingOut = false
     this.isConnecting = true
     const wsUrl = `${import.meta.env.VITE_WS_URL}ws`
     console.log('Connecting to WebSocket:', wsUrl)
@@ -55,7 +58,9 @@ class WebSocketService {
         wasClean: event.wasClean
       })
       this.isConnecting = false
-      this.handleReconnect()
+      if (!this.isLoggingOut) {
+        this.handleReconnect()
+      }
     }
 
     this.ws.onerror = (error) => {
@@ -65,12 +70,12 @@ class WebSocketService {
   }
 
   private handleReconnect() {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+    if (this.reconnectAttempts < this.maxReconnectAttempts && !this.isLoggingOut) {
       this.reconnectAttempts++
       console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`)
       setTimeout(() => this.connect(true), this.reconnectTimeout)
     } else {
-      console.error('Max reconnection attempts reached')
+      console.error('Max reconnection attempts reached or user is logging out')
     }
   }
 
@@ -122,6 +127,7 @@ class WebSocketService {
 
   public disconnect() {
     console.log('Disconnecting WebSocket')
+    this.isLoggingOut = true // Set flag to prevent reconnection
     if (this.ws) {
       this.ws.close()
       this.ws = null
