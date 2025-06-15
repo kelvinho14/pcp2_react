@@ -1,10 +1,10 @@
-import { ColumnInstance } from 'react-table'
+import { ColumnInstance, UseSortByColumnProps, HeaderProps } from 'react-table'
 import { User } from '../../core/_models'
 import { UserSelectionHeader } from './UserSelectionHeader'
 import { UserCustomHeader } from './UserCustomHeader'
 
 type Props = {
-  column: ColumnInstance<User>
+  column: ColumnInstance<User> & UseSortByColumnProps<User>
   onSort: () => void
 }
 

@@ -1,8 +1,8 @@
 import { useMemo, useEffect, useState, useCallback } from 'react'
-import { useTable, useSortBy, ColumnInstance, Row } from 'react-table'
+import { useTable, useSortBy, ColumnInstance, Row, UseSortByState, TableState, TableOptions, UseSortByColumnProps } from 'react-table'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchUsers } from '../../../../../store/user/userSlice'
-import { RootState } from '../../../../../store'
+import { RootState, AppDispatch } from '../../../../../store'
 import { usersColumns } from './columns/_columns'
 import { User } from '../core/_models'
 import { CustomHeaderColumn } from './columns/CustomHeaderColumn'
@@ -16,7 +16,7 @@ type Props = {
 }
 
 const UsersTable = ({ search }: Props) => {
-  const dispatch = useDispatch()
+  const dispatch = useDispatch<AppDispatch>()
   const users = useSelector((state: RootState) => state.users.users)
   const isLoading = useSelector((state: RootState) => state.users.loading)
   const total = useSelector((state: RootState) => state.users.total)
@@ -50,7 +50,7 @@ const UsersTable = ({ search }: Props) => {
       initialState: {
         sortBy: [],
       },
-    },
+    } as TableOptions<User>,
     useSortBy
   )
 
@@ -77,7 +77,11 @@ const UsersTable = ({ search }: Props) => {
           <thead>
             <tr className='text-start text-muted fw-bolder fs-7 text-uppercase gs-0'>
               {headers.map((column: ColumnInstance<User>) => (
-                <CustomHeaderColumn key={column.id} column={column} onSort={() => handleSortChange(column)} />
+                <CustomHeaderColumn
+                  key={column.id}
+                  column={column as ColumnInstance<User> & UseSortByColumnProps<User>}
+                  onSort={() => handleSortChange(column)}
+                />
               ))}
             </tr>
           </thead>
