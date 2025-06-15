@@ -6,6 +6,7 @@ import {useFormik} from 'formik'
 import {getUserByToken, login} from '../core/_requests'
 import {toAbsoluteUrl} from '../../../../_metronic/helpers'
 import {useAuth} from '../core/Auth'
+import webSocketService from '../../../services/WebSocketService'
 
 const loginSchema = Yup.object().shape({
   email: Yup.string()
@@ -32,7 +33,7 @@ const initialValues = {
 
 export function Login() {
   const [loading, setLoading] = useState(false)
-  const {saveAuth, setCurrentUser} = useAuth()
+  const {setCurrentUser} = useAuth()
 
   const formik = useFormik({
     initialValues,
@@ -44,6 +45,8 @@ export function Login() {
         if (data.status === 'success' && data.data) {
           const user = data.data
           setCurrentUser(user)
+          // Connect WebSocket after successful login
+          webSocketService.connect(true)
         } else {
           throw new Error('Invalid response format')
         }

@@ -4,6 +4,8 @@ import {LayoutSplashScreen} from '../../../../_metronic/layout/core'
 import {AuthModel, UserModel} from './_models'
 import {getCurrentUser} from './_requests'
 import {WithChildren} from '../../../../_metronic/helpers'
+import webSocketService from '../../../services/WebSocketService'
+import axios from 'axios'
 
 type AuthContextProps = {
   currentUser: UserModel | undefined
@@ -26,8 +28,19 @@ const useAuth = () => {
 const AuthProvider: FC<WithChildren> = ({children}) => {
   const [currentUser, setCurrentUser] = useState<UserModel | undefined>()
 
-  const logout = () => {
-    setCurrentUser(undefined)
+  const logout = async () => {
+    console.log('Logging out')
+    try {
+      // Call backend to clear the HttpOnly cookie
+      await axios.post(`${import.meta.env.VITE_APP_THEME_API_URL}/users/logout`, {}, {
+        withCredentials: true
+      })
+    } catch (error) {
+      console.error('Error during logout:', error)
+    } finally {
+      webSocketService.disconnect()
+      setCurrentUser(undefined)
+    }
   }
 
   return (
@@ -42,7 +55,7 @@ const AuthProvider: FC<WithChildren> = ({children}) => {
 }
 
 const AuthInit: FC<WithChildren> = ({children}) => {
-  const {setCurrentUser} = useAuth()
+  const {setCurrentUser, currentUser} = useAuth()
   const [showSplashScreen, setShowSplashScreen] = useState(true)
 
   useEffect(() => {
@@ -52,12 +65,15 @@ const AuthInit: FC<WithChildren> = ({children}) => {
         if (data.status === 'success' && data.data) {
           const user = data.data
           setCurrentUser(user)
+          webSocketService.connect(true)
         } else {
           setCurrentUser(undefined)
+          webSocketService.disconnect()
         }
       } catch (error) {
         console.error('Failed to get current user:', error)
         setCurrentUser(undefined)
+        webSocketService.disconnect()
       } finally {
         setShowSplashScreen(false)
       }
@@ -65,6 +81,12 @@ const AuthInit: FC<WithChildren> = ({children}) => {
 
     checkAuth()
   }, [])
+
+  useEffect(() => {
+    if (!currentUser) {
+      webSocketService.disconnect()
+    }
+  }, [currentUser])
 
   return showSplashScreen ? <LayoutSplashScreen /> : <>{children}</>
 }
