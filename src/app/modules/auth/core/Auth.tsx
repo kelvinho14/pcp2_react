@@ -32,7 +32,7 @@ const AuthProvider: FC<WithChildren> = ({children}) => {
     console.log('Logging out')
     try {
       // Call backend to clear the HttpOnly cookie
-      await axios.post(`${import.meta.env.VITE_APP_THEME_API_URL}/users/logout`, {}, {
+      await axios.post(`${import.meta.env.VITE_APP_API_URL}/users/logout`, {}, {
         withCredentials: true
       })
     } catch (error) {

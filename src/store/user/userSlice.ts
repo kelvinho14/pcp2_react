@@ -18,7 +18,7 @@ export const fetchUsers = createAsyncThunk(
     if (order) params.order = order
     if (search) params.search = search
 
-    const response = await axios.get(API_URL, { params, withCredentials: true  })
+    const response = await axios.get(API_URL+'/users', { params, withCredentials: true  })
     return {
       items: response.data.data,
       total: response.data.payload.pagination.total,

@@ -7,7 +7,7 @@ const UsersListSearchComponent = ({ setSearch }: { setSearch: (value: string) =>
 
   // 🔥 When user stops typing for 300ms, trigger search
   useEffect(() => {
-    setSearch(debouncedSearchTerm)
+    setSearch(debouncedSearchTerm || '')
   }, [debouncedSearchTerm, setSearch])
 
   return (

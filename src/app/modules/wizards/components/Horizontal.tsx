@@ -6,7 +6,7 @@ import {Step4} from './steps/Step4'
 import {Step5} from './steps/Step5'
 import {KTIcon} from '../../../../_metronic/helpers'
 import {StepperComponent} from '../../../../_metronic/assets/ts/components'
-import {Form, Formik, FormikValues} from 'formik'
+import {Formik, FormikValues} from 'formik'
 import {createAccountSchemas, ICreateAccount, inits} from './CreateAccountWizardHelper'
 import { Toolbar } from '../../../../_metronic/layout/components/toolbar/Toolbar'
 import { Content } from '../../../../_metronic/layout/components/Content'
@@ -96,7 +96,7 @@ const Horizontal: FC = () => {
 
             <Formik validationSchema={currentSchema} initialValues={initValues} onSubmit={submitStep}>
               {() => (
-                <Form className='mx-auto mw-600px w-100 pt-15 pb-10' id='kt_create_account_form' placeholder={undefined}>
+                <form className='mx-auto mw-600px w-100 pt-15 pb-10' id='kt_create_account_form'>
                   <div className='current' data-kt-stepper-element='content'>
                     <Step1 />
                   </div>
@@ -140,7 +140,7 @@ const Horizontal: FC = () => {
                       </button>
                     </div>
                   </div>
-                </Form>
+                </form>
               )}
             </Formik>
           </div>

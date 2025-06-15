@@ -1,15 +1,17 @@
-import { FC, PropsWithChildren } from 'react'
-import { HeaderProps } from 'react-table'
+import { FC } from 'react'
+import { ColumnInstance } from 'react-table'
 import { useListView } from '../../core/ListViewProvider'
 import { User } from '../../core/_models'
 
 type Props = {
-  tableProps: PropsWithChildren<HeaderProps<User>>
+  tableProps: {
+    column: ColumnInstance<User>
+  }
 }
 
 const UserSelectionHeader: FC<Props> = ({ tableProps }) => {
   const { isAllSelected, onSelectAll } = useListView()
-  const { key, ...restHeaderProps } = tableProps.column.getHeaderProps() // 🛠 fix
+  const { key, ...restHeaderProps } = tableProps.column.getHeaderProps()
 
   return (
     <th key={key} {...restHeaderProps} className='w-10px pe-2'>

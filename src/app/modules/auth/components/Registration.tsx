@@ -1,5 +1,3 @@
-
-
 import {useState, useEffect} from 'react'
 import {useFormik} from 'formik'
 import * as Yup from 'yup'
@@ -47,7 +45,7 @@ const registrationSchema = Yup.object().shape({
 
 export function Registration() {
   const [loading, setLoading] = useState(false)
-  const {saveAuth, setCurrentUser} = useAuth()
+  const {setCurrentUser} = useAuth()
   const formik = useFormik({
     initialValues,
     validationSchema: registrationSchema,
@@ -61,12 +59,11 @@ export function Registration() {
           values.password,
           values.changepassword
         )
-        saveAuth(auth)
         const {data: user} = await getUserByToken(auth.api_token)
         setCurrentUser(user)
       } catch (error) {
         console.error(error)
-        saveAuth(undefined)
+        setCurrentUser(undefined)
         setStatus('The registration details is incorrect')
         setSubmitting(false)
         setLoading(false)
