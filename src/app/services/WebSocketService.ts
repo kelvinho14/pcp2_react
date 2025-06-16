@@ -27,8 +27,12 @@ class WebSocketService {
     // Reset logout flag when starting a new connection
     this.isLoggingOut = false
     this.isConnecting = true
-    const wsUrl = `${import.meta.env.VITE_WS_URL}ws`
+
+    // Get token from cookies
+    const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1]
+    const wsUrl = `${import.meta.env.VITE_WS_URL}ws?token=${token}`
     console.log('Connecting to WebSocket:', wsUrl)
+
     this.ws = new WebSocket(wsUrl)
 
     this.ws.onopen = () => {
