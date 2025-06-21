@@ -1,4 +1,3 @@
-
 import {useIntl} from 'react-intl'
 import {AsideMenuItemWithSub} from './AsideMenuItemWithSub'
 import {AsideMenuItem} from './AsideMenuItem'
@@ -89,7 +88,7 @@ export function AsideMenuMain() {
         <AsideMenuItem to='/apps/chat/drawer-chat' title='Drawer Chart' hasBullet={true} />
       </AsideMenuItemWithSub>
       <AsideMenuItem
-        to='/apps/user-management/users'
+        to='/users'
         icon='shield-tick'
         title='User management'
         fontIcon='bi-layers'
