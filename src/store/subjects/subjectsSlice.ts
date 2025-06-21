@@ -138,6 +138,7 @@ interface SubjectsState {
   deleting: boolean
   error: string | null
   success: string | null
+  total: number
 }
 
 const initialState: SubjectsState = {
@@ -149,6 +150,7 @@ const initialState: SubjectsState = {
   deleting: false,
   error: null,
   success: null,
+  total: 0,
 }
 
 // Slice
@@ -239,6 +241,7 @@ const subjectsSlice = createSlice({
       .addCase(fetchSubjects.fulfilled, (state, action) => {
         state.loading = false
         state.subjects = action.payload.items
+        state.total = action.payload.total
       })
       .addCase(fetchSubjects.rejected, (state, action) => {
         state.loading = false

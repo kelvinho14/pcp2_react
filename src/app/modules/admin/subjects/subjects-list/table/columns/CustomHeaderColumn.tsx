@@ -1,5 +1,5 @@
 import { ColumnInstance, UseSortByColumnProps, HeaderProps } from 'react-table'
-import { Subject } from '../../core/_models'
+import { Subject } from '../../../../../../../store/subjects/subjectsSlice'
 import { SubjectSelectionHeader } from './SubjectSelectionHeader'
 
 type Props = {

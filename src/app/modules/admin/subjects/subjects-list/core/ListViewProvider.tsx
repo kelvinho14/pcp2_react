@@ -11,7 +11,7 @@ import {
   WithChildren,
 } from '../../../../../../_metronic/helpers'
 import {RootState} from '../../../../../../store'
-import {Subject} from './_models'
+import {Subject} from '../../../../../../store/subjects/subjectsSlice'
 
 const ListViewContext = createContext<ListViewContextProps>(initialListView)
 
@@ -33,7 +33,9 @@ const ListViewProvider: FC<WithChildren> = ({children}) => {
       setSelected([])
     } else {
       if (data && data.length > 0) {
-        const subjectIds = data.filter((subject: Subject) => subject.subject_id).map((subject: Subject) => subject.subject_id)
+        const subjectIds = data
+          .filter((subject: Subject) => subject.subject_id)
+          .map((subject: Subject) => subject.subject_id as unknown as ID)
         setSelected(subjectIds)
       }
     }

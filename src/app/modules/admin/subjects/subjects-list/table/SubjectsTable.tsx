@@ -21,10 +21,10 @@ const SubjectsTable = ({ search }: Props) => {
   
   const subjects = useSelector((state: RootState) => state.subjects.subjects)
   const isLoading = useSelector((state: RootState) => state.subjects.loading)
+  const total = useSelector((state: RootState) => state.subjects.total)
 
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<{ id: string; desc: boolean } | null>(null)
-  const [total, setTotal] = useState(0)
   const itemsPerPage = 10
 
   // Memoize the fetch function to prevent unnecessary re-renders
@@ -45,11 +45,7 @@ const SubjectsTable = ({ search }: Props) => {
         order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
         search: search || undefined,
       })
-    ).then((result) => {
-      if (result.meta.requestStatus === 'fulfilled') {
-        setTotal(result.payload.total)
-      }
-    })
+    )
   }, [page, sort, search, itemsPerPage])
 
   useEffect(() => {

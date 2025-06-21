@@ -1,7 +1,7 @@
 import { FC } from 'react'
 import { ColumnInstance } from 'react-table'
 import { useListView } from '../../core/ListViewProvider'
-import { Subject } from '../../core/_models'
+import { Subject } from '../../../../../../../store/subjects/subjectsSlice'
 
 type Props = {
   tableProps: {

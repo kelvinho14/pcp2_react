@@ -1,6 +1,6 @@
 import { FC } from 'react'
 import { Row } from 'react-table'
-import { Subject } from '../../core/_models'
+import { Subject } from '../../../../../../../store/subjects/subjectsSlice'
 
 type Props = {
   row: Row<Subject>
