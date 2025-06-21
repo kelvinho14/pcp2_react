@@ -28,6 +28,14 @@ const AdminPage = () => {
         <Route element={<Outlet />}>
           {/* Subjects Routes */}
           <Route
+            path='subjects'
+            element={<Navigate to='/admin/subjects/list' replace />}
+          />
+          <Route
+            path='subjects/'
+            element={<Navigate to='/admin/subjects/list' replace />}
+          />
+          <Route
             path='subjects/list'
             element={<SubjectsPage />}
           />
