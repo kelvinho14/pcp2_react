@@ -45,8 +45,10 @@ export interface UserSocialNetworksModel {
 }
 
 export interface UserModel {
+  user_id: string
   email: string
   name?: string
+  school_id?: string
   role: {
     role_id: string
     name: string
@@ -57,4 +59,5 @@ export interface UserModel {
 export interface ApiResponse<T> {
   status: string
   data: T
+  token?: string
 }

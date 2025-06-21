@@ -1,22 +1,58 @@
 import clsx from 'clsx'
 import {Dispatch, FC, SetStateAction} from 'react'
-import {KTIcon} from '../../../helpers'
+import {useAuth} from '../../../../app/modules/auth/core/Auth'
+import {ROLES} from '../../../../app/constants/roles'
+import {useLocation, useNavigate} from 'react-router-dom'
+import {DrawerComponent} from '../../../assets/ts/components'
 
-const tabs: ReadonlyArray<{link: string; icon: string; tooltip: string}> = [
+type Tab = {
+  link: string
+  icon: string
+  tooltip: string
+  path?: string // Optional path for navigation
+}
+
+// Tabs for teachers
+const tabsForTeachers: ReadonlyArray<Tab> = [
+  {
+    link: 'exercise',
+    icon: 'fa-solid fa-pen',
+    tooltip: 'Exercise',
+  },
+  {
+    link: 'video',
+    icon: 'fa-solid fa-video',
+    tooltip: 'Video',
+  },
+  {
+    link: 'draw',
+    icon: 'fa-solid fa-pen-to-square',
+    tooltip: 'Draw',
+    path: '/draw',
+  },
   {
     link: 'projects',
-    icon: 'element-11',
+    icon: 'fa-solid fa-magnifying-glass',
     tooltip: 'Projects',
   },
+]
+
+// Tabs for students
+const tabsForStudents: ReadonlyArray<Tab> = [
   {
-    link: 'menu',
-    icon: 'briefcase',
-    tooltip: 'Menu',
+    link: 'exercise',
+    icon: 'fa-solid fa-pen',
+    tooltip: 'Exercise',
   },
   {
-    link: 'subscription',
-    icon: 'chart-simple',
-    tooltip: 'Subscription',
+    link: 'video',
+    icon: 'fa-solid fa-video',
+    tooltip: 'Video',
+  },
+  {
+    link: 'projects',
+    icon: 'fa-solid fa-magnifying-glass',
+    tooltip: 'Projects',
   },
   {
     link: 'tasks',
@@ -28,11 +64,6 @@ const tabs: ReadonlyArray<{link: string; icon: string; tooltip: string}> = [
     icon: 'abstract-26',
     tooltip: 'Notifications',
   },
-  {
-    link: 'authors',
-    icon: 'add-files',
-    tooltip: 'Authors',
-  },
 ]
 
 type Props = {
@@ -41,22 +72,58 @@ type Props = {
 }
 
 const AsideTabs: FC<Props> = ({link, setLink}) => {
-  const handleClick = (newLink: string) => {
-    // Check if the aside is minimized by looking at the aside element's width
-    const aside = document.getElementById('kt_aside')
-    if (aside) {
-      const asideWidth = aside.offsetWidth
-      const isMinimized = asideWidth <= 100 // Metronic's minimized width is 100px
+  const {currentUser} = useAuth()
+  const roleType = currentUser?.role?.role_type
+  const navigate = useNavigate()
+  const location = useLocation()
 
-      if (isMinimized) {
-        const toggleButton = document.getElementById('kt_aside_toggle')
-        if (toggleButton) {
-          toggleButton.click()
+  // Select tabs based on role type
+  let tabsToShow: ReadonlyArray<Tab>
+
+  if (roleType === ROLES.STUDENT) {
+    tabsToShow = tabsForStudents
+  } else {
+    // Default to teacher tabs for other roles
+    tabsToShow = tabsForTeachers
+  }
+
+  const handleClick = (tab: Tab) => {
+    setLink(tab.link)
+    if (tab.path) {
+      navigate(tab.path)
+      // Hide the aside drawer after navigation
+      const drawerElement = document.getElementById('kt_aside')
+      if (drawerElement) {
+        const drawer = DrawerComponent.getInstance(drawerElement as any)
+        if (drawer && drawer.isShown()) {
+          drawer.hide()
+        }
+      }
+      const aside = document.getElementById('kt_aside')
+      if (aside) {
+        const asideWidth = aside.offsetWidth
+        const isMinimized = asideWidth <= 100 // Metronic's minimized width is 100px
+        if (!isMinimized) {
+          const toggleButton = document.getElementById('kt_aside_toggle')
+          if (toggleButton) {
+            toggleButton.click()
+          }
+        }
+      }
+    } else {
+      // Only expand the aside for tabs without a 'path'
+      const aside = document.getElementById('kt_aside')
+      if (aside) {
+        const asideWidth = aside.offsetWidth
+        const isMinimized = asideWidth <= 100 // Metronic's minimized width is 100px
+        if (isMinimized) {
+          const toggleButton = document.getElementById('kt_aside_toggle')
+          if (toggleButton) {
+            toggleButton.click()
+          }
         }
       }
     }
-    // Set the new link
-    setLink(newLink)
   }
 
   return (
@@ -72,17 +139,17 @@ const AsideTabs: FC<Props> = ({link, setLink}) => {
       {/* begin::Nav */}
       <ul className='nav flex-column' id='kt_aside_nav_tabs'>
         {/* begin::Nav item */}
-        {tabs.map((t) => (
-          <li key={t.link}>
+        {tabsToShow.map((t) => (
+          <li key={t.link} className='mb-3'>
             {/* begin::Nav link */}
             <a
               className={clsx(
                 'nav-link btn btn-icon btn-active-color-primary btn-color-gray-500 btn-active-light',
-                {active: t.link === link}
+                {active: link === t.link || (t.path && location.pathname.startsWith(t.path))}
               )}
-              onClick={() => handleClick(t.link)}
+              onClick={() => handleClick(t)}
             >
-              <KTIcon iconName={t.icon} className='fs-2x' />
+              <i className={`${t.icon} fs-2x`}></i>
             </a>
             {/* end::Nav link */}
           </li>

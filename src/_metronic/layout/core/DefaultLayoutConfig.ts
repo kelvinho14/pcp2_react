@@ -35,11 +35,11 @@ export const DefaultLayoutConfig: ILayout = {
   aside: {
     menu: 'main',
     secondaryDisplay: true,
-    minimized: false,
+    minimized: true,
     minimize: true,
     display: true,
     fixed: true,
-    menuIcon: 'svg',
+    menuIcon: 'font',
   },
   content: {
     width: 'fixed', // Set fixed|fluid to change width

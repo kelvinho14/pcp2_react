@@ -1,33 +1,42 @@
-
 import {FC} from 'react'
 import {KTIcon} from '../../../../helpers'
 import {AuthorsTab} from './AuthorsTab'
-import {MenuTab} from './MenuTab'
+import {TeacherExerciseTab} from './TeacherExerciseTab'
 import {NotificationsTab} from './NotificationsTab'
 import {ProjectsTab} from './ProjectsTab'
-import {SubscriptionsTab} from './SubscriptionsTab'
+import {VideoTab} from './VideoTab'
+import {TeacherVideoTab} from './TeacherVideoTab'
 import {TasksTab} from './TasksTab'
+import { useAuth } from '../../../../../app/modules/auth/core/Auth'
+import {StudentExerciseTab} from './StudentExerciseTab'
+import { ROLES } from '../../../../../app/constants/roles'
 
 type Props = {
   link: string
 }
 
 const SelectedTab: FC<Props> = ({link}) => {
-  switch (link) {
-    case 'projects':
-      return <ProjectsTab />
-    case 'menu':
-      return <MenuTab />
-    case 'subscription':
-      return <SubscriptionsTab />
-    case 'tasks':
-      return <TasksTab />
-    case 'notifications':
-      return <NotificationsTab />
-    case 'authors':
-      return <AuthorsTab />
-    default:
-      return <ProjectsTab />
+  const { currentUser } = useAuth()
+  const roleType = currentUser?.role?.role_type
+console.log(currentUser);
+  if (roleType === ROLES.STUDENT) {
+    switch (link) {
+      case 'exercise':
+        return <StudentExerciseTab />
+      case 'video':
+        return <VideoTab />
+      case 'projects':
+        return <ProjectsTab />
+    }
+  } else {
+    switch (link) {
+      case 'exercise':
+        return <TeacherExerciseTab />
+      case 'video':
+        return <TeacherVideoTab />
+      case 'projects':
+        return <ProjectsTab />
+    }
   }
 }
 
