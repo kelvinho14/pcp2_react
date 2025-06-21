@@ -6,8 +6,9 @@ import {initialUser, User} from '../core/_models'
 import clsx from 'clsx'
 import {useListView} from '../core/ListViewProvider'
 import {UsersListLoading} from '../components/loading/UsersListLoading'
-import {createUser, updateUser} from '../core/_requests'
-import {useQueryResponse} from '../core/QueryResponseProvider'
+import {createUser, updateUser} from '../../../../../store/user/userSlice'
+import {useDispatch} from 'react-redux'
+import {AppDispatch} from '../../../../../store'
 
 type Props = {
   isUserLoading: boolean
@@ -28,7 +29,7 @@ const editUserSchema = Yup.object().shape({
 
 const UserEditModalForm: FC<Props> = ({user, isUserLoading}) => {
   const {setItemIdForUpdate} = useListView()
-  const {refetch} = useQueryResponse()
+  const dispatch = useDispatch<AppDispatch>()
 
   const [userForEdit] = useState<User>({
     ...user,
@@ -39,10 +40,7 @@ const UserEditModalForm: FC<Props> = ({user, isUserLoading}) => {
     email: user.email || initialUser.email,
   })
 
-  const cancel = (withRefresh?: boolean) => {
-    if (withRefresh) {
-      refetch()
-    }
+  const cancel = () => {
     setItemIdForUpdate(undefined)
   }
 
@@ -55,16 +53,16 @@ const UserEditModalForm: FC<Props> = ({user, isUserLoading}) => {
     onSubmit: async (values, {setSubmitting}) => {
       setSubmitting(true)
       try {
-        if (isNotEmpty(values.id)) {
-          await updateUser(values)
+        if (isNotEmpty(values.user_id)) {
+          await dispatch(updateUser(values))
         } else {
-          await createUser(values)
+          await dispatch(createUser(values))
         }
       } catch (ex) {
         console.error(ex)
       } finally {
         setSubmitting(true)
-        cancel(true)
+        cancel()
       }
     },
   })

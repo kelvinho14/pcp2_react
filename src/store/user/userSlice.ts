@@ -30,6 +30,69 @@ export const fetchUsers = createAsyncThunk(
   }
 )
 
+export const createUser = createAsyncThunk(
+  'users/createUser',
+  async (user: any) => {
+    try {
+      const response = await axios.put(`${API_URL}/user`, user, { withCredentials: true })
+      return response.data.data
+    } catch (error) {
+      throw error
+    }
+  }
+)
+
+export const updateUser = createAsyncThunk(
+  'users/updateUser',
+  async (user: any) => {
+    try {
+      const response = await axios.post(`${API_URL}/user/${user.user_id}`, user, { withCredentials: true })
+      return response.data.data
+    } catch (error) {
+      throw error
+    }
+  }
+)
+
+export const deleteUser = createAsyncThunk(
+  'users/deleteUser',
+  async (userId: string | number) => {
+    try {
+      await axios.delete(`${API_URL}/user/${userId}`, { withCredentials: true })
+      return userId
+    } catch (error) {
+      throw error
+    }
+  }
+)
+
+export const deleteSelectedUsers = createAsyncThunk(
+  'users/deleteSelectedUsers',
+  async (userIds: Array<string | number>) => {
+    try {
+      await axios.delete(`${API_URL}/users`, {
+        data: { user_ids: userIds },
+        withCredentials: true
+      })
+      return userIds
+    } catch (error) {
+      throw error
+    }
+  }
+)
+
+export const getUserById = createAsyncThunk(
+  'users/getUserById',
+  async (id: string | number) => {
+    try {
+      const response = await axios.get(`${API_URL}/user/${id}`, { withCredentials: true })
+      return response.data.data
+    } catch (error) {
+      throw error
+    }
+  }
+)
+
 const userSlice = createSlice({
   name: 'users',
   initialState: {
@@ -37,8 +100,13 @@ const userSlice = createSlice({
     total: 0,
     loading: false,
     error: null as string | null,
+    selectedUser: null as any,
   },
-  reducers: {},
+  reducers: {
+    clearSelectedUser: (state) => {
+      state.selectedUser = null
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchUsers.pending, (state) => {
@@ -53,7 +121,26 @@ const userSlice = createSlice({
         state.loading = false
         state.error = action.error.message || null
       })
+      .addCase(getUserById.fulfilled, (state, action) => {
+        state.selectedUser = action.payload
+      })
+      .addCase(createUser.fulfilled, (state, action) => {
+        state.users.push(action.payload)
+      })
+      .addCase(updateUser.fulfilled, (state, action) => {
+        const index = state.users.findIndex(user => user.user_id === action.payload.user_id)
+        if (index !== -1) {
+          state.users[index] = action.payload
+        }
+      })
+      .addCase(deleteUser.fulfilled, (state, action) => {
+        state.users = state.users.filter(user => user.user_id !== action.payload)
+      })
+      .addCase(deleteSelectedUsers.fulfilled, (state, action) => {
+        state.users = state.users.filter(user => !action.payload.includes(user.user_id))
+      })
   }
 })
 
+export const { clearSelectedUser } = userSlice.actions
 export default userSlice.reducer

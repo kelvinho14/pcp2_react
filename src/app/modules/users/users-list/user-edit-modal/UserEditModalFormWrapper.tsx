@@ -1,37 +1,32 @@
-import {useQuery} from 'react-query'
+import {useEffect} from 'react'
 import {UserEditModalForm} from './UserEditModalForm'
-import {isNotEmpty, QUERIES} from '../../../../../_metronic/helpers'
+import {isNotEmpty} from '../../../../../_metronic/helpers'
 import {useListView} from '../core/ListViewProvider'
-import {getUserById} from '../core/_requests'
+import {getUserById, clearSelectedUser} from '../../../../../store/user/userSlice'
+import {useDispatch, useSelector} from 'react-redux'
+import {AppDispatch, RootState} from '../../../../../store'
 
 const UserEditModalFormWrapper = () => {
   const {itemIdForUpdate, setItemIdForUpdate} = useListView()
+  const dispatch = useDispatch<AppDispatch>()
+  const {selectedUser, loading} = useSelector((state: RootState) => state.users)
+  
   const enabledQuery: boolean = isNotEmpty(itemIdForUpdate)
-  const {
-    isLoading,
-    data: user,
-    error,
-  } = useQuery(
-    `${QUERIES.USERS_LIST}-user-${itemIdForUpdate}`,
-    () => {
-      return getUserById(itemIdForUpdate)
-    },
-    {
-      cacheTime: 0,
-      enabled: enabledQuery,
-      onError: (err) => {
-        setItemIdForUpdate(undefined)
-        console.error(err)
-      },
+
+  useEffect(() => {
+    if (enabledQuery && itemIdForUpdate) {
+      dispatch(getUserById(itemIdForUpdate))
+    } else {
+      dispatch(clearSelectedUser())
     }
-  )
+  }, [dispatch, itemIdForUpdate, enabledQuery])
 
   if (!itemIdForUpdate) {
-    return <UserEditModalForm isUserLoading={isLoading} user={{id: undefined}} />
+    return <UserEditModalForm isUserLoading={loading} user={{user_id: undefined}} />
   }
 
-  if (!isLoading && !error && user) {
-    return <UserEditModalForm isUserLoading={isLoading} user={user} />
+  if (!loading && selectedUser) {
+    return <UserEditModalForm isUserLoading={loading} user={selectedUser} />
   }
 
   return null

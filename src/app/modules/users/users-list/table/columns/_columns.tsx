@@ -10,7 +10,7 @@ const usersColumns: ReadonlyArray<Column<User>> = [
   {
     Header: '',
     id: 'selection',
-    Cell: ({ ...props }) => <UserSelectionCell id={props.data[props.row.index].id} />,
+    Cell: ({ ...props }) => <UserSelectionCell id={props.data[props.row.index].user_id} />,
   },
   {
     Header: 'Name',
@@ -38,7 +38,7 @@ const usersColumns: ReadonlyArray<Column<User>> = [
   {
     Header: 'Actions',
     id: 'actions',
-    Cell: ({ ...props }) => <UserActionsCell id={props.data[props.row.index].id} />,
+    Cell: ({ ...props }) => <UserActionsCell id={props.data[props.row.index].user_id} />,
   },
 ]
 

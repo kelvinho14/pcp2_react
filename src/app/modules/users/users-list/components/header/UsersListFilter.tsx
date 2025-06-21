@@ -2,11 +2,12 @@ import {useEffect, useState} from 'react'
 import {MenuComponent} from '../../../../../../_metronic/assets/ts/components'
 import {initialQueryState, KTIcon} from '../../../../../../_metronic/helpers'
 import {useQueryRequest} from '../../core/QueryRequestProvider'
-import {useQueryResponse} from '../../core/QueryResponseProvider'
+import {useSelector} from 'react-redux'
+import {RootState} from '../../../../../../store'
 
 const UsersListFilter = () => {
   const {updateState} = useQueryRequest()
-  const {isLoading} = useQueryResponse()
+  const isLoading = useSelector((state: RootState) => state.users.loading)
   const [role, setRole] = useState<string | undefined>()
   const [lastLogin, setLastLogin] = useState<string | undefined>()
 
