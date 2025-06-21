@@ -1,5 +1,4 @@
 import { ListViewProvider, useListView } from './core/ListViewProvider'
-import { QueryRequestProvider } from './core/QueryRequestProvider'
 import { useState } from 'react'
 import { UsersListHeader } from './components/header/UsersListHeader'
 import { UsersTable } from './table/UsersTable'
@@ -25,11 +24,9 @@ const UsersList = () => {
 const UsersListWrapper = () => {
   console.log('🔄 UsersListWrapper component rendered')
   return (
-    <QueryRequestProvider>
-      <ListViewProvider>
-        <UsersList />
-      </ListViewProvider>
-    </QueryRequestProvider>
+    <ListViewProvider>
+      <UsersList />
+    </ListViewProvider>
   )
 }
 
