@@ -145,7 +145,12 @@ const AsideTabs: FC<Props> = ({link, setLink}) => {
             <a
               className={clsx(
                 'nav-link btn btn-icon btn-active-color-primary btn-color-gray-500 btn-active-light',
-                {active: link === t.link || (t.path && location.pathname.startsWith(t.path))}
+                {
+                  active: link === t.link || 
+                    (t.path && location.pathname.startsWith(t.path)) ||
+                    (t.link === 'exercise' && location.pathname.startsWith('/exercises')) ||
+                    (t.link === 'video' && location.pathname.startsWith('/videos'))
+                }
               )}
               onClick={() => handleClick(t)}
             >
