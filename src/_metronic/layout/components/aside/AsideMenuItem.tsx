@@ -11,6 +11,7 @@ type Props = {
   icon?: string
   fontIcon?: string
   hasBullet?: boolean
+  textAlign?: 'start' | 'end'
 }
 
 const AsideMenuItem: FC<Props & WithChildren> = ({
@@ -20,6 +21,7 @@ const AsideMenuItem: FC<Props & WithChildren> = ({
   icon,
   fontIcon,
   hasBullet = false,
+  textAlign = 'start',
 }) => {
   const {pathname} = useLocation()
   const navigate = useNavigate()
@@ -40,22 +42,25 @@ const AsideMenuItem: FC<Props & WithChildren> = ({
   return (
     <div className='menu-item'>
       <Link
-        className={clsx('menu-link without-sub', {active: isActive})}
+        className={clsx('menu-link without-sub d-flex', {active: isActive})}
         to={to}
         onClick={handleClick}
+        style={textAlign === 'end' ? {justifyContent: 'flex-end', width: '100%'} : {}}
       >
-        {hasBullet && (
-          <span className='menu-bullet'>
-            <span className='bullet bullet-dot'></span>
-          </span>
-        )}
-        {icon && aside.menuIcon === 'svg' && (
-          <span className='menu-icon'>
-            <KTIcon iconName={icon} className='fs-2' />
-          </span>
-        )}
-        {fontIcon && aside.menuIcon === 'font' && <i className={clsx('bi fs-3', fontIcon)}></i>}
-        <span className='menu-title'>{title}</span>
+        <div className='d-flex align-items-center'>
+          {hasBullet && (
+            <span className='menu-bullet'>
+              <span className='bullet bullet-dot'></span>
+            </span>
+          )}
+          {icon && aside.menuIcon === 'svg' && (
+            <span className='menu-icon'>
+              <KTIcon iconName={icon} className='fs-2' />
+            </span>
+          )}
+          {fontIcon && aside.menuIcon === 'font' && <i className={clsx('fs-3 me-2', fontIcon)}></i>}
+          <span className='menu-title'>{title}</span>
+        </div>
       </Link>
       {children}
     </div>

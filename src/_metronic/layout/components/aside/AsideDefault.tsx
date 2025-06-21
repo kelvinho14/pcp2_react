@@ -1,5 +1,3 @@
-
-
 import {useState} from 'react'
 import {Link} from 'react-router-dom'
 import clsx from 'clsx'
@@ -12,7 +10,7 @@ import {TabsBase} from './Tabs/_TabsBase'
 const AsideDefault = () => {
   const {config} = useLayout()
   const {classes} = useLayout()
-  const [link, setLink] = useState<string>('projects')
+  const [link, setLink] = useState<string>('')
 
   return (
     <div

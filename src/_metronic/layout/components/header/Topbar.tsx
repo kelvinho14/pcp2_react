@@ -1,7 +1,7 @@
 
 import {FC} from 'react'
-import {KTIcon} from '../../../helpers'
-import {ThemeModeSwitcher} from '../../../partials'
+import {KTIcon, toAbsoluteUrl} from '../../../helpers'
+import {ThemeModeSwitcher,HeaderUserMenu,HeaderNotificationsMenu} from '../../../partials'
 
 const Topbar: FC = () => (
   <div className='d-flex flex-shrink-0'>
@@ -18,28 +18,28 @@ const Topbar: FC = () => (
       </a>
     </div>
     {/* end::Invite user */}
-
-    {/* begin::Create app */}
-    <div className='d-flex ms-3'>
-      <a
-        href='#'
-        className='btn btn-flex flex-center bg-body btn-color-gray-700 btn-active-color-primary w-40px w-md-auto h-40px px-0 px-md-6'
-        id='kt_toolbar_primary_button'
-        data-bs-toggle='modal'
-        data-bs-target='#kt_modal_create_app'
-      >
-        <KTIcon iconName='document' className='fs-2 text-primary me-0 me-md-2' />
-        <span className='d-none d-md-inline'>New App</span>
-      </a>
-    </div>
-    {/* end::Create app */}
-
     {/* begin::Theme mode */}
     <div className='d-flex align-items-center  ms-3'>
       <ThemeModeSwitcher toggleBtnClass=' flex-center bg-body btn-color-gray-600 btn-active-color-primary h-40px' />
     </div>
     {/* end::Theme mode */}
-
+    <div className='d-flex align-items-center ms-3'>
+        {/* begin::Menu wrapper */}
+        <div
+          className='btn btn-icon btn-active-color-primary btn-color-gray-500 btn-active-light'
+          data-kt-menu-trigger='click'
+          data-kt-menu-overflow='true'
+          data-kt-menu-placement='top-start'
+          data-bs-toggle='tooltip'
+          data-bs-placement='right'
+          data-bs-dismiss='click'
+          title='Notifications'
+        >
+          <i className="fa-solid fa-bell fs-2"></i>
+        </div>
+        {/* end::Menu wrapper */}
+        <HeaderNotificationsMenu backgrounUrl='media/misc/pattern-1.jpg' />
+      </div>
     {/* CHAT */}
     <div className='d-flex align-items-center ms-3'>
       {/* begin::Menu wrapper */}
@@ -51,6 +51,20 @@ const Topbar: FC = () => (
         <span className='pulse-ring' />
       </div>
       {/* end::Menu wrapper */}
+    </div>
+    <div className='d-flex align-items-center ms-3' id='kt_header_user_menu_toggle'>
+        {/* begin::Menu wrapper */}
+        <div
+          className='cursor-pointer symbol symbol-40px'
+          data-kt-menu-trigger='click'
+          data-kt-menu-overflow='false'
+          data-kt-menu-placement='top-start'
+          title='User profile'
+        >
+          <img src={toAbsoluteUrl('media/avatars/300-1.jpg')} alt='avatar' />
+        </div>
+        {/* end::Menu wrapper */}
+        <HeaderUserMenu />
     </div>
   </div>
 )

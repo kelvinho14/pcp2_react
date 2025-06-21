@@ -44,8 +44,8 @@ export function Login() {
         const {data} = await login(values.email, values.password)
         if (data.status === 'success' && data.data) {
           const user = data.data
+          console.log( user)
           setCurrentUser(user)
-          // Connect WebSocket after successful login
           webSocketService.connect(true)
         } else {
           throw new Error('Invalid response format')

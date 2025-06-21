@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState, useCallback } from 'react'
+import { useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import { useTable, useSortBy, ColumnInstance, Row, UseSortByState, TableState, TableOptions, UseSortByColumnProps } from 'react-table'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchUsers } from '../../../../../store/user/userSlice'
@@ -17,6 +17,9 @@ type Props = {
 
 const UsersTable = ({ search }: Props) => {
   const dispatch = useDispatch<AppDispatch>()
+  const dispatchRef = useRef(dispatch)
+  dispatchRef.current = dispatch
+  
   const users = useSelector((state: RootState) => state.users.users)
   const isLoading = useSelector((state: RootState) => state.users.loading)
   const total = useSelector((state: RootState) => state.users.total)
@@ -25,17 +28,30 @@ const UsersTable = ({ search }: Props) => {
   const [sort, setSort] = useState<{ id: string; desc: boolean } | null>(null)
   const itemsPerPage = 10
 
-  useEffect(() => {
-    dispatch(
+  // Memoize the fetch function to prevent unnecessary re-renders
+  const fetchUsersData = useCallback(() => {
+    console.log('🔄 Fetching users data with params:', {
+      page,
+      items_per_page: itemsPerPage,
+      sort: sort?.id,
+      order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
+      search: search || undefined,
+    })
+    
+    dispatchRef.current(
       fetchUsers({
         page,
         items_per_page: itemsPerPage,
         sort: sort?.id,
         order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
-        search: search || undefined,  // ✅ Now it's the prop!
+        search: search || undefined,
       })
     )
-  }, [dispatch, page, sort, search])
+  }, [page, sort, search, itemsPerPage])
+
+  useEffect(() => {
+    fetchUsersData()
+  }, [fetchUsersData])
 
   const data = useMemo(() => (Array.isArray(users) ? users : []), [users])
   const columns = useMemo(() => usersColumns, [])
