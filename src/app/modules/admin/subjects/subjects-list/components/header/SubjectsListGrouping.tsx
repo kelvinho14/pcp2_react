@@ -23,9 +23,9 @@ const SubjectsListGrouping = () => {
 
   return (
     <>
-      <div className='d-flex justify-content-end align-items-center d-none' data-kt-subject-table-toolbar='selected'>
+      <div className='d-flex justify-content-end align-items-center' data-kt-subject-table-toolbar='selected'>
         <div className='fw-bolder me-5'>
-          <span className='badge badge-primary'>{selected.length}</span> selected
+          <span className='me-2'>{selected.length}</span> selected
         </div>
 
         <button type='button' className='btn btn-danger' onClick={() => setShowDeleteDialog(true)}>

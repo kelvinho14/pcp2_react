@@ -15,6 +15,15 @@ const CustomHeaderColumn: React.FC<Props> = ({ column, onSort }) => {
     return <SubjectSelectionHeader tableProps={{ column }} />
   }
 
+  // Actions Column - disable sorting
+  if (column.id === 'actions') {
+    return (
+      <th key={key} {...restHeaderProps}>
+        {column.render('Header')}
+      </th>
+    )
+  }
+
   // Default Column
   return (
     <th key={key} {...restHeaderProps} onClick={onSort} style={{ cursor: 'pointer' }}>

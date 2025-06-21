@@ -27,7 +27,6 @@ const SubjectInfoCell: FC<Props> = ({subject}) => {
         >
           {subject.name}
         </a>
-        <span className='text-muted'>{subject.code}</span>
       </div>
     </div>
   )

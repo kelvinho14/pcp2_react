@@ -24,7 +24,7 @@ const SubjectsTable = ({ search }: Props) => {
   const total = useSelector((state: RootState) => state.subjects.total)
 
   const [page, setPage] = useState(1)
-  const [sort, setSort] = useState<{ id: string; desc: boolean } | null>(null)
+  const [sort, setSort] = useState<{ id: string; desc: boolean } | null>({ id: 'name', desc: false })
   const itemsPerPage = 10
 
   // Memoize the fetch function to prevent unnecessary re-renders
@@ -52,6 +52,11 @@ const SubjectsTable = ({ search }: Props) => {
     fetchSubjectsData()
   }, [fetchSubjectsData])
 
+  // Reset page to 1 when search changes
+  useEffect(() => {
+    setPage(1)
+  }, [search])
+
   const data = useMemo(() => (Array.isArray(subjects) ? subjects : []), [subjects])
   const columns = useMemo(() => subjectsColumns, [])
 
@@ -76,7 +81,7 @@ const SubjectsTable = ({ search }: Props) => {
       } else if (currentSort && !currentSort.desc) {
         return { id: column.id, desc: true }
       } else {
-        return null
+        return { id: column.id, desc: false }
       }
     })
   }, [])
