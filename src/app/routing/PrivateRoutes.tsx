@@ -16,6 +16,7 @@ const PrivateRoutes = () => {
   const ChatPage = lazy(() => import('../modules/apps/chat/ChatPage'))
   const UsersPage = lazy(() => import('../modules/users/UsersPage'))
   const TestPage = lazy(() => import('../modules/test/TestPage'))
+  const AdminPage = lazy(() => import('../modules/admin/AdminPage'))
 
   return (
     <Routes>
@@ -80,6 +81,15 @@ const PrivateRoutes = () => {
           element={
             <SuspensedView>
               <UsersPage />
+            </SuspensedView>
+          }
+        />
+        {/* Admin Routes */}
+        <Route
+          path='admin/*'
+          element={
+            <SuspensedView>
+              <AdminPage />
             </SuspensedView>
           }
         />
