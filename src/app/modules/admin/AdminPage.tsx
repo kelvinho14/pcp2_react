@@ -2,6 +2,8 @@ import {Route, Routes, Outlet, Navigate} from 'react-router-dom'
 import {PageLink, PageTitle} from '../../../_metronic/layout/core'
 import AdminRouteGuard from './AdminRouteGuard'
 import SubjectCreatePage from './subjects/SubjectCreatePage'
+import SubjectEditPage from './subjects/SubjectEditPage'
+import SubjectsPage from './subjects/SubjectsPage'
 import SchoolSubjectCreatePage from './subjects/SchoolSubjectCreatePage'
 
 const adminBreadcrumbs: Array<PageLink> = [
@@ -26,6 +28,18 @@ const AdminPage = () => {
         <Route element={<Outlet />}>
           {/* Subjects Routes */}
           <Route
+            path='subjects'
+            element={<Navigate to='/admin/subjects/list' replace />}
+          />
+          <Route
+            path='subjects/'
+            element={<Navigate to='/admin/subjects/list' replace />}
+          />
+          <Route
+            path='subjects/list'
+            element={<SubjectsPage />}
+          />
+          <Route
             path='subjects/create'
             element={
               <>
@@ -33,6 +47,10 @@ const AdminPage = () => {
                 <SubjectCreatePage />
               </>
             }
+          />
+          <Route
+            path='subjects/edit/:id'
+            element={<SubjectEditPage />}
           />
           
           {/* School Subjects Routes */}
