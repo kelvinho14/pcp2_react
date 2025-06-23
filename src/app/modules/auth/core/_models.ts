@@ -49,6 +49,7 @@ export interface UserModel {
   email: string
   name?: string
   school_id?: string
+  school_subject_ids?: string[]
   role: {
     role_id: string
     name: string

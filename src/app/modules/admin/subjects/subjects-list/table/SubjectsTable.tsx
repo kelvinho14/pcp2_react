@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import { useTable, useSortBy, ColumnInstance, Row, UseSortByState, TableState, TableOptions, UseSortByColumnProps } from 'react-table'
 import { useSelector, useDispatch } from 'react-redux'
-import { fetchSubjects, Subject } from '../../../../../../store/subjects/subjectsSlice'
+import { fetchSubjects, Subject } from '../../../../../../store/admin/adminSlice'
 import { RootState, AppDispatch } from '../../../../../../store'
 import { subjectsColumns } from './columns/_columns'
 import { CustomHeaderColumn } from './columns/CustomHeaderColumn'
@@ -19,9 +19,9 @@ const SubjectsTable = ({ search }: Props) => {
   const dispatchRef = useRef(dispatch)
   dispatchRef.current = dispatch
   
-  const subjects = useSelector((state: RootState) => state.subjects.subjects)
-  const isLoading = useSelector((state: RootState) => state.subjects.loading)
-  const total = useSelector((state: RootState) => state.subjects.total)
+  const subjects = useSelector((state: RootState) => state.admin.subjects)
+  const isLoading = useSelector((state: RootState) => state.admin.loading)
+  const total = useSelector((state: RootState) => state.admin.subjectsTotal)
 
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<{ id: string; desc: boolean } | null>({ id: 'name', desc: false })

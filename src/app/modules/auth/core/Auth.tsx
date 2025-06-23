@@ -39,7 +39,8 @@ const AuthProvider: FC<WithChildren> = ({children}) => {
     } catch (error) {
       console.error('Error during logout:', error)
     } finally {
-      // Clear JWT data
+      // Clear JWT data and school_subject_ids
+      localStorage.removeItem('school_subject_id')
       webSocketService.disconnect()
       setCurrentUser(undefined)
     }
@@ -86,6 +87,12 @@ const AuthInit: FC<WithChildren> = ({children}) => {
           console.log('  - user.role.role_id:', user.role?.role_id)
           console.log('  - user.role.name:', user.role?.name)
           console.log('  - user.role.role_type:', user.role?.role_type)
+          
+          // Store school_subject_ids in localStorage
+          if (user.school_subject_ids && Array.isArray(user.school_subject_ids) && user.school_subject_ids.length > 0 && user.school_subject_ids[0]) {
+            localStorage.setItem('school_subject_id', user.school_subject_ids[0])
+            console.log('Stored first school_subject_id in localStorage:', user.school_subject_ids[0])
+          }
           
           setCurrentUser(user)
           webSocketService.connect(true)

@@ -4,7 +4,7 @@ import {ID, KTIcon} from '../../../../../../../_metronic/helpers'
 import {useListView} from '../../core/ListViewProvider'
 import {useDispatch} from 'react-redux'
 import {AppDispatch} from '../../../../../../../store'
-import {deleteSubject} from '../../../../../../../store/subjects/subjectsSlice'
+import {deleteSubject} from '../../../../../../../store/admin/adminSlice'
 import {ConfirmationDialog} from '../../../../../../../_metronic/helpers/ConfirmationDialog'
 
 type Props = {

@@ -6,7 +6,7 @@ import clsx from 'clsx'
 import {useSelector, useDispatch} from 'react-redux'
 import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
 import {RootState, AppDispatch} from '../../../../store'
-import {createSubject, updateSubject, fetchSubject, clearMessages, clearSuccess, clearCurrentSubject} from '../../../../store/subjects/subjectsSlice'
+import {createSubject, updateSubject, fetchSubject, clearMessages, clearSuccess, clearCurrentSubject} from '../../../../store/admin/adminSlice'
 
 const subjectSchema = Yup.object().shape({
   name: Yup.string()
@@ -32,7 +32,7 @@ const SubjectForm: React.FC<SubjectFormProps> = ({mode}) => {
   const dispatch = useDispatch<AppDispatch>()
   const isOnFormPage = useRef(true)
   
-  const {creating, updating, loading, error, success, currentSubject} = useSelector((state: RootState) => state.subjects)
+  const {creating, updating, loading, error, success, currentSubject} = useSelector((state: RootState) => state.admin)
   const isSubmitting = creating || updating
 
   // Clear messages on component mount
@@ -87,7 +87,7 @@ const SubjectForm: React.FC<SubjectFormProps> = ({mode}) => {
         if (mode === 'create') {
           await dispatch(createSubject(subjectData)).unwrap()
         } else if (mode === 'edit' && id) {
-          await dispatch(updateSubject({ id, subjectData })).unwrap()
+          await dispatch(updateSubject({ ...subjectData, subject_id: id })).unwrap()
         }
       } catch (error) {
         // Error is already handled by the slice with toast

@@ -2,7 +2,7 @@ import {KTIcon} from '../../../../../../../_metronic/helpers'
 import {useListView} from '../../core/ListViewProvider'
 import {useDispatch} from 'react-redux'
 import {AppDispatch} from '../../../../../../../store'
-import {bulkDeleteSubjects} from '../../../../../../../store/subjects/subjectsSlice'
+import {bulkDeleteSubjects} from '../../../../../../../store/admin/adminSlice'
 import {ConfirmationDialog} from '../../../../../../../_metronic/helpers/ConfirmationDialog'
 import {useState} from 'react'
 

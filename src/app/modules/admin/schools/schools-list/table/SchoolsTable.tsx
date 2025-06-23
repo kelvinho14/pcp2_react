@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import { useTable, useSortBy, ColumnInstance, Row, UseSortByState, TableState, TableOptions, UseSortByColumnProps } from 'react-table'
 import { useSelector, useDispatch } from 'react-redux'
-import { fetchSchools, School } from '../../../../../../store/schools/schoolsSlice'
+import { fetchSchools, School } from '../../../../../../store/admin/adminSlice'
 import { RootState, AppDispatch } from '../../../../../../store'
 import { schoolsColumns } from './columns/_columns'
 import { CustomHeaderColumn } from './columns/CustomHeaderColumn'
@@ -19,9 +19,9 @@ const SchoolsTable = ({ search }: Props) => {
   const dispatchRef = useRef(dispatch)
   dispatchRef.current = dispatch
   
-  const schools = useSelector((state: RootState) => state.schools.schools)
-  const isLoading = useSelector((state: RootState) => state.schools.loading)
-  const total = useSelector((state: RootState) => state.schools.total)
+  const schools = useSelector((state: RootState) => state.admin.schools)
+  const isLoading = useSelector((state: RootState) => state.admin.loading)
+  const total = useSelector((state: RootState) => state.admin.schoolsTotal)
 
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<{ id: string; desc: boolean } | null>({ id: 'name', desc: false })

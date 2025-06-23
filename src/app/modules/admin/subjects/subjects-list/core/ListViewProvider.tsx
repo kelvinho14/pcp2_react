@@ -11,7 +11,7 @@ import {
   WithChildren,
 } from '../../../../../../_metronic/helpers'
 import {RootState} from '../../../../../../store'
-import {Subject} from '../../../../../../store/subjects/subjectsSlice'
+import {Subject} from '../../../../../../store/admin/adminSlice'
 
 const ListViewContext = createContext<ListViewContextProps>(initialListView)
 
@@ -20,8 +20,8 @@ const ListViewProvider: FC<WithChildren> = ({children}) => {
   const [itemIdForUpdate, setItemIdForUpdate] = useState<ID>(initialListView.itemIdForUpdate)
   
   // Use Redux data
-  const subjects = useSelector((state: RootState) => state.subjects.subjects)
-  const isLoading = useSelector((state: RootState) => state.subjects.loading)
+  const subjects = useSelector((state: RootState) => state.admin.subjects)
+  const isLoading = useSelector((state: RootState) => state.admin.loading)
   
   const data = useMemo(() => (Array.isArray(subjects) ? subjects : []), [subjects])
   const disabled = useMemo(() => calculatedGroupingIsDisabled(isLoading, data), [isLoading, data])

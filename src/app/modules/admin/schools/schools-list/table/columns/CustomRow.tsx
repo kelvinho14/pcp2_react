@@ -1,6 +1,6 @@
 import { FC } from 'react'
 import { Row } from 'react-table'
-import { School } from '../../../../../../../store/schools/schoolsSlice'
+import { School } from '../../../../../../../store/admin/adminSlice'
 
 type Props = {
   row: Row<School>

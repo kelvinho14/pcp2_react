@@ -1,15 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit'
 import userReducer from './user/userSlice'
 import exerciseReducer from './exercise/exerciseSlice'
-import subjectsReducer from './subjects/subjectsSlice'
-import schoolsReducer from './schools/schoolsSlice'
+import adminReducer from './admin/adminSlice'
+import tagsReducer from './tags/tagsSlice'
 
 export const store = configureStore({
   reducer: {
     users: userReducer,
     exercise: exerciseReducer,
-    subjects: subjectsReducer,
-    schools: schoolsReducer,
+    admin: adminReducer,
+    tags: tagsReducer,
   },
 })
 

@@ -2,7 +2,7 @@ import { Column } from 'react-table'
 import { SchoolSelectionCell } from './SchoolSelectionCell'
 import { SchoolInfoCell } from './SchoolInfoCell'
 import { SchoolActionsCell } from './SchoolActionsCell'
-import { School } from '../../../../../../../store/schools/schoolsSlice'
+import { School } from '../../../../../../../store/admin/adminSlice'
 import { ID } from '../../../../../../../_metronic/helpers'
 
 const schoolsColumns: ReadonlyArray<Column<School>> = [
