@@ -4,7 +4,7 @@ import {ID, KTIcon} from '../../../../../../../_metronic/helpers'
 import {useListView} from '../../core/ListViewProvider'
 import {useDispatch} from 'react-redux'
 import {AppDispatch} from '../../../../../../../store'
-import {deleteSchool} from '../../../../../../../store/schools/schoolsSlice'
+import {deleteSchool} from '../../../../../../../store/admin/adminSlice'
 import {ConfirmationDialog} from '../../../../../../../_metronic/helpers/ConfirmationDialog'
 import toast from '../../../../../../../_metronic/helpers/toast'
 

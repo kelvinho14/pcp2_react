@@ -1,5 +1,6 @@
 import axios from "axios";
 import { AuthModel, UserModel, ApiResponse } from "./_models";
+import { getHeadersWithSchoolSubject } from "../../../../_metronic/helpers/axios";
 
 const API_URL = import.meta.env.VITE_APP_API_URL;
 
@@ -47,5 +48,9 @@ export function getUserByToken(token: string) {
 }
 
 export function getCurrentUser() {
-  return axios.get<ApiResponse<UserModel>>(`${API_URL}/session/verify`, { withCredentials: true })
+  const headers = getHeadersWithSchoolSubject(`${API_URL}/session/verify`)
+  return axios.get<ApiResponse<UserModel>>(`${API_URL}/session/verify`, { 
+    headers,
+    withCredentials: true 
+  })
 }

@@ -2,7 +2,7 @@ import {FC, useState, useEffect} from 'react'
 import {useNavigate, useParams} from 'react-router-dom'
 import {useDispatch, useSelector} from 'react-redux'
 import {AppDispatch, RootState} from '../../../../store'
-import {fetchSchoolById, updateSchool} from '../../../../store/schools/schoolsSlice'
+import {fetchSchool, updateSchool} from '../../../../store/admin/adminSlice'
 import {SchoolForm} from './SchoolForm'
 import {SchoolSubjectsSection} from './SchoolSubjectsSection'
 import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
@@ -15,12 +15,12 @@ const SchoolEditPage: FC = () => {
   const {id} = useParams<{id: string}>()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const currentSchool = useSelector((state: RootState) => state.schools.currentSchool)
-  const loading = useSelector((state: RootState) => state.schools.loading)
+  const currentSchool = useSelector((state: RootState) => state.admin.currentSchool)
+  const loading = useSelector((state: RootState) => state.admin.loading)
 
   useEffect(() => {
     if (id) {
-      dispatch(fetchSchoolById(id))
+      dispatch(fetchSchool(id))
     }
   }, [dispatch, id])
 
@@ -35,7 +35,7 @@ const SchoolEditPage: FC = () => {
     
     setIsSubmitting(true)
     try {
-      await dispatch(updateSchool({id, schoolData})).unwrap()
+      await dispatch(updateSchool({...schoolData, school_id: id})).unwrap()
       toast.success('School updated successfully!', 'Success')
       navigate('/admin/schools/list')
     } catch (error) {

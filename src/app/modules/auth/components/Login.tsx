@@ -45,6 +45,13 @@ export function Login() {
         if (data.status === 'success' && data.data) {
           const user = data.data
           console.log( user)
+          
+          // Store school_subject_ids in localStorage
+          if (user.school_subject_ids && Array.isArray(user.school_subject_ids) && user.school_subject_ids.length > 0 && user.school_subject_ids[0]) {
+            localStorage.setItem('school_subject_id', user.school_subject_ids[0])
+            console.log('Stored first school_subject_id in localStorage:', user.school_subject_ids[0])
+          }
+          
           setCurrentUser(user)
           webSocketService.connect(true)
         } else {

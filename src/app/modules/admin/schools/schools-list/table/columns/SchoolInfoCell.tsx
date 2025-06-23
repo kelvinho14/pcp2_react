@@ -1,6 +1,6 @@
 import {FC} from 'react'
 import {useNavigate} from 'react-router-dom'
-import {School} from '../../../../../../../store/schools/schoolsSlice'
+import {School} from '../../../../../../../store/admin/adminSlice'
 
 type Props = {
   school: School

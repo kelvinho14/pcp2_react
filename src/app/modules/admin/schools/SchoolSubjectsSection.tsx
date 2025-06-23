@@ -1,7 +1,7 @@
 import {FC, useEffect, useState} from 'react'
 import {useSelector, useDispatch} from 'react-redux'
 import {RootState, AppDispatch} from '../../../../store'
-import {SchoolSubject, updateSubjectStatus} from '../../../../store/schools/schoolsSlice'
+import {SchoolSubject, updateSchoolSubjectStatus} from '../../../../store/admin/adminSlice'
 import {KTCardBody} from '../../../../_metronic/helpers'
 import toast from '../../../../_metronic/helpers/toast'
 
@@ -11,8 +11,8 @@ type Props = {
 
 const SchoolSubjectsSection: FC<Props> = ({schoolId}) => {
   const dispatch = useDispatch<AppDispatch>()
-  const currentSchool = useSelector((state: RootState) => state.schools.currentSchool)
-  const loading = useSelector((state: RootState) => state.schools.loading)
+  const currentSchool = useSelector((state: RootState) => state.admin.currentSchool)
+  const loading = useSelector((state: RootState) => state.admin.loading)
   const [updatingSubjects, setUpdatingSubjects] = useState<Set<string>>(new Set())
 
   const schoolSubjects = currentSchool?.subjects || []
@@ -49,7 +49,7 @@ const SchoolSubjectsSection: FC<Props> = ({schoolId}) => {
     setUpdatingSubjects(prev => new Set(prev).add(subjectId))
     
     try {
-      await dispatch(updateSubjectStatus({
+      await dispatch(updateSchoolSubjectStatus({
         schoolId,
         subjectId,
         status: newStatus

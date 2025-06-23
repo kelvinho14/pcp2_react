@@ -3,7 +3,7 @@ import { SubjectSelectionCell } from './SubjectSelectionCell'
 import { SubjectInfoCell } from './SubjectInfoCell'
 import { SubjectActionsCell } from './SubjectActionsCell'
 import { SubjectStatusCell } from './SubjectStatusCell'
-import { Subject } from '../../../../../../../store/subjects/subjectsSlice'
+import { Subject } from '../../../../../../../store/admin/adminSlice'
 import { ID } from '../../../../../../../_metronic/helpers'
 
 const subjectsColumns: ReadonlyArray<Column<Subject>> = [

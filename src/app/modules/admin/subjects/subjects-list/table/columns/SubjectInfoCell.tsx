@@ -1,6 +1,6 @@
 import {FC} from 'react'
 import {useNavigate} from 'react-router-dom'
-import {Subject} from '../../../../../../../store/subjects/subjectsSlice'
+import {Subject} from '../../../../../../../store/admin/adminSlice'
 
 type Props = {
   subject: Subject
