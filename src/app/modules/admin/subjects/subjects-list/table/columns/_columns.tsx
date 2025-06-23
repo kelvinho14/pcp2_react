@@ -2,6 +2,7 @@ import { Column } from 'react-table'
 import { SubjectSelectionCell } from './SubjectSelectionCell'
 import { SubjectInfoCell } from './SubjectInfoCell'
 import { SubjectActionsCell } from './SubjectActionsCell'
+import { SubjectStatusCell } from './SubjectStatusCell'
 import { Subject } from '../../../../../../../store/subjects/subjectsSlice'
 import { ID } from '../../../../../../../_metronic/helpers'
 
@@ -19,6 +20,11 @@ const subjectsColumns: ReadonlyArray<Column<Subject>> = [
   {
     Header: 'Code',
     accessor: 'code',
+  },
+  {
+    Header: 'Status',
+    accessor: 'status',
+    Cell: ({ ...props }) => <SubjectStatusCell status={props.data[props.row.index].status} />,
   },
   {
     Header: 'Actions',

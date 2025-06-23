@@ -17,6 +17,9 @@ const subjectSchema = Yup.object().shape({
     .min(2, 'Minimum 2 symbols')
     .max(10, 'Maximum 10 symbols')
     .required('Subject code is required'),
+  status: Yup.number()
+    .oneOf([0, 1], 'Status must be either 0 (Inactive) or 1 (Active)')
+    .required('Status is required'),
 })
 
 interface SubjectFormProps {
@@ -69,6 +72,7 @@ const SubjectForm: React.FC<SubjectFormProps> = ({mode}) => {
     initialValues: {
       name: currentSubject?.name || '',
       code: currentSubject?.code || '',
+      status: currentSubject?.status ?? 1, // Default to active (1)
     },
     validationSchema: subjectSchema,
     enableReinitialize: true, // Important for edit mode to populate form with fetched data
@@ -77,6 +81,7 @@ const SubjectForm: React.FC<SubjectFormProps> = ({mode}) => {
         const subjectData = {
           name: values.name.trim(),
           code: values.code.trim(),
+          status: values.status,
         }
         
         if (mode === 'create') {
@@ -202,6 +207,33 @@ const SubjectForm: React.FC<SubjectFormProps> = ({mode}) => {
                 {formik.touched.code && formik.errors.code && (
                   <div className='fv-plugins-message-container invalid-feedback'>
                     <div>{formik.errors.code}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Subject Status */}
+            <div className='row mb-6'>
+              <label className='col-lg-4 col-form-label required fw-semibold fs-6'>
+                Status
+              </label>
+              <div className='col-lg-8'>
+                <select
+                  className={clsx(
+                    'form-select form-select-lg form-select-solid',
+                    {
+                      'is-valid': formik.touched.status && !formik.errors.status,
+                      'is-invalid': formik.touched.status && formik.errors.status,
+                    }
+                  )}
+                  {...formik.getFieldProps('status')}
+                >
+                  <option value={1}>Active</option>
+                  <option value={0}>Inactive</option>
+                </select>
+                {formik.touched.status && formik.errors.status && (
+                  <div className='fv-plugins-message-container invalid-feedback'>
+                    <div>{formik.errors.status}</div>
                   </div>
                 )}
               </div>

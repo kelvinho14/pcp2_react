@@ -9,6 +9,7 @@ export interface Subject {
   subject_id: string
   name: string
   code: string
+  status?: number
   created_at?: string
   updated_at?: string
 }
@@ -16,6 +17,7 @@ export interface Subject {
 export interface SubjectFormData {
   name: string
   code: string
+  status?: number
 }
 
 // Async thunks

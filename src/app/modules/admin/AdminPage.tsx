@@ -4,6 +4,9 @@ import AdminRouteGuard from './AdminRouteGuard'
 import SubjectCreatePage from './subjects/SubjectCreatePage'
 import SubjectEditPage from './subjects/SubjectEditPage'
 import SubjectsPage from './subjects/SubjectsPage'
+import SchoolCreatePage from './schools/SchoolCreatePage'
+import SchoolEditPage from './schools/SchoolEditPage'
+import SchoolsPage from './schools/SchoolsPage'
 import SchoolSubjectCreatePage from './subjects/SchoolSubjectCreatePage'
 
 const adminBreadcrumbs: Array<PageLink> = [
@@ -51,6 +54,28 @@ const AdminPage = () => {
           <Route
             path='subjects/edit/:id'
             element={<SubjectEditPage />}
+          />
+          
+          {/* Schools Routes */}
+          <Route
+            path='schools'
+            element={<Navigate to='/admin/schools/list' replace />}
+          />
+          <Route
+            path='schools/'
+            element={<Navigate to='/admin/schools/list' replace />}
+          />
+          <Route
+            path='schools/list'
+            element={<SchoolsPage />}
+          />
+          <Route
+            path='schools/create'
+            element={<SchoolCreatePage />}
+          />
+          <Route
+            path='schools/edit/:id'
+            element={<SchoolEditPage />}
           />
           
           {/* School Subjects Routes */}

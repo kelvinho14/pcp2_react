@@ -1,12 +1,12 @@
 import { useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import { useTable, useSortBy, ColumnInstance, Row, UseSortByState, TableState, TableOptions, UseSortByColumnProps } from 'react-table'
 import { useSelector, useDispatch } from 'react-redux'
-import { fetchSubjects, Subject } from '../../../../../../store/subjects/subjectsSlice'
+import { fetchSchools, School } from '../../../../../../store/schools/schoolsSlice'
 import { RootState, AppDispatch } from '../../../../../../store'
-import { subjectsColumns } from './columns/_columns'
+import { schoolsColumns } from './columns/_columns'
 import { CustomHeaderColumn } from './columns/CustomHeaderColumn'
 import { CustomRow } from './columns/CustomRow'
-import { SubjectsListLoading } from '../components/loading/SubjectsListLoading'
+import { SchoolsListLoading } from '../components/loading/SchoolsListLoading'
 import { TablePagination } from '../../../../../../_metronic/helpers/TablePagination'
 import { KTCardBody } from '../../../../../../_metronic/helpers'
 
@@ -14,22 +14,22 @@ type Props = {
   search: string
 }
 
-const SubjectsTable = ({ search }: Props) => {
+const SchoolsTable = ({ search }: Props) => {
   const dispatch = useDispatch<AppDispatch>()
   const dispatchRef = useRef(dispatch)
   dispatchRef.current = dispatch
   
-  const subjects = useSelector((state: RootState) => state.subjects.subjects)
-  const isLoading = useSelector((state: RootState) => state.subjects.loading)
-  const total = useSelector((state: RootState) => state.subjects.total)
+  const schools = useSelector((state: RootState) => state.schools.schools)
+  const isLoading = useSelector((state: RootState) => state.schools.loading)
+  const total = useSelector((state: RootState) => state.schools.total)
 
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<{ id: string; desc: boolean } | null>({ id: 'name', desc: false })
   const itemsPerPage = 10
 
   // Memoize the fetch function to prevent unnecessary re-renders
-  const fetchSubjectsData = useCallback(() => {
-    console.log('🔄 Fetching subjects data with params:', {
+  const fetchSchoolsData = useCallback(() => {
+    console.log('🔄 Fetching schools data with params:', {
       page,
       items_per_page: itemsPerPage,
       sort: sort?.id,
@@ -38,7 +38,7 @@ const SubjectsTable = ({ search }: Props) => {
     })
     
     dispatchRef.current(
-      fetchSubjects({
+      fetchSchools({
         page,
         items_per_page: itemsPerPage,
         sort: sort?.id,
@@ -49,16 +49,16 @@ const SubjectsTable = ({ search }: Props) => {
   }, [page, sort, search, itemsPerPage])
 
   useEffect(() => {
-    fetchSubjectsData()
-  }, [fetchSubjectsData])
+    fetchSchoolsData()
+  }, [fetchSchoolsData])
 
   // Reset page to 1 when search changes
   useEffect(() => {
     setPage(1)
   }, [search])
 
-  const data = useMemo(() => (Array.isArray(subjects) ? subjects : []), [subjects])
-  const columns = useMemo(() => subjectsColumns, [])
+  const data = useMemo(() => (Array.isArray(schools) ? schools : []), [schools])
+  const columns = useMemo(() => schoolsColumns, [])
 
   const { getTableProps, getTableBodyProps, headers, rows, prepareRow } = useTable(
     {
@@ -70,11 +70,11 @@ const SubjectsTable = ({ search }: Props) => {
       initialState: {
         sortBy: [],
       },
-    } as unknown as TableOptions<Subject>,
+    } as unknown as TableOptions<School>,
     useSortBy
   )
 
-  const handleSortChange = useCallback((column: ColumnInstance<Subject>) => {
+  const handleSortChange = useCallback((column: ColumnInstance<School>) => {
     setSort((currentSort) => {
       if (!currentSort || currentSort.id !== column.id) {
         return { id: column.id, desc: false }
@@ -91,8 +91,8 @@ const SubjectsTable = ({ search }: Props) => {
   }, [])
 
   // Debug logging
-  console.log('📊 Subjects pagination debug:', {
-    totalSubjects: subjects.length,
+  console.log('📊 Schools pagination debug:', {
+    totalSchools: schools.length,
     currentPage: page,
     itemsPerPage,
     total,
@@ -103,16 +103,16 @@ const SubjectsTable = ({ search }: Props) => {
     <KTCardBody className='py-4'>
       <div className='table-responsive'>
         <table
-          id='kt_table_subjects'
+          id='kt_table_schools'
           className='table align-middle table-row-dashed fs-6 gy-5 dataTable no-footer'
           {...getTableProps()}
         >
           <thead>
             <tr className='text-start text-muted fw-bolder fs-7 text-uppercase gs-0'>
-              {headers.map((column: ColumnInstance<Subject>) => (
+              {headers.map((column: ColumnInstance<School>) => (
                 <CustomHeaderColumn
                   key={column.id}
-                  column={column as ColumnInstance<Subject> & UseSortByColumnProps<Subject>}
+                  column={column as ColumnInstance<School> & UseSortByColumnProps<School>}
                   onSort={() => handleSortChange(column)}
                 />
               ))}
@@ -120,13 +120,13 @@ const SubjectsTable = ({ search }: Props) => {
           </thead>
           <tbody className='text-gray-600 fw-bold' {...getTableBodyProps()}>
             {rows.length > 0 ? (
-              rows.map((row: Row<Subject>, i) => {
+              rows.map((row: Row<School>, i) => {
                 prepareRow(row)
-                return <CustomRow row={row} key={`row-${i}-${row.original.subject_id}`} />
+                return <CustomRow row={row} key={`row-${i}-${row.original.school_id}`} />
               })
             ) : (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={7}>
                   <div className='d-flex text-center w-100 align-content-center justify-content-center'>
                     No matching records found
                   </div>
@@ -147,9 +147,9 @@ const SubjectsTable = ({ search }: Props) => {
         className='mt-5'
       />
       
-      {isLoading && <SubjectsListLoading />}
+      {isLoading && <SchoolsListLoading />}
     </KTCardBody>
   )
 }
 
-export { SubjectsTable } 
+export { SchoolsTable } 
