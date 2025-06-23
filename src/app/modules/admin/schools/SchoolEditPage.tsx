@@ -105,7 +105,7 @@ const SchoolEditPage: FC = () => {
           isSubmitting={isSubmitting}
           initialValues={{
             name: currentSchool.name,
-            code: currentSchool.code,
+            code: currentSchool.code || '',
             address: currentSchool.address || '',
             phone: currentSchool.phone || '',
             email: currentSchool.email || '',
