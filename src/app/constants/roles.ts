@@ -1,23 +1,23 @@
 // Role type constants
 export const ROLES = {
-  SUPER_ADMIN: 1,
-  STUDENT: 2,
-  SUPER_TEACHER: 3,
-  TEACHER: 4,
-  TUTOR: 5,
-  ASSISTANT: 6,
-  CUSTOM_ROLE: 7,
+  ADMIN: 1,
+  SUPER_TEACHER: 2,
+  TEACHER: 3,
+  TUTOR: 4,
+  ASSISTANT: 5,
+  STUDENT: 6,
+  PARENT: 7,
 } as const
 
 // Role names for display purposes
 export const ROLE_NAMES = {
-  [ROLES.SUPER_ADMIN]: 'Super Admin',
-  [ROLES.STUDENT]: 'Student',
+  [ROLES.ADMIN]: 'Admin',
   [ROLES.SUPER_TEACHER]: 'Super Teacher',
   [ROLES.TEACHER]: 'Teacher',
   [ROLES.TUTOR]: 'Tutor',
   [ROLES.ASSISTANT]: 'Assistant',
-  [ROLES.CUSTOM_ROLE]: 'Custom Role',
+  [ROLES.STUDENT]: 'Student',
+  [ROLES.PARENT]: 'Parent',
 } as const
 
 // Type for role values
