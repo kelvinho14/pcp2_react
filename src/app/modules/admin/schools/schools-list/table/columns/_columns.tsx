@@ -33,6 +33,21 @@ const schoolsColumns: ReadonlyArray<Column<School>> = [
     accessor: 'email',
   },
   {
+    Header: 'Subjects',
+    id: 'subjects',
+    Cell: ({ row }) => {
+      const active = row.original.active_subjects || 0
+      const inactive = row.original.inactive_subjects || 0
+      if (active === 0 && inactive === 0) return null
+      return (
+        <div>
+          {active > 0 && <span className='badge badge-success me-1'>{active} Active</span>}
+          {inactive > 0 && <span className='badge badge-warning'>{inactive} Inactive</span>}
+        </div>
+      )
+    },
+  },
+  {
     Header: 'Actions',
     id: 'actions',
     Cell: ({ ...props }) => <SchoolActionsCell id={props.data[props.row.index].school_id as unknown as ID} />,

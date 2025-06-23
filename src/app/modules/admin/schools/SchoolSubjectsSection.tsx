@@ -160,21 +160,6 @@ const SchoolSubjectsSection: FC<Props> = ({schoolId}) => {
           </table>
         </div>
       )}
-
-      <div className='mt-4 pt-3 border-top'>
-        <div className='d-flex justify-content-between align-items-center'>
-          <span className='text-muted'>
-            {schoolSubjects.length} subjects total
-          </span>
-          <div className='text-muted small'>
-            <span className='badge badge-light-secondary me-2'>Never Used</span> = School has never used this subject
-            <br />
-            <span className='badge badge-warning me-2'>Inactive</span> = Subject is inactive
-            <br />
-            <span className='badge badge-success'>Active</span> = Subject is active for this school
-          </div>
-        </div>
-      </div>
     </KTCardBody>
   )
 }
