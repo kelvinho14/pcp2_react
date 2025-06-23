@@ -36,8 +36,8 @@ const schoolsColumns: ReadonlyArray<Column<School>> = [
     Header: 'Subjects',
     id: 'subjects',
     Cell: ({ row }) => {
-      const active = row.original.active_subjects || 0
-      const inactive = row.original.inactive_subjects || 0
+      const active = (row.original as any).active_subjects || 0
+      const inactive = (row.original as any).inactive_subjects || 0
       if (active === 0 && inactive === 0) return null
       return (
         <div>
