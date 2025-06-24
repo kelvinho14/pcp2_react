@@ -18,7 +18,7 @@ export const fetchTags = createAsyncThunk(
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/tags`)
       const response = await axios.get(`${API_URL}/tags`, { 
-        params: { items_per_page: -1 },
+        params: { all: 1 },
         headers,
         withCredentials: true 
       })
