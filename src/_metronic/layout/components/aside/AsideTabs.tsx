@@ -10,6 +10,7 @@ type Tab = {
   icon: string
   tooltip: string
   path?: string // Optional path for navigation
+  paths?: string[] // Array of paths that should activate this tab
 }
 
 // Tabs for teachers
@@ -18,17 +19,20 @@ const tabsForTeachers: ReadonlyArray<Tab> = [
     link: 'exercise',
     icon: 'fa-solid fa-pen',
     tooltip: 'Exercise',
+    paths: ['/exercises', '/questions'],
   },
   {
     link: 'video',
     icon: 'fa-solid fa-video',
     tooltip: 'Video',
+    paths: ['/videos'],
   },
   {
     link: 'draw',
     icon: 'fa-solid fa-pen-to-square',
     tooltip: 'Draw',
     path: '/draw',
+    paths: ['/draw'],
   },
   {
     link: 'projects',
@@ -148,8 +152,7 @@ const AsideTabs: FC<Props> = ({link, setLink}) => {
                 {
                   active: link === t.link || 
                     (t.path && location.pathname.startsWith(t.path)) ||
-                    (t.link === 'exercise' && location.pathname.startsWith('/exercises')) ||
-                    (t.link === 'video' && location.pathname.startsWith('/videos'))
+                    (t.paths && t.paths.some(path => location.pathname.startsWith(path)))
                 }
               )}
               onClick={() => handleClick(t)}

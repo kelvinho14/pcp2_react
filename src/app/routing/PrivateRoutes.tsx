@@ -21,6 +21,7 @@ const PrivateRoutes = () => {
   const ExercisePage = lazy(() => import('../modules/exercises/ExercisePage'))
   const VideoPage = lazy(() => import('../modules/videos/VideoPage'))
   const AdminPage = lazy(() => import('../modules/admin/AdminPage'))
+  const QuestionsPage = lazy(() => import('../modules/questions/QuestionsPage'))
 
 
   return (
@@ -62,6 +63,14 @@ const PrivateRoutes = () => {
           element={
             <SuspensedView>
               <VideoPage />
+            </SuspensedView>
+          }
+        />
+        <Route
+          path='questions/*'
+          element={
+            <SuspensedView>
+              <QuestionsPage />
             </SuspensedView>
           }
         />
