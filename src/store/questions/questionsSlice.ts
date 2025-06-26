@@ -117,6 +117,43 @@ export const updateQuestion = createAsyncThunk(
   }
 )
 
+export const deleteQuestion = createAsyncThunk(
+  'questions/deleteQuestion',
+  async (qId: string) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/questions/${qId}`)
+      await axios.delete(`${API_URL}/questions/${qId}`, { 
+        headers,
+        withCredentials: true 
+      })
+      return qId
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to delete question'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
+export const bulkDeleteQuestions = createAsyncThunk(
+  'questions/bulkDeleteQuestions',
+  async (questionIds: string[]) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/questions`)
+      await axios.delete(`${API_URL}/questions`, { 
+        headers,
+        withCredentials: true,
+        data: { question_ids: questionIds }
+      })
+      return questionIds
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to delete questions'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 // Initial state
 interface QuestionsState {
   questions: Question[]
@@ -225,6 +262,38 @@ const questionsSlice = createSlice({
       .addCase(updateQuestion.rejected, (state, action) => {
         state.updating = false
         state.error = action.error.message || 'Failed to update question'
+      })
+
+    // Delete question
+    builder
+      .addCase(deleteQuestion.pending, (state) => {
+        state.deleting = true
+        state.error = null
+      })
+      .addCase(deleteQuestion.fulfilled, (state, action) => {
+        state.deleting = false
+        state.questions = state.questions.filter((q) => q.q_id !== action.payload)
+        state.success = 'Question deleted successfully'
+      })
+      .addCase(deleteQuestion.rejected, (state, action) => {
+        state.deleting = false
+        state.error = action.error.message || 'Failed to delete question'
+      })
+
+    // Bulk delete questions
+    builder
+      .addCase(bulkDeleteQuestions.pending, (state) => {
+        state.deleting = true
+        state.error = null
+      })
+      .addCase(bulkDeleteQuestions.fulfilled, (state, action) => {
+        state.deleting = false
+        state.questions = state.questions.filter((q) => !action.payload.includes(q.q_id))
+        state.success = 'Questions deleted successfully'
+      })
+      .addCase(bulkDeleteQuestions.rejected, (state, action) => {
+        state.deleting = false
+        state.error = action.error.message || 'Failed to delete questions'
       })
   },
 })

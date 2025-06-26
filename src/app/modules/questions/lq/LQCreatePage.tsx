@@ -22,7 +22,7 @@ const lqCreateBreadcrumbs: Array<PageLink> = [
   },
   {
     title: 'LQ',
-    path: '/questions/lq',
+    path: '/questions/lq/list',
     isSeparator: false,
     isActive: false,
   },

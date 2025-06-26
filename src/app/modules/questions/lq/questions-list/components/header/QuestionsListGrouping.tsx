@@ -4,6 +4,8 @@ import {useDispatch} from 'react-redux'
 import {AppDispatch} from '../../../../../../../store'
 import {ConfirmationDialog} from '../../../../../../../_metronic/helpers/ConfirmationDialog'
 import {useState} from 'react'
+import {bulkDeleteQuestions} from '../../../../../../../store/questions/questionsSlice'
+import {toast} from '../../../../../../../_metronic/helpers/toast'
 
 const QuestionsListGrouping = () => {
   const {selected, clearSelected} = useListView()
@@ -13,11 +15,13 @@ const QuestionsListGrouping = () => {
   const handleBulkDelete = async () => {
     try {
       const questionIds = selected.filter(id => id !== undefined && id !== null).map(id => String(id))
-      // TODO: Implement bulk delete questions functionality
-      console.log('Deleting questions:', questionIds)
+      await dispatch(bulkDeleteQuestions(questionIds)).unwrap()
+      toast.success(`${questionIds.length} question(s) deleted successfully!`, 'Success')
       clearSelected()
+      setShowDeleteDialog(false)
     } catch (error) {
       console.error('Error deleting questions:', error)
+      // Error toast is handled by the thunk
     }
   }
 

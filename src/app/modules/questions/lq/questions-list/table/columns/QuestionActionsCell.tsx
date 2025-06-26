@@ -3,6 +3,10 @@ import {MenuComponent} from '../../../../../../../_metronic/assets/ts/components
 import {ID, KTIcon} from '../../../../../../../_metronic/helpers'
 import {useNavigate} from 'react-router-dom'
 import {ConfirmationDialog} from '../../../../../../../_metronic/helpers/ConfirmationDialog'
+import {useDispatch} from 'react-redux'
+import {AppDispatch} from '../../../../../../../store'
+import {deleteQuestion} from '../../../../../../../store/questions/questionsSlice'
+import {toast} from '../../../../../../../_metronic/helpers/toast'
 
 type Props = {
   id: ID
@@ -10,7 +14,9 @@ type Props = {
 
 const QuestionActionsCell: FC<Props> = ({id}) => {
   const navigate = useNavigate()
+  const dispatch = useDispatch<AppDispatch>()
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     MenuComponent.reinitialization()
@@ -22,11 +28,16 @@ const QuestionActionsCell: FC<Props> = ({id}) => {
 
   const handleDelete = async () => {
     if (!id) return
+    setIsDeleting(true)
     try {
-      // TODO: Implement delete question functionality
-      console.log('Deleting question:', id)
+      await dispatch(deleteQuestion(String(id))).unwrap()
+      toast.success('Question deleted successfully!', 'Success')
+      setShowConfirmDialog(false)
     } catch (error) {
       console.error('Error deleting question:', error)
+      // Error toast is handled by the thunk
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -78,7 +89,7 @@ const QuestionActionsCell: FC<Props> = ({id}) => {
         onConfirm={handleDelete}
         title="Confirm Delete"
         message="Are you sure you want to delete this question? This action cannot be undone."
-        confirmText="Delete"
+        confirmText={isDeleting ? "Deleting..." : "Delete"}
         cancelText="Cancel"
         variant="danger"
       />

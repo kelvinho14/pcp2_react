@@ -13,27 +13,6 @@ import {toast} from '../../../../_metronic/helpers/toast'
 import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
 import Select from 'react-select'
 
-const lqFormBreadcrumbs: Array<PageLink> = [
-  {
-    title: 'Questions',
-    path: '/questions',
-    isSeparator: false,
-    isActive: false,
-  },
-  {
-    title: 'LQ',
-    path: '/questions/lq',
-    isSeparator: false,
-    isActive: false,
-  },
-  {
-    title: 'Form',
-    path: '/questions/lq/form',
-    isSeparator: false,
-    isActive: true,
-  },
-]
-
 const lqValidationSchema = Yup.object().shape({
   questionName: Yup.string()
     .min(1, 'Minimum 1 characters')
@@ -123,15 +102,33 @@ const LQFormPage: FC = () => {
   // Update breadcrumbs based on mode
   const breadcrumbs = isEditMode 
     ? [
-        ...lqFormBreadcrumbs.slice(0, -1),
         {
-          title: 'Edit',
-          path: `/questions/lq/edit/${qId}`,
+          title: 'Home',
+          path: '/dashboard',
           isSeparator: false,
-          isActive: true,
+          isActive: false,
+        },
+        {
+          title: 'Long Question List',
+          path: '/questions/lq/list',
+          isSeparator: false,
+          isActive: false,
         }
       ]
-    : lqFormBreadcrumbs
+    : [
+        {
+          title: 'Home',
+          path: '/dashboard',
+          isSeparator: false,
+          isActive: false,
+        },
+        {
+          title: 'Long Question List',
+          path: '/questions/lq/list',
+          isSeparator: false,
+          isActive: false,
+        }
+      ]
 
   const formik = useFormik<LQFormData>({
     initialValues: {
@@ -377,46 +374,89 @@ const LQFormPage: FC = () => {
               <div className='col-lg-8 offset-lg-4'>
                 <div className='d-flex gap-3'>
                   {isEditMode ? (
-                    <button
-                      type='button'
-                      className='btn btn-primary btn-lg'
-                      disabled={isSubmitting || creating || !formik.isValid}
-                      onClick={async () => {
-                        if (formik.isValid) {
-                          setIsSubmitting(true)
-                          try {
-                            const questionData = {
-                              type: 'lq' as const,
-                              name: formik.values.questionName,
-                              question_content: formik.values.question,
-                              teacher_remark: formik.values.teacherRemark,
-                              lq_question: {
-                                answer_content: formik.values.answer
-                              },
-                              tag_ids: formik.values.tagIds.length > 0 ? formik.values.tagIds : undefined
+                    <>
+                      <button
+                        type='button'
+                        className='btn btn-primary btn-lg'
+                        disabled={isSubmitting || creating || !formik.isValid}
+                        onClick={async () => {
+                          if (formik.isValid) {
+                            setIsSubmitting(true)
+                            try {
+                              const questionData = {
+                                type: 'lq' as const,
+                                name: formik.values.questionName,
+                                question_content: formik.values.question,
+                                teacher_remark: formik.values.teacherRemark,
+                                lq_question: {
+                                  answer_content: formik.values.answer
+                                },
+                                tag_ids: formik.values.tagIds.length > 0 ? formik.values.tagIds : undefined
+                              }
+                              
+                              await dispatch(updateQuestion({qId, questionData})).unwrap()
+                              toast.success('Long Question updated successfully!', 'Success')
+                              // Stay on this page - no navigation
+                            } catch (error) {
+                              console.error('Error updating LQ:', error)
+                              toast.error('Failed to update Long Question. Please try again.', 'Error')
+                            } finally {
+                              setIsSubmitting(false)
                             }
-                            
-                            await dispatch(updateQuestion({qId, questionData})).unwrap()
-                            toast.success('Long Question updated successfully!', 'Success')
-                            // Stay on this page - no navigation
-                          } catch (error) {
-                            console.error('Error updating LQ:', error)
-                            toast.error('Failed to update Long Question. Please try again.', 'Error')
-                          } finally {
-                            setIsSubmitting(false)
                           }
-                        }
-                      }}
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <span className='spinner-border spinner-border-sm me-2'></span>
-                          Updating...
-                        </>
-                      ) : (
-                        'Update'
-                      )}
-                    </button>
+                        }}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <span className='spinner-border spinner-border-sm me-2'></span>
+                            Updating...
+                          </>
+                        ) : (
+                          'Update'
+                        )}
+                      </button>
+                      
+                      <button
+                        type='button'
+                        className='btn btn-success btn-lg'
+                        disabled={isSubmitting || creating || !formik.isValid}
+                        onClick={async () => {
+                          if (formik.isValid) {
+                            setIsSubmitting(true)
+                            try {
+                              const questionData = {
+                                type: 'lq' as const,
+                                name: formik.values.questionName,
+                                question_content: formik.values.question,
+                                teacher_remark: formik.values.teacherRemark,
+                                lq_question: {
+                                  answer_content: formik.values.answer
+                                },
+                                tag_ids: formik.values.tagIds.length > 0 ? formik.values.tagIds : undefined
+                              }
+                              
+                              await dispatch(updateQuestion({qId, questionData})).unwrap()
+                              toast.success('Long Question updated successfully!', 'Success')
+                              navigate('/questions/lq/list')
+                            } catch (error) {
+                              console.error('Error updating LQ:', error)
+                              toast.error('Failed to update Long Question. Please try again.', 'Error')
+                            } finally {
+                              setIsSubmitting(false)
+                            }
+                          }
+                        }}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <span className='spinner-border spinner-border-sm me-2'></span>
+                            Updating...
+                          </>
+                        ) : (
+                          'Update and go to list'
+                        )}
+                      </button>
+                    </>
                   ) : (
                     <button
                       type='button'

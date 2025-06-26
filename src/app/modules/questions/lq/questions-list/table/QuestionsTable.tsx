@@ -29,14 +29,6 @@ const QuestionsTable = ({ search }: Props) => {
 
   // Memoize the fetch function to prevent unnecessary re-renders
   const fetchQuestionsData = useCallback(() => {
-    console.log('🔄 Fetching questions data with params:', {
-      page,
-      items_per_page: itemsPerPage,
-      sort: sort?.id,
-      order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
-      search: search || undefined,
-    })
-    
     dispatchRef.current(
       fetchQuestions({
         page,
@@ -89,15 +81,6 @@ const QuestionsTable = ({ search }: Props) => {
   const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage)
   }, [])
-
-  // Debug logging
-  console.log('📊 Questions pagination debug:', {
-    totalQuestions: questions.length,
-    currentPage: page,
-    itemsPerPage,
-    total,
-    totalPages: Math.ceil(total / itemsPerPage)
-  })
 
   return (
     <KTCardBody className='py-4'>
