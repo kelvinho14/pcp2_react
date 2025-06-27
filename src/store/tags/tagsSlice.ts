@@ -11,6 +11,15 @@ export interface Tag {
   name: string
 }
 
+// API response interface
+interface APITag {
+  tag_id: string
+  name: string
+  school_subject_id: string
+  created_at: string
+  updated_at: string
+}
+
 // Async thunks
 export const fetchTags = createAsyncThunk(
   'tags/fetchTags',
@@ -18,11 +27,19 @@ export const fetchTags = createAsyncThunk(
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/tags`)
       const response = await axios.get(`${API_URL}/tags`, { 
-        params: { items_per_page: -1 },
+        params: { all: 1 },
         headers,
         withCredentials: true 
       })
-      return response.data.data || []
+
+      // Transform API response to match our Tag interface
+      const apiTags: APITag[] = response.data.data || []
+      const transformedTags: Tag[] = apiTags.map(tag => ({
+        id: tag.tag_id,
+        name: tag.name
+      }))
+
+      return transformedTags
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to fetch tags'
       toast.error(errorMessage, 'Error')
