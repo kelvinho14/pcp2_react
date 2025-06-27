@@ -14,7 +14,7 @@ export interface QuestionFormData {
   type: 'lq'
   question_content: string
   lq_question: LQQuestion
-  tag_ids?: string[]
+  tags?: Array<{ tag_id?: string; name?: string; score?: number }>
 }
 
 export interface Question {
@@ -25,6 +25,7 @@ export interface Question {
   teacher_remark?: string
   lq_question?: LQQuestion
   tag_ids?: string[]
+  tags?: Array<{ tag_id?: string; name?: string; score?: number }>
   created_at?: string
   updated_at?: string
 }
