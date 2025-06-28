@@ -7,6 +7,7 @@ import {useSelector, useDispatch} from 'react-redux'
 import {RootState, AppDispatch} from '../../../../store'
 import {fetchTags, Tag} from '../../../../store/tags/tagsSlice'
 import {createQuestion, fetchQuestionById, updateQuestion} from '../../../../store/questions/questionsSlice'
+import {processContentToText, setProcessedContent} from '../../../../store/ai/aiSlice'
 import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
 import {KTCard} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
@@ -14,6 +15,7 @@ import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
 import CreatableSelect from 'react-select/creatable'
 import Select from 'react-select'
 import TagWithScore, {TagWithScoreData} from '../components/TagWithScore'
+import AIProcessedContentModal from '../../../../components/AI/AIProcessedContentModal'
 
 const lqValidationSchema = Yup.object().shape({
   questionName: Yup.string()
@@ -48,11 +50,13 @@ const LQFormPage: FC = () => {
   const { qId } = useParams<{ qId: string }>()
   const dispatch = useDispatch<AppDispatch>()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [processingField, setProcessingField] = useState<'question' | 'answer' | null>(null)
   const isEditMode = !!qId
 
   // Redux selectors
   const { tags, loading: tagsLoading } = useSelector((state: RootState) => state.tags)
   const { creating, currentQuestion, loading: questionLoading } = useSelector((state: RootState) => state.questions)
+  const { processing: aiProcessing } = useSelector((state: RootState) => state.ai)
 
   // Helper function to transform tags to the required format
   const transformTags = (selectedTags: TagWithScoreData[]) => {
@@ -177,6 +181,35 @@ const LQFormPage: FC = () => {
     }
   }, [currentQuestion, isEditMode])
 
+  // AI Image to Text function using Redux
+  const handleAIImageToText = async (content: string, field: 'question' | 'answer') => {
+    if (!content.includes('<img')) {
+      toast.warning('No images found in the content to process.', 'Warning')
+      return
+    }
+
+    setProcessingField(field)
+    try {
+      const processedText = await dispatch(processContentToText(content)).unwrap()
+      
+      // Show the modal with processed content
+      dispatch(setProcessedContent({ content: processedText, field }))
+      
+    } catch (error: any) {
+      console.error('Error processing AI image to text:', error)
+      // Error handling is already done in the Redux thunk
+    } finally {
+      setProcessingField(null)
+    }
+  }
+
+  // Handle accepting processed content from modal
+  const handleAcceptProcessedContent = (content: string, field: 'question' | 'answer') => {
+    formik.setFieldValue(field, content)
+    formik.setFieldTouched(field, true)
+    toast.success('AI processed content applied successfully!', 'Success')
+  }
+
   if (tagsLoading || (isEditMode && questionLoading)) {
     return (
       <>
@@ -213,10 +246,10 @@ const LQFormPage: FC = () => {
           <form onSubmit={formik.handleSubmit} className='form'>
             {/* Question Name */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label required fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label required fw-semibold fs-6'>
                 Question Name
               </label>
-              <div className='col-lg-8'>
+              <div className='col-lg-9'>
                 <input
                   type='text'
                   className={clsx(
@@ -239,10 +272,10 @@ const LQFormPage: FC = () => {
 
             {/* Tags */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
                 Tags with Scores
               </label>
-              <div className='col-lg-8'>
+              <div className='col-lg-9'>
                 <TagWithScore
                   options={tags}
                   selectedTags={formik.values.selectedTags}
@@ -255,10 +288,10 @@ const LQFormPage: FC = () => {
 
             {/* Teacher Remark */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
                 Teacher Remark
               </label>
-              <div className='col-lg-8'>
+              <div className='col-lg-9'>
                 <textarea
                   className={clsx(
                     'form-control form-control-lg form-control-solid',
@@ -281,10 +314,10 @@ const LQFormPage: FC = () => {
 
             {/* Question Content */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
                 Question
               </label>
-              <div className='col-lg-8'>
+              <div className='col-lg-9'>
                 <div className='d-flex flex-column'>
                   <TinyMCEEditor
                     key={`question-editor-${isEditMode ? qId : 'create'}`}
@@ -293,21 +326,29 @@ const LQFormPage: FC = () => {
                       formik.setFieldValue('question', content)
                       formik.setFieldTouched('question', true)
                     }}
-                    height={300}
+                    height={400}
                     placeholder='Enter the question content...'
                   />
                   {formik.values.question.includes('<img') && (
                     <div className='mt-2'>
                       <button
                         type='button'
-                        className='btn btn-sm btn-outline-primary'
-                        onClick={() => {
-                          // TODO: Implement AI image to text functionality
-                          console.log('AI image to text for question')
-                        }}
+                        className='btn btn-sm btn-primary'
+                        style={{ backgroundColor: '#009ef7', borderColor: '#009ef7' }}
+                        disabled={processingField === 'question'}
+                        onClick={() => handleAIImageToText(formik.values.question, 'question')}
                       >
-                        <i className='fas fa-robot me-1'></i>
-                        AI Image to Text
+                        {processingField === 'question' ? (
+                          <>
+                            <span className='spinner-border spinner-border-sm me-1'></span>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <i className='fas fa-robot me-1'></i>
+                            AI Image to Text
+                          </>
+                        )}
                       </button>
                     </div>
                   )}
@@ -322,10 +363,10 @@ const LQFormPage: FC = () => {
 
             {/* Answer Content */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
                 Answer
               </label>
-              <div className='col-lg-8'>
+              <div className='col-lg-9'>
                 <div className='d-flex flex-column'>
                   <TinyMCEEditor
                     key={`answer-editor-${isEditMode ? qId : 'create'}`}
@@ -334,21 +375,29 @@ const LQFormPage: FC = () => {
                       formik.setFieldValue('answer', content)
                       formik.setFieldTouched('answer', true)
                     }}
-                    height={300}
+                    height={400}
                     placeholder='Enter the answer content...'
                   />
                   {formik.values.answer.includes('<img') && (
                     <div className='mt-2'>
                       <button
                         type='button'
-                        className='btn btn-sm btn-outline-primary'
-                        onClick={() => {
-                          // TODO: Implement AI image to text functionality
-                          console.log('AI image to text for answer')
-                        }}
+                        className='btn btn-sm btn-primary'
+                        style={{ backgroundColor: '#009ef7', borderColor: '#009ef7' }}
+                        disabled={processingField === 'answer'}
+                        onClick={() => handleAIImageToText(formik.values.answer, 'answer')}
                       >
-                        <i className='fas fa-robot me-1'></i>
-                        AI Image to Text
+                        {processingField === 'answer' ? (
+                          <>
+                            <span className='spinner-border spinner-border-sm me-1'></span>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <i className='fas fa-robot me-1'></i>
+                            AI Image to Text
+                          </>
+                        )}
                       </button>
                     </div>
                   )}
@@ -363,7 +412,7 @@ const LQFormPage: FC = () => {
 
             {/* Form Actions */}
             <div className='row mb-6'>
-              <div className='col-lg-8 offset-lg-4'>
+              <div className='col-lg-9 offset-lg-3'>
                 <div className='d-flex gap-3'>
                   {isEditMode ? (
                     <>
@@ -552,6 +601,9 @@ const LQFormPage: FC = () => {
           </form>
         </div>
       </KTCard>
+
+      {/* AI Processed Content Modal */}
+      <AIProcessedContentModal onAccept={handleAcceptProcessedContent} />
     </>
   )
 }
