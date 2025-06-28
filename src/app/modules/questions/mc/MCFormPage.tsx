@@ -156,7 +156,7 @@ interface MCFormData {
             correct_option: values.options.find(opt => opt.is_correct)?.option_letter || '',
             answer_content: values.answer
           },
-          tags: transformedTags.length > 0 ? transformedTags : undefined
+          tags: transformedTags
         }
         
         if (isEditMode) {
@@ -505,7 +505,7 @@ interface MCFormData {
                                   correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
                                   answer_content: formik.values.answer
                                 },
-                                tags: transformedTags.length > 0 ? transformedTags : undefined
+                                tags: transformedTags
                               }
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -551,7 +551,7 @@ interface MCFormData {
                                   correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
                                   answer_content: formik.values.answer
                                 },
-                                tags: transformedTags.length > 0 ? transformedTags : undefined
+                                tags: transformedTags
                               }
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -598,7 +598,7 @@ interface MCFormData {
                                   correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
                                   answer_content: formik.values.answer
                                 },
-                                tags: transformedTags.length > 0 ? transformedTags : undefined
+                                tags: transformedTags
                               }
                               const createdQuestion = await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Multiple Choice Question created successfully!', 'Success')
@@ -642,7 +642,7 @@ interface MCFormData {
                                   correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
                                   answer_content: formik.values.answer
                                 },
-                                tags: transformedTags.length > 0 ? transformedTags : undefined
+                                tags: transformedTags
                               }
                               await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Multiple Choice Question created successfully!', 'Success')

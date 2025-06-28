@@ -136,7 +136,7 @@ const LQFormPage: FC = () => {
           lq_question: {
             answer_content: values.answer
           },
-          tags: transformedTags.length > 0 ? transformedTags : undefined
+          tags: transformedTags
         }
         
         if (isEditMode) {
@@ -385,7 +385,7 @@ const LQFormPage: FC = () => {
                                 lq_question: {
                                   answer_content: formik.values.answer
                                 },
-                                tags: transformedTags.length > 0 ? transformedTags : undefined
+                                tags: transformedTags
                               }
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -428,7 +428,7 @@ const LQFormPage: FC = () => {
                                 lq_question: {
                                   answer_content: formik.values.answer
                                 },
-                                tags: transformedTags.length > 0 ? transformedTags : undefined
+                                tags: transformedTags
                               }
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -472,7 +472,7 @@ const LQFormPage: FC = () => {
                                 lq_question: {
                                   answer_content: formik.values.answer
                                 },
-                                tags: transformedTags.length > 0 ? transformedTags : undefined
+                                tags: transformedTags
                               }
                               const createdQuestion = await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Long Question created successfully!', 'Success')
@@ -512,7 +512,7 @@ const LQFormPage: FC = () => {
                                 lq_question: {
                                   answer_content: formik.values.answer
                                 },
-                                tags: transformedTags.length > 0 ? transformedTags : undefined
+                                tags: transformedTags
                               }
                               await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Long Question created successfully!', 'Success')

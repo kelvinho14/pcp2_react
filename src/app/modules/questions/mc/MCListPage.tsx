@@ -3,12 +3,14 @@ import {useNavigate} from 'react-router-dom'
 import {useSelector, useDispatch} from 'react-redux'
 import {RootState, AppDispatch} from '../../../../store'
 import {fetchQuestions} from '../../../../store/questions/questionsSlice'
+import {fetchQuestionTags} from '../../../../store/tags/tagsSlice'
 import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
 import {KTCard} from '../../../../_metronic/helpers'
 import {KTSVG} from '../../../../_metronic/helpers'
 import {TablePagination} from '../../../../_metronic/helpers/TablePagination'
 import {QuestionsActionsCell} from './components/QuestionsActionsCell'
 import {QuestionSelectionCell} from './components/QuestionSelectionCell'
+import Select from 'react-select'
 
 const mcListBreadcrumbs: Array<PageLink> = [
   {
@@ -37,6 +39,7 @@ const MCListPage: FC = () => {
   
   // Redux selectors
   const { questions, loading, total } = useSelector((state: RootState) => state.questions)
+  const { questionTags, questionTagsLoading } = useSelector((state: RootState) => state.tags)
   
   // Local state for pagination and search
   const [currentPage, setCurrentPage] = useState(1)
@@ -45,8 +48,14 @@ const MCListPage: FC = () => {
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
 
-  // Fetch questions on component mount and when pagination/search changes
+  // Fetch question tags on component mount
+  useEffect(() => {
+    dispatch(fetchQuestionTags())
+  }, [dispatch])
+
+  // Fetch questions on component mount and when pagination/search/filters change
   useEffect(() => {
     dispatch(fetchQuestions({
       page: currentPage,
@@ -54,9 +63,10 @@ const MCListPage: FC = () => {
       sort: sortBy,
       order: sortOrder,
       search: searchTerm || undefined,
-      type: 'mc'
+      type: 'mc',
+      tags: selectedTags.length > 0 ? selectedTags : undefined
     }))
-  }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder, searchTerm])
+  }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder, searchTerm, selectedTags])
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -120,6 +130,12 @@ const MCListPage: FC = () => {
   const isAllSelected = questions.length > 0 && selectedQuestions.length === questions.length
   const isIndeterminate = selectedQuestions.length > 0 && selectedQuestions.length < questions.length
 
+  const handleTagChange = (selectedOptions: any) => {
+    const tagIds = selectedOptions ? selectedOptions.map((option: any) => option.value) : []
+    setSelectedTags(tagIds)
+    setCurrentPage(1) // Reset to first page when filtering
+  }
+
   return (
     <>
       <PageTitle breadcrumbs={mcListBreadcrumbs}>Multiple Choice Questions List</PageTitle>
@@ -147,7 +163,6 @@ const MCListPage: FC = () => {
         <div className='card-body'>
           {/* Search Bar */}
           <div className='d-flex align-items-center position-relative my-1 mb-5'>
-            <KTSVG path='/media/icons/duotune/general/gen021.svg' className='svg-icon-1 position-absolute ms-6' />
             <input
               type='text'
               data-kt-user-table-filter='search'
@@ -155,6 +170,24 @@ const MCListPage: FC = () => {
               placeholder='Search questions...'
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Tag Filter */}
+          <div className='mb-5'>
+            <label htmlFor='tag-filter' className='form-label'>Filter by Tag</label>
+            <Select
+              id='tag-filter'
+              options={questionTags.map((tag: any) => ({
+                value: tag.tag_id,
+                label: `${tag.name} (${tag.usage_count})`
+              }))}
+              isMulti
+              onChange={handleTagChange}
+              placeholder='Select tags...'
+              isLoading={questionTagsLoading}
+              isClearable
+              isSearchable
             />
           </div>
 
@@ -248,11 +281,16 @@ const MCListPage: FC = () => {
                               {question.mc_question.options?.slice(0, 2).map((option, index) => (
                                 <div key={index} className='mb-1'>
                                   <span className='badge badge-light-primary me-1'>{option.option_letter}</span>
-                                  {truncateText(option.content, 30)}
+                                  {typeof option === 'string' ? option : option.option_letter}
                                 </div>
                               ))}
                               {question.mc_question.options && question.mc_question.options.length > 2 && (
                                 <span className='text-muted'>+{question.mc_question.options.length - 2} more</span>
+                              )}
+                              {question.mc_question.correct_option && (
+                                <div className='mt-1'>
+                                  <span className='badge badge-success'>Correct: {question.mc_question.correct_option}</span>
+                                </div>
                               )}
                             </div>
                           ) : (

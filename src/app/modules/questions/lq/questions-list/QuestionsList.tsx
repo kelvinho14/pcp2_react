@@ -17,6 +17,8 @@ const questionsListBreadcrumbs: Array<PageLink> = [
 const QuestionsList = () => {
   const { itemIdForUpdate } = useListView()
   const [search, setSearch] = useState('')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [tagLogic, setTagLogic] = useState<'and' | 'or'>('and')
 
   return (
     <>
@@ -24,8 +26,16 @@ const QuestionsList = () => {
         Long Questions
       </PageTitle>
       <KTCard>
-        <QuestionsListHeader setSearch={setSearch} />
-        <QuestionsTable search={search} />
+        <QuestionsListHeader 
+          setSearch={setSearch} 
+          setSelectedTags={setSelectedTags} 
+          setTagLogic={setTagLogic}
+        />
+        <QuestionsTable 
+          search={search} 
+          selectedTags={selectedTags} 
+          tagLogic={tagLogic}
+        />
       </KTCard>
     </>
   )
