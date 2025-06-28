@@ -206,6 +206,34 @@ export const bulkDeleteQuestions = createAsyncThunk(
   }
 )
 
+export const generateSimilarQuestions = createAsyncThunk(
+  'questions/generateSimilarQuestions',
+  async ({ questionIds, questionType, difficulty, count }: { 
+    questionIds: string[], 
+    questionType: 'mc' | 'lq', 
+    difficulty: 'easy' | 'medium' | 'hard' | 'challenging',
+    count: number 
+  }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/ai/generate-similar-questions`)
+      const response = await axios.post(`${API_URL}/ai/generate-similar-questions`, { 
+        question_ids: questionIds,
+        question_type: questionType,
+        difficulty: difficulty,
+        num_questions: count
+      }, { 
+        headers,
+        withCredentials: true 
+      })
+      return response.data.data
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to generate similar questions'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 // Initial state
 interface QuestionsState {
   questions: Question[]
@@ -214,6 +242,7 @@ interface QuestionsState {
   creating: boolean
   updating: boolean
   deleting: boolean
+  generatingSimilarQuestions: boolean
   error: string | null
   success: string | null
   total: number
@@ -226,6 +255,7 @@ const initialState: QuestionsState = {
   creating: false,
   updating: false,
   deleting: false,
+  generatingSimilarQuestions: false,
   error: null,
   success: null,
   total: 0,
@@ -346,6 +376,22 @@ const questionsSlice = createSlice({
       .addCase(bulkDeleteQuestions.rejected, (state, action) => {
         state.deleting = false
         state.error = action.error.message || 'Failed to delete questions'
+      })
+
+    // Generate similar questions
+    builder
+      .addCase(generateSimilarQuestions.pending, (state) => {
+        state.generatingSimilarQuestions = true
+        state.error = null
+      })
+      .addCase(generateSimilarQuestions.fulfilled, (state, action) => {
+        state.generatingSimilarQuestions = false
+        state.questions = action.payload
+        state.success = 'Similar questions generated successfully'
+      })
+      .addCase(generateSimilarQuestions.rejected, (state, action) => {
+        state.generatingSimilarQuestions = false
+        state.error = action.error.message || 'Failed to generate similar questions'
       })
   },
 })
