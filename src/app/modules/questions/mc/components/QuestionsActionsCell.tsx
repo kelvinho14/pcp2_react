@@ -1,44 +1,32 @@
 import {FC, useEffect, useState} from 'react'
-import {MenuComponent} from '../../../../../../../_metronic/assets/ts/components'
-import {ID, KTIcon} from '../../../../../../../_metronic/helpers'
+import {MenuComponent} from '../../../../../_metronic/assets/ts/components'
+import {ID, KTIcon} from '../../../../../_metronic/helpers'
 import {useNavigate} from 'react-router-dom'
-import {ConfirmationDialog} from '../../../../../../../_metronic/helpers/ConfirmationDialog'
-import {useDispatch} from 'react-redux'
-import {AppDispatch} from '../../../../../../../store'
-import {deleteQuestion, fetchQuestions} from '../../../../../../../store/questions/questionsSlice'
-import {toast} from '../../../../../../../_metronic/helpers/toast'
+import {ConfirmationDialog} from '../../../../../_metronic/helpers/ConfirmationDialog'
 
 type Props = {
   id: ID
 }
 
-const QuestionActionsCell: FC<Props> = ({id}) => {
+const QuestionsActionsCell: FC<Props> = ({id}) => {
   const navigate = useNavigate()
-  const dispatch = useDispatch<AppDispatch>()
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     MenuComponent.reinitialization()
   }, [])
 
   const openEditModal = () => {
-    navigate(`/questions/lq/edit/${id}`)
+    navigate(`/questions/mc/edit/${id}`)
   }
 
   const handleDelete = async () => {
     if (!id) return
-    setIsDeleting(true)
     try {
-      await dispatch(deleteQuestion(String(id))).unwrap()
-      toast.success('Question deleted successfully!', 'Success')
-      setShowConfirmDialog(false)
-      dispatch(fetchQuestions({ type: 'lq', page: 1, items_per_page: 10 }))
+      // TODO: Implement delete question functionality
+      console.log('Deleting question:', id)
     } catch (error) {
       console.error('Error deleting question:', error)
-      // Error toast is handled by the thunk
-    } finally {
-      setIsDeleting(false)
     }
   }
 
@@ -90,7 +78,7 @@ const QuestionActionsCell: FC<Props> = ({id}) => {
         onConfirm={handleDelete}
         title="Confirm Delete"
         message="Are you sure you want to delete this question? This action cannot be undone."
-        confirmText={isDeleting ? "Deleting..." : "Delete"}
+        confirmText="Delete"
         cancelText="Cancel"
         variant="danger"
       />
@@ -98,4 +86,4 @@ const QuestionActionsCell: FC<Props> = ({id}) => {
   )
 }
 
-export {QuestionActionsCell} 
+export {QuestionsActionsCell} 

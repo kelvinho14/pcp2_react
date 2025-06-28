@@ -36,7 +36,7 @@ const QuestionsTable = ({ search }: Props) => {
         sort: sort?.id,
         order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
         search: search || undefined,
-        type: 'lq',
+        type: 'mc',
       })
     )
   }, [page, sort, search, itemsPerPage])

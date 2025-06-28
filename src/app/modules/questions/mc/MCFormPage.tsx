@@ -11,9 +11,8 @@ import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
 import {KTCard} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
 import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
-import CreatableSelect from 'react-select/creatable'
 
-const lqValidationSchema = Yup.object().shape({
+const mcValidationSchema = Yup.object().shape({
   questionName: Yup.string()
     .min(1, 'Minimum 1 characters')
     .max(200, 'Maximum 200 characters')
@@ -24,6 +23,12 @@ const lqValidationSchema = Yup.object().shape({
     .max(5000, 'Maximum 5000 characters'),
   answer: Yup.string()
     .max(5000, 'Maximum 5000 characters'),
+  options: Yup.array().of(
+    Yup.object().shape({
+      option_letter: Yup.string().required('Option letter is required'),
+      is_correct: Yup.boolean()
+    })
+  ).min(2, 'At least 2 options are required'),
   selectedTags: Yup.array().of(
     Yup.object().shape({
       id: Yup.string().required(),
@@ -33,11 +38,17 @@ const lqValidationSchema = Yup.object().shape({
   ),
 })
 
-interface LQFormData {
+interface MCOptionData {
+  option_letter: string
+  is_correct: boolean
+}
+
+interface MCFormData {
   questionName: string
   teacherRemark: string
   question: string
   answer: string
+  options: MCOptionData[]
   selectedTags: TagWithScoreData[]
 }
 
@@ -224,7 +235,7 @@ const TagWithScore: FC<TagWithScoreProps> = ({ options, selectedTags, onChange, 
   )
 }
 
-const LQFormPage: FC = () => {
+const MCFormPage: FC = () => {
   const navigate = useNavigate()
   const { qId } = useParams<{ qId: string }>()
   const dispatch = useDispatch<AppDispatch>()
@@ -274,8 +285,8 @@ const LQFormPage: FC = () => {
           isActive: false,
         },
         {
-          title: 'Long Question List',
-          path: '/questions/lq/list',
+          title: 'Multiple Choice Question List',
+          path: '/questions/mc/list',
           isSeparator: false,
           isActive: false,
         }
@@ -288,33 +299,42 @@ const LQFormPage: FC = () => {
           isActive: false,
         },
         {
-          title: 'Long Question List',
-          path: '/questions/lq/list',
+          title: 'Multiple Choice Question List',
+          path: '/questions/mc/list',
           isSeparator: false,
           isActive: false,
         }
       ]
 
-  const formik = useFormik<LQFormData>({
+  const formik = useFormik<MCFormData>({
     initialValues: {
       questionName: '',
       teacherRemark: '',
       question: '',
       answer: '',
+      options: [
+        { option_letter: 'A', is_correct: false },
+        { option_letter: 'B', is_correct: false },
+        { option_letter: 'C', is_correct: false },
+        { option_letter: 'D', is_correct: false },
+      ],
       selectedTags: [],
     },
-    validationSchema: lqValidationSchema,
+    validationSchema: mcValidationSchema,
     onSubmit: async (values) => {
       setIsSubmitting(true)
       try {
         const transformedTags = transformTags(values.selectedTags)
+        const correctOption = values.options.find(opt => opt.is_correct)
 
         const questionData = {
-          type: 'lq' as const,
+          type: 'mc' as const,
           name: values.questionName,
           question_content: values.question,
           teacher_remark: values.teacherRemark,
-          lq_question: {
+          mc_question: {
+            options: values.options,
+            correct_option: values.options.find(opt => opt.is_correct)?.option_letter || '',
             answer_content: values.answer
           },
           tags: transformedTags.length > 0 ? transformedTags : undefined
@@ -322,16 +342,15 @@ const LQFormPage: FC = () => {
         
         if (isEditMode) {
           await dispatch(updateQuestion({qId, questionData})).unwrap()
-          toast.success('Long Question updated successfully!', 'Success')
+          toast.success('Multiple Choice Question updated successfully!', 'Success')
         } else {
-          await dispatch(createQuestion(questionData)).unwrap()
-          toast.success('Long Question created successfully!', 'Success')
+          const createdQuestion = await dispatch(createQuestion(questionData)).unwrap()
+          toast.success('Multiple Choice Question created successfully!', 'Success')
+          navigate('/questions/mc/list')
         }
-        
-        navigate('/questions/lq/list')
       } catch (error) {
-        console.error('Error saving LQ:', error)
-        toast.error(`Failed to ${isEditMode ? 'update' : 'create'} Long Question. Please try again.`, 'Error')
+        console.error('Error saving MC:', error)
+        toast.error(`Failed to ${isEditMode ? 'update' : 'create'} Multiple Choice Question. Please try again.`, 'Error')
       } finally {
         setIsSubmitting(false)
       }
@@ -348,21 +367,79 @@ const LQFormPage: FC = () => {
         score: tag.score !== undefined ? tag.score : 0
       })) as TagWithScoreData[]
 
+      // Transform options from API format to form format
+      const apiOptions = currentQuestion.mc_question?.options || []
+      const correctOptionLetter = currentQuestion.mc_question?.correct_option || ''
+      
+      // Handle both string array and object array formats from API
+      const transformedOptions = (Array.isArray(apiOptions) ? apiOptions : []).map((option: any, index: number) => {
+        if (typeof option === 'string') {
+          // API returns options as strings
+          return {
+            option_letter: option,
+            is_correct: option === correctOptionLetter
+          }
+        } else {
+          // API returns options as objects (fallback)
+          return {
+            option_letter: option.option_letter || option,
+            is_correct: (option.option_letter || option) === correctOptionLetter
+          }
+        }
+      })
+
       formik.setValues({
         questionName: currentQuestion.name || '',
         teacherRemark: currentQuestion.teacher_remark || '',
         question: currentQuestion.question_content || '',
-        answer: currentQuestion.lq_question?.answer_content || '',
+        answer: currentQuestion.mc_question?.answer_content || '',
+        options: transformedOptions,
         selectedTags: transformedTags,
       }, false) // Set validateOnChange to false to prevent validation during load
     }
   }, [currentQuestion, isEditMode])
 
+  // Handle option changes
+  const handleOptionChange = (index: number, field: keyof MCOptionData, value: any) => {
+    const newOptions = [...formik.values.options]
+    
+    if (field === 'is_correct') {
+      // If setting this option as correct, uncheck all others
+      newOptions.forEach((option, i) => {
+        option.is_correct = i === index ? value : false
+      })
+    } else {
+      newOptions[index] = { ...newOptions[index], [field]: value }
+    }
+    
+    formik.setFieldValue('options', newOptions)
+  }
+
+  // Add new option
+  const addOption = () => {
+    const newOptions = [...formik.values.options]
+    const nextLetter = String.fromCharCode(65 + newOptions.length) // A, B, C, D, E, F, etc.
+    newOptions.push({ option_letter: nextLetter, is_correct: false })
+    formik.setFieldValue('options', newOptions)
+  }
+
+  // Remove option
+  const removeOption = (index: number) => {
+    if (formik.values.options.length > 2) {
+      const newOptions = formik.values.options.filter((_, i) => i !== index)
+      // Reassign letters
+      newOptions.forEach((option, i) => {
+        option.option_letter = String.fromCharCode(65 + i)
+      })
+      formik.setFieldValue('options', newOptions)
+    }
+  }
+
   if (tagsLoading || (isEditMode && questionLoading)) {
     return (
       <>
         <PageTitle breadcrumbs={breadcrumbs}>
-          {isEditMode ? 'Edit Long Question' : 'Create Long Question'}
+          {isEditMode ? 'Edit Multiple Choice Question' : 'Create Multiple Choice Question'}
         </PageTitle>
         <KTCard>
           <div className='card-body'>
@@ -380,13 +457,13 @@ const LQFormPage: FC = () => {
   return (
     <>
       <PageTitle breadcrumbs={breadcrumbs}>
-        {isEditMode ? 'Edit Long Question' : 'Create Long Question'}
+        {isEditMode ? 'Edit Multiple Choice Question' : 'Create Multiple Choice Question'}
       </PageTitle>
       
       <KTCard>
         <div className='card-header'>
           <h3 className='card-title'>
-            {isEditMode ? 'Edit Long Question' : 'Create New Long Question'}
+            {isEditMode ? 'Edit Multiple Choice Question' : 'Create New Multiple Choice Question'}
           </h3>
         </div>
         
@@ -430,7 +507,6 @@ const LQFormPage: FC = () => {
                   onChange={(tags) => formik.setFieldValue('selectedTags', tags)}
                   placeholder='Select tags or type to create new ones (optional)'
                 />
-                
               </div>
             </div>
 
@@ -542,6 +618,47 @@ const LQFormPage: FC = () => {
               </div>
             </div>
 
+            {/* Multiple Choice Options */}
+            <div className='row mb-6'>
+              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+                Options
+              </label>
+              <div className='col-lg-8'>
+                <div className='d-flex flex-column gap-4'>
+                  {formik.values.options.map((option, index) => (
+                    <div key={index} className='border rounded p-4'>
+                      <div className='row g-3'>
+                        <div className='col-md-2'>
+                          <label className='form-label fw-bold fs-5'>{option.option_letter}</label>
+                        </div>
+                        <div className='col-md-10'>
+                          <div className='form-check'>
+                            <input
+                              className='form-check-input'
+                              type='radio'
+                              name='correctOption'
+                              id={`correct-${index}`}
+                              checked={option.is_correct}
+                              onChange={() => handleOptionChange(index, 'is_correct', true)}
+                            />
+                            <label className='form-check-label' htmlFor={`correct-${index}`}>
+                              Correct Answer
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {formik.touched.options && formik.errors.options && (
+                  <div className='fv-plugins-message-container invalid-feedback d-block mt-2'>
+                    <div>{Array.isArray(formik.errors.options) ? formik.errors.options.join(', ') : formik.errors.options}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Form Actions */}
             <div className='row mb-6'>
               <div className='col-lg-8 offset-lg-4'>
@@ -557,24 +674,27 @@ const LQFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
+                              const correctOption = formik.values.options.find(opt => opt.is_correct)
 
                               const questionData = {
-                                type: 'lq' as const,
+                                type: 'mc' as const,
                                 name: formik.values.questionName,
                                 question_content: formik.values.question,
                                 teacher_remark: formik.values.teacherRemark,
-                                lq_question: {
+                                mc_question: {
+                                  options: formik.values.options,
+                                  correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
                                   answer_content: formik.values.answer
                                 },
                                 tags: transformedTags.length > 0 ? transformedTags : undefined
                               }
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
-                              toast.success('Long Question updated successfully!', 'Success')
+                              toast.success('Multiple Choice Question updated successfully!', 'Success')
                               // Stay on this page - no navigation
                             } catch (error) {
-                              console.error('Error updating LQ:', error)
-                              toast.error('Failed to update Long Question. Please try again.', 'Error')
+                              console.error('Error updating MC:', error)
+                              toast.error('Failed to update Multiple Choice Question. Please try again.', 'Error')
                             } finally {
                               setIsSubmitting(false)
                             }
@@ -600,24 +720,27 @@ const LQFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
+                              const correctOption = formik.values.options.find(opt => opt.is_correct)
 
                               const questionData = {
-                                type: 'lq' as const,
+                                type: 'mc' as const,
                                 name: formik.values.questionName,
                                 question_content: formik.values.question,
                                 teacher_remark: formik.values.teacherRemark,
-                                lq_question: {
+                                mc_question: {
+                                  options: formik.values.options,
+                                  correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
                                   answer_content: formik.values.answer
                                 },
                                 tags: transformedTags.length > 0 ? transformedTags : undefined
                               }
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
-                              toast.success('Long Question updated successfully!', 'Success')
-                              navigate('/questions/lq/list')
+                              toast.success('Multiple Choice Question updated successfully!', 'Success')
+                              navigate('/questions/mc/list')
                             } catch (error) {
-                              console.error('Error updating LQ:', error)
-                              toast.error('Failed to update Long Question. Please try again.', 'Error')
+                              console.error('Error updating MC:', error)
+                              toast.error('Failed to update Multiple Choice Question. Please try again.', 'Error')
                             } finally {
                               setIsSubmitting(false)
                             }
@@ -645,22 +768,25 @@ const LQFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
+                              const correctOption = formik.values.options.find(opt => opt.is_correct)
                               const questionData = {
-                                type: 'lq' as const,
+                                type: 'mc' as const,
                                 name: formik.values.questionName,
                                 question_content: formik.values.question,
                                 teacher_remark: formik.values.teacherRemark,
-                                lq_question: {
+                                mc_question: {
+                                  options: formik.values.options,
+                                  correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
                                   answer_content: formik.values.answer
                                 },
                                 tags: transformedTags.length > 0 ? transformedTags : undefined
                               }
                               const createdQuestion = await dispatch(createQuestion(questionData)).unwrap()
-                              toast.success('Long Question created successfully!', 'Success')
-                              navigate(`/questions/lq/edit/${createdQuestion.q_id}`)
+                              toast.success('Multiple Choice Question created successfully!', 'Success')
+                              navigate(`/questions/mc/edit/${createdQuestion.q_id}`)
                             } catch (error) {
-                              console.error('Error creating LQ:', error)
-                              toast.error('Failed to create Long Question. Please try again.', 'Error')
+                              console.error('Error creating MC:', error)
+                              toast.error('Failed to create Multiple Choice Question. Please try again.', 'Error')
                             } finally {
                               setIsSubmitting(false)
                             }
@@ -676,6 +802,7 @@ const LQFormPage: FC = () => {
                           'Create'
                         )}
                       </button>
+                      
                       <button
                         type='button'
                         className='btn btn-success btn-lg'
@@ -685,22 +812,25 @@ const LQFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
+                              const correctOption = formik.values.options.find(opt => opt.is_correct)
                               const questionData = {
-                                type: 'lq' as const,
+                                type: 'mc' as const,
                                 name: formik.values.questionName,
                                 question_content: formik.values.question,
                                 teacher_remark: formik.values.teacherRemark,
-                                lq_question: {
+                                mc_question: {
+                                  options: formik.values.options,
+                                  correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
                                   answer_content: formik.values.answer
                                 },
                                 tags: transformedTags.length > 0 ? transformedTags : undefined
                               }
                               await dispatch(createQuestion(questionData)).unwrap()
-                              toast.success('Long Question created successfully!', 'Success')
-                              navigate('/questions/lq/list')
+                              toast.success('Multiple Choice Question created successfully!', 'Success')
+                              navigate('/questions/mc/list')
                             } catch (error) {
-                              console.error('Error creating LQ:', error)
-                              toast.error('Failed to create Long Question. Please try again.', 'Error')
+                              console.error('Error creating MC:', error)
+                              toast.error('Failed to create Multiple Choice Question. Please try again.', 'Error')
                             } finally {
                               setIsSubmitting(false)
                             }
@@ -721,9 +851,8 @@ const LQFormPage: FC = () => {
                   
                   <button
                     type='button'
-                    className='btn btn-light btn-lg'
-                    onClick={() => navigate('/questions/lq/list')}
-                    disabled={isSubmitting || creating}
+                    className='btn btn-secondary btn-lg'
+                    onClick={() => navigate('/questions/mc/list')}
                   >
                     Cancel
                   </button>
@@ -737,4 +866,4 @@ const LQFormPage: FC = () => {
   )
 }
 
-export default LQFormPage 
+export default MCFormPage 

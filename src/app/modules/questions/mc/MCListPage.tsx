@@ -10,7 +10,7 @@ import {TablePagination} from '../../../../_metronic/helpers/TablePagination'
 import {QuestionsActionsCell} from './components/QuestionsActionsCell'
 import {QuestionSelectionCell} from './components/QuestionSelectionCell'
 
-const lqListBreadcrumbs: Array<PageLink> = [
+const mcListBreadcrumbs: Array<PageLink> = [
   {
     title: 'Questions',
     path: '/questions',
@@ -18,20 +18,20 @@ const lqListBreadcrumbs: Array<PageLink> = [
     isActive: false,
   },
   {
-    title: 'LQ',
-    path: '/questions/lq',
+    title: 'MC',
+    path: '/questions/mc',
     isSeparator: false,
     isActive: false,
   },
   {
     title: 'List',
-    path: '/questions/lq/list',
+    path: '/questions/mc/list',
     isSeparator: false,
     isActive: true,
   },
 ]
 
-const LQListPage: FC = () => {
+const MCListPage: FC = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
   
@@ -54,7 +54,7 @@ const LQListPage: FC = () => {
       sort: sortBy,
       order: sortOrder,
       search: searchTerm || undefined,
-      type: 'lq'
+      type: 'mc'
     }))
   }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder, searchTerm])
 
@@ -99,7 +99,7 @@ const LQListPage: FC = () => {
   }
 
   const handleQuestionNameClick = (qId: string) => {
-    navigate(`/questions/lq/edit/${qId}`)
+    navigate(`/questions/mc/edit/${qId}`)
   }
 
   const formatDate = (dateString: string) => {
@@ -122,24 +122,24 @@ const LQListPage: FC = () => {
 
   return (
     <>
-      <PageTitle breadcrumbs={lqListBreadcrumbs}>Long Questions List</PageTitle>
+      <PageTitle breadcrumbs={mcListBreadcrumbs}>Multiple Choice Questions List</PageTitle>
       
       <KTCard>
         <div className='card-header border-0 pt-5'>
           <h3 className='card-title align-items-start flex-column'>
-            <span className='card-label fw-bold fs-3 mb-1'>Long Questions</span>
+            <span className='card-label fw-bold fs-3 mb-1'>Multiple Choice Questions</span>
             <span className='text-muted mt-1 fw-semibold fs-7'>
-              Manage your long questions
+              Manage your multiple choice questions
             </span>
           </h3>
           <div className='card-toolbar'>
             <button
               type='button'
               className='btn btn-sm btn-light-primary me-3'
-              onClick={() => navigate('/questions/lq/create')}
+              onClick={() => navigate('/questions/mc/create')}
             >
-              
-              Create New LQ
+              <KTSVG path='/media/icons/duotune/arrows/arr075.svg' className='svg-icon-2' />
+              Create New MC
             </button>
           </div>
         </div>
@@ -147,7 +147,7 @@ const LQListPage: FC = () => {
         <div className='card-body'>
           {/* Search Bar */}
           <div className='d-flex align-items-center position-relative my-1 mb-5'>
-            
+            <KTSVG path='/media/icons/duotune/general/gen021.svg' className='svg-icon-1 position-absolute ms-6' />
             <input
               type='text'
               data-kt-user-table-filter='search'
@@ -185,7 +185,7 @@ const LQListPage: FC = () => {
                     </div>
                   </th>
                   <th className='min-w-125px'>Question Preview</th>
-                  <th className='min-w-125px'>Answer Preview</th>
+                  <th className='min-w-125px'>Options Preview</th>
                   <th 
                     className='min-w-125px cursor-pointer'
                     onClick={() => handleSort('created_at')}
@@ -225,30 +225,45 @@ const LQListPage: FC = () => {
                       <td>
                         <div className='d-flex align-items-center'>
                           <div className='d-flex flex-column'>
-                            <span 
-                              className='text-dark fw-bold text-hover-primary mb-1 fs-6 cursor-pointer'
+                            <a
+                              href='#'
+                              className='text-gray-800 text-hover-primary mb-1'
                               onClick={() => handleQuestionNameClick(question.q_id)}
-                              style={{ cursor: 'pointer' }}
                             >
-                              {question.question_content}
-                            </span>
+                              {question.name || 'Untitled Question'}
+                            </a>
+                            <span className='text-muted'>{question.type.toUpperCase()}</span>
                           </div>
                         </div>
                       </td>
                       <td>
-                        <span className='text-muted'>
-                          {truncateText(question.question_content || '', 80)}
-                        </span>
+                        <div className='text-gray-800'>
+                          {truncateText(question.question_content, 80)}
+                        </div>
                       </td>
                       <td>
-                        <span className='text-muted'>
-                          {truncateText(question.lq_question?.answer_content || '', 80)}
-                        </span>
+                        <div className='text-gray-800'>
+                          {question.mc_question ? (
+                            <div>
+                              {question.mc_question.options?.slice(0, 2).map((option, index) => (
+                                <div key={index} className='mb-1'>
+                                  <span className='badge badge-light-primary me-1'>{option.option_letter}</span>
+                                  {truncateText(option.content, 30)}
+                                </div>
+                              ))}
+                              {question.mc_question.options && question.mc_question.options.length > 2 && (
+                                <span className='text-muted'>+{question.mc_question.options.length - 2} more</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className='text-muted'>No options</span>
+                          )}
+                        </div>
                       </td>
                       <td>
-                        <span className='text-muted'>
-                          {question.created_at ? formatDate(question.created_at) : '-'}
-                        </span>
+                        <div className='text-gray-800'>
+                          {question.created_at ? formatDate(question.created_at) : 'N/A'}
+                        </div>
                       </td>
                       <td className='text-end'>
                         <QuestionsActionsCell id={question.q_id as any} />
@@ -273,4 +288,4 @@ const LQListPage: FC = () => {
   )
 }
 
-export default LQListPage 
+export default MCListPage 

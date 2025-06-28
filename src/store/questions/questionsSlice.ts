@@ -10,10 +10,24 @@ export interface LQQuestion {
   answer_content: string
 }
 
+export interface MCOption {
+  option_letter: string
+  is_correct: boolean
+}
+
+export interface MCQuestion {
+  options: MCOption[]
+  correct_option: string
+  answer_content?: string
+}
+
 export interface QuestionFormData {
-  type: 'lq'
+  type: 'lq' | 'mc'
+  name?: string
   question_content: string
-  lq_question: LQQuestion
+  teacher_remark?: string
+  lq_question?: LQQuestion
+  mc_question?: MCQuestion
   tags?: Array<{ tag_id?: string; name?: string; score?: number }>
 }
 
@@ -24,6 +38,7 @@ export interface Question {
   question_content: string
   teacher_remark?: string
   lq_question?: LQQuestion
+  mc_question?: MCQuestion
   tag_ids?: string[]
   tags?: Array<{ tag_id?: string; name?: string; score?: number }>
   created_at?: string
@@ -51,17 +66,19 @@ export const createQuestion = createAsyncThunk(
 
 export const fetchQuestions = createAsyncThunk(
   'questions/fetchQuestions',
-  async ({ page, items_per_page, sort, order, search }: {
+  async ({ page, items_per_page, sort, order, search, type }: {
     page: number
     items_per_page: number
     sort?: string
     order?: 'asc' | 'desc'
     search?: string
+    type?: 'lq' | 'mc'
   }) => {
     const params: any = { page, items_per_page }
     if (sort) params.sort = sort
     if (order) params.order = order
     if (search) params.search = search
+    if (type) params.type = type
 
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/questions`)
