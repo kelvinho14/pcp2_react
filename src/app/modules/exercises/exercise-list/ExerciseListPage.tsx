@@ -12,18 +12,6 @@ const exercisesListBreadcrumbs: Array<PageLink> = [
     isSeparator: false,
     isActive: false,
   },
-  {
-    title: 'Exercises',
-    path: '/exercises',
-    isSeparator: false,
-    isActive: false,
-  },
-  {
-    title: 'List',
-    path: '/exercises/list',
-    isSeparator: false,
-    isActive: true,
-  },
 ]
 
 const ExerciseListPage: FC = () => {

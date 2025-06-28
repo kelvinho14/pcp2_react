@@ -120,12 +120,6 @@ const ExerciseFormPage: FC = () => {
           isActive: false,
         },
         {
-          title: 'Exercises',
-          path: '/exercises',
-          isSeparator: false,
-          isActive: false,
-        },
-        {
           title: 'Exercise List',
           path: '/exercises/list',
           isSeparator: false,
@@ -136,12 +130,6 @@ const ExerciseFormPage: FC = () => {
         {
           title: 'Home',
           path: '/dashboard',
-          isSeparator: false,
-          isActive: false,
-        },
-        {
-          title: 'Exercises',
-          path: '/exercises',
           isSeparator: false,
           isActive: false,
         },
