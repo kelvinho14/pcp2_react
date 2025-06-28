@@ -7,12 +7,16 @@ import {useSelector, useDispatch} from 'react-redux'
 import {RootState, AppDispatch} from '../../../../store'
 import {fetchTags, Tag} from '../../../../store/tags/tagsSlice'
 import {createQuestion, fetchQuestionById, updateQuestion} from '../../../../store/questions/questionsSlice'
+import {processContentToText, setProcessedContent} from '../../../../store/ai/aiSlice'
 import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
 import {KTCard} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
 import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
 import Select from 'react-select'
 import TagWithScore, {TagWithScoreData} from '../components/TagWithScore'
+import AIEditorWithButton from '../../../../components/AI/AIEditorWithButton'
+import AIProcessedContentModal from '../../../../components/AI/AIProcessedContentModal'
+import {useAIImageToText} from '../../../../hooks/useAIImageToText'
 
 const mcValidationSchema = Yup.object().shape({
   questionName: Yup.string()
@@ -54,12 +58,15 @@ interface MCFormData {
   selectedTags: TagWithScoreData[]
 }
 
-  const MCFormPage: FC = () => {
+const MCFormPage: FC = () => {
   const navigate = useNavigate()
   const { qId } = useParams<{ qId: string }>()
   const dispatch = useDispatch<AppDispatch>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEditMode = !!qId
+
+  // Custom hook for AI functionality
+  const { processingField, handleAIImageToText } = useAIImageToText()
 
   // Redux selectors
   const { tags, loading: tagsLoading } = useSelector((state: RootState) => state.tags)
@@ -80,6 +87,13 @@ interface MCFormData {
       }
     })
     return result
+  }
+
+  // Handle accepting processed content from modal
+  const handleAcceptProcessedContent = (content: string, field: 'question' | 'answer') => {
+    formik.setFieldValue(field, content)
+    formik.setFieldTouched(field, true)
+    toast.success('AI processed content applied successfully!', 'Success')
   }
 
   // Fetch tags on component mount
@@ -361,33 +375,19 @@ interface MCFormData {
                 Question
               </label>
               <div className='col-lg-8'>
-                <div className='d-flex flex-column'>
-                  <TinyMCEEditor
-                    key={`question-editor-${isEditMode ? qId : 'create'}`}
-                    value={formik.values.question}
-                    onBlur={(content) => {
-                      formik.setFieldValue('question', content)
-                      formik.setFieldTouched('question', true)
-                    }}
-                    height={300}
-                    placeholder='Enter the question content...'
-                  />
-                  {formik.values.question.includes('<img') && (
-                    <div className='mt-2'>
-                      <button
-                        type='button'
-                        className='btn btn-sm btn-outline-primary'
-                        onClick={() => {
-                          // TODO: Implement AI image to text functionality
-                          console.log('AI image to text for question')
-                        }}
-                      >
-                        <i className='fas fa-robot me-1'></i>
-                        AI Image to Text
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <AIEditorWithButton
+                  field='question'
+                  value={formik.values.question}
+                  onBlur={(content) => {
+                    formik.setFieldValue('question', content)
+                    formik.setFieldTouched('question', true)
+                  }}
+                  isProcessing={processingField === 'question'}
+                  onAIClick={handleAIImageToText}
+                  height={300}
+                  placeholder='Enter the question content...'
+                  editorKey={`question-editor-${isEditMode ? qId : 'create'}`}
+                />
                 {formik.touched.question && formik.errors.question && (
                   <div className='fv-plugins-message-container invalid-feedback d-block'>
                     <div>{formik.errors.question}</div>
@@ -402,33 +402,19 @@ interface MCFormData {
                 Answer
               </label>
               <div className='col-lg-8'>
-                <div className='d-flex flex-column'>
-                  <TinyMCEEditor
-                    key={`answer-editor-${isEditMode ? qId : 'create'}`}
-                    value={formik.values.answer}
-                    onBlur={(content) => {
-                      formik.setFieldValue('answer', content)
-                      formik.setFieldTouched('answer', true)
-                    }}
-                    height={300}
-                    placeholder='Enter the answer content...'
-                  />
-                  {formik.values.answer.includes('<img') && (
-                    <div className='mt-2'>
-                      <button
-                        type='button'
-                        className='btn btn-sm btn-outline-primary'
-                        onClick={() => {
-                          // TODO: Implement AI image to text functionality
-                          console.log('AI image to text for answer')
-                        }}
-                      >
-                        <i className='fas fa-robot me-1'></i>
-                        AI Image to Text
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <AIEditorWithButton
+                  field='answer'
+                  value={formik.values.answer}
+                  onBlur={(content) => {
+                    formik.setFieldValue('answer', content)
+                    formik.setFieldTouched('answer', true)
+                  }}
+                  isProcessing={processingField === 'answer'}
+                  onAIClick={handleAIImageToText}
+                  height={300}
+                  placeholder='Enter the answer content...'
+                  editorKey={`answer-editor-${isEditMode ? qId : 'create'}`}
+                />
                 {formik.touched.answer && formik.errors.answer && (
                   <div className='fv-plugins-message-container invalid-feedback d-block'>
                     <div>{formik.errors.answer}</div>
@@ -681,6 +667,9 @@ interface MCFormData {
           </form>
         </div>
       </KTCard>
+
+      {/* AI Processed Content Modal */}
+      <AIProcessedContentModal onAccept={handleAcceptProcessedContent} />
     </>
   )
 }

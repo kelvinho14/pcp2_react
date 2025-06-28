@@ -7,6 +7,7 @@ import {useSelector, useDispatch} from 'react-redux'
 import {RootState, AppDispatch} from '../../../../store'
 import {fetchTags, Tag} from '../../../../store/tags/tagsSlice'
 import {createQuestion, fetchQuestionById, updateQuestion} from '../../../../store/questions/questionsSlice'
+import {processContentToText, setProcessedContent} from '../../../../store/ai/aiSlice'
 import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
 import {KTCard} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
@@ -14,6 +15,9 @@ import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
 import CreatableSelect from 'react-select/creatable'
 import Select from 'react-select'
 import TagWithScore, {TagWithScoreData} from '../components/TagWithScore'
+import AIEditorWithButton from '../../../../components/AI/AIEditorWithButton'
+import AIProcessedContentModal from '../../../../components/AI/AIProcessedContentModal'
+import {useAIImageToText} from '../../../../hooks/useAIImageToText'
 
 const lqValidationSchema = Yup.object().shape({
   questionName: Yup.string()
@@ -49,6 +53,9 @@ const LQFormPage: FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEditMode = !!qId
+
+  // Custom hook for AI functionality
+  const { processingField, handleAIImageToText } = useAIImageToText()
 
   // Redux selectors
   const { tags, loading: tagsLoading } = useSelector((state: RootState) => state.tags)
@@ -177,6 +184,13 @@ const LQFormPage: FC = () => {
     }
   }, [currentQuestion, isEditMode])
 
+  // Handle accepting processed content from modal
+  const handleAcceptProcessedContent = (content: string, field: 'question' | 'answer') => {
+    formik.setFieldValue(field, content)
+    formik.setFieldTouched(field, true)
+    toast.success('AI processed content applied successfully!', 'Success')
+  }
+
   if (tagsLoading || (isEditMode && questionLoading)) {
     return (
       <>
@@ -213,10 +227,10 @@ const LQFormPage: FC = () => {
           <form onSubmit={formik.handleSubmit} className='form'>
             {/* Question Name */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label required fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label required fw-semibold fs-6'>
                 Question Name
               </label>
-              <div className='col-lg-8'>
+              <div className='col-lg-9'>
                 <input
                   type='text'
                   className={clsx(
@@ -239,10 +253,10 @@ const LQFormPage: FC = () => {
 
             {/* Tags */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
                 Tags with Scores
               </label>
-              <div className='col-lg-8'>
+              <div className='col-lg-9'>
                 <TagWithScore
                   options={tags}
                   selectedTags={formik.values.selectedTags}
@@ -255,10 +269,10 @@ const LQFormPage: FC = () => {
 
             {/* Teacher Remark */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
                 Teacher Remark
               </label>
-              <div className='col-lg-8'>
+              <div className='col-lg-9'>
                 <textarea
                   className={clsx(
                     'form-control form-control-lg form-control-solid',
@@ -281,37 +295,23 @@ const LQFormPage: FC = () => {
 
             {/* Question Content */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
                 Question
               </label>
-              <div className='col-lg-8'>
-                <div className='d-flex flex-column'>
-                  <TinyMCEEditor
-                    key={`question-editor-${isEditMode ? qId : 'create'}`}
-                    value={formik.values.question}
-                    onBlur={(content) => {
-                      formik.setFieldValue('question', content)
-                      formik.setFieldTouched('question', true)
-                    }}
-                    height={300}
-                    placeholder='Enter the question content...'
-                  />
-                  {formik.values.question.includes('<img') && (
-                    <div className='mt-2'>
-                      <button
-                        type='button'
-                        className='btn btn-sm btn-outline-primary'
-                        onClick={() => {
-                          // TODO: Implement AI image to text functionality
-                          console.log('AI image to text for question')
-                        }}
-                      >
-                        <i className='fas fa-robot me-1'></i>
-                        AI Image to Text
-                      </button>
-                    </div>
-                  )}
-                </div>
+              <div className='col-lg-9'>
+                <AIEditorWithButton
+                  field='question'
+                  value={formik.values.question}
+                  onBlur={(content) => {
+                    formik.setFieldValue('question', content)
+                    formik.setFieldTouched('question', true)
+                  }}
+                  isProcessing={processingField === 'question'}
+                  onAIClick={handleAIImageToText}
+                  height={400}
+                  placeholder='Enter the question content...'
+                  editorKey={`question-editor-${isEditMode ? qId : 'create'}`}
+                />
                 {formik.touched.question && formik.errors.question && (
                   <div className='fv-plugins-message-container invalid-feedback d-block'>
                     <div>{formik.errors.question}</div>
@@ -322,37 +322,23 @@ const LQFormPage: FC = () => {
 
             {/* Answer Content */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
                 Answer
               </label>
-              <div className='col-lg-8'>
-                <div className='d-flex flex-column'>
-                  <TinyMCEEditor
-                    key={`answer-editor-${isEditMode ? qId : 'create'}`}
-                    value={formik.values.answer}
-                    onBlur={(content) => {
-                      formik.setFieldValue('answer', content)
-                      formik.setFieldTouched('answer', true)
-                    }}
-                    height={300}
-                    placeholder='Enter the answer content...'
-                  />
-                  {formik.values.answer.includes('<img') && (
-                    <div className='mt-2'>
-                      <button
-                        type='button'
-                        className='btn btn-sm btn-outline-primary'
-                        onClick={() => {
-                          // TODO: Implement AI image to text functionality
-                          console.log('AI image to text for answer')
-                        }}
-                      >
-                        <i className='fas fa-robot me-1'></i>
-                        AI Image to Text
-                      </button>
-                    </div>
-                  )}
-                </div>
+              <div className='col-lg-9'>
+                <AIEditorWithButton
+                  field='answer'
+                  value={formik.values.answer}
+                  onBlur={(content) => {
+                    formik.setFieldValue('answer', content)
+                    formik.setFieldTouched('answer', true)
+                  }}
+                  isProcessing={processingField === 'answer'}
+                  onAIClick={handleAIImageToText}
+                  height={400}
+                  placeholder='Enter the answer content...'
+                  editorKey={`answer-editor-${isEditMode ? qId : 'create'}`}
+                />
                 {formik.touched.answer && formik.errors.answer && (
                   <div className='fv-plugins-message-container invalid-feedback d-block'>
                     <div>{formik.errors.answer}</div>
@@ -363,7 +349,7 @@ const LQFormPage: FC = () => {
 
             {/* Form Actions */}
             <div className='row mb-6'>
-              <div className='col-lg-8 offset-lg-4'>
+              <div className='col-lg-9 offset-lg-3'>
                 <div className='d-flex gap-3'>
                   {isEditMode ? (
                     <>
@@ -552,6 +538,9 @@ const LQFormPage: FC = () => {
           </form>
         </div>
       </KTCard>
+
+      {/* AI Processed Content Modal */}
+      <AIProcessedContentModal onAccept={handleAcceptProcessedContent} />
     </>
   )
 }
