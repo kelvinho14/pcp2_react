@@ -1,25 +1,46 @@
-import {FC} from 'react'
-import {PageTitle} from '../../../../_metronic/layout/core'
-import {useIntl} from 'react-intl'
+import {FC, useState} from 'react'
+import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
+import {KTCard} from '../../../../_metronic/helpers'
+import {ExercisesListHeader} from './components/header/ExercisesListHeader'
+import {ExercisesTable} from './table/ExercisesTable'
+import {ListViewProvider} from './core/ListViewProvider'
+
+const exercisesListBreadcrumbs: Array<PageLink> = [
+  {
+    title: 'Home',
+    path: '/dashboard',
+    isSeparator: false,
+    isActive: false,
+  },
+  {
+    title: 'Exercises',
+    path: '/exercises',
+    isSeparator: false,
+    isActive: false,
+  },
+  {
+    title: 'List',
+    path: '/exercises/list',
+    isSeparator: false,
+    isActive: true,
+  },
+]
 
 const ExerciseListPage: FC = () => {
-  const intl = useIntl()
+  const [search, setSearch] = useState('')
 
   return (
     <>
-      <PageTitle breadcrumbs={[]}>
-        {intl.formatMessage({id: 'MENU.EXERCISES.LIST'})}
+      <PageTitle breadcrumbs={exercisesListBreadcrumbs}>
+        Exercises List
       </PageTitle>
       
-      <div className='card'>
-        <div className='card-header'>
-          <h3 className='card-title'>Exercise List</h3>
-        </div>
-        <div className='card-body'>
-          <p>This is the page for viewing all exercises.</p>
-          {/* Add your exercise list table here */}
-        </div>
-      </div>
+      <KTCard>
+        <ListViewProvider>
+          <ExercisesListHeader setSearch={setSearch} />
+          <ExercisesTable search={search} />
+        </ListViewProvider>
+      </KTCard>
     </>
   )
 }

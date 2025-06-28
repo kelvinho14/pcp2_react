@@ -19,15 +19,15 @@ import Select from 'react-select'
 import clsx from 'clsx'
 
 const exerciseValidationSchema = Yup.object().shape({
-  name: Yup.string()
+  title: Yup.string()
     .min(3, 'Minimum 3 characters')
     .max(100, 'Maximum 100 characters')
-    .required('Exercise name is required'),
+    .required('Exercise title is required'),
   description: Yup.string()
     .min(10, 'Minimum 10 characters')
     .max(1000, 'Maximum 1000 characters'),
-  topicIds: Yup.array().of(Yup.string()),
-  exerciseTypeId: Yup.string().required('Please select an exercise type'),
+  topic_ids: Yup.array().of(Yup.string()),
+  type: Yup.string().required('Please select an exercise type'),
 })
 
 // MultiSelect Component using react-select
@@ -83,6 +83,12 @@ const ExerciseNewPage: FC = () => {
     (state: RootState) => state.exercise
   )
 
+  // Fetch exercise types and topics on component mount
+  useEffect(() => {
+    dispatch(fetchExerciseTypes())
+    dispatch(fetchTopics())
+  }, [dispatch])
+
   // Clear messages on component unmount
   useEffect(() => {
     return () => {
@@ -101,10 +107,10 @@ const ExerciseNewPage: FC = () => {
 
   const formik = useFormik<ExerciseFormData>({
     initialValues: {
-      name: '',
+      title: '',
       description: '',
-      topicIds: [],
-      exerciseTypeId: '',
+      topic_ids: [],
+      type: '',
     },
     validationSchema: exerciseValidationSchema,
     onSubmit: async (values, {setSubmitting}) => {
@@ -154,23 +160,23 @@ const ExerciseNewPage: FC = () => {
         </div>
         <div className='card-body'>
           <form onSubmit={formik.handleSubmit} className='form'>
-            {/* Exercise Name */}
+            {/* Exercise Title */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label required fw-bold fs-6'>Exercise Name</label>
+              <label className='col-lg-4 col-form-label required fw-bold fs-6'>Exercise Title</label>
               <div className='col-lg-8 fv-row'>
                 <input
                   type='text'
                   className={clsx(
                     'form-control form-control-lg form-control-solid',
-                    {'is-invalid': formik.touched.name && formik.errors.name},
-                    {'is-valid': formik.touched.name && !formik.errors.name}
+                    {'is-invalid': formik.touched.title && formik.errors.title},
+                    {'is-valid': formik.touched.title && !formik.errors.title}
                   )}
-                  placeholder='Enter exercise name'
-                  {...formik.getFieldProps('name')}
+                  placeholder='Enter exercise title'
+                  {...formik.getFieldProps('title')}
                 />
-                {formik.touched.name && formik.errors.name && (
+                {formik.touched.title && formik.errors.title && (
                   <div className='fv-plugins-message-container'>
-                    <div className='fv-help-block'>{formik.errors.name}</div>
+                    <div className='fv-help-block'>{formik.errors.title}</div>
                   </div>
                 )}
               </div>
@@ -215,8 +221,8 @@ const ExerciseNewPage: FC = () => {
               <div className='col-lg-8 fv-row'>
                 <MultiSelect
                   options={topics}
-                  selectedValues={formik.values.topicIds}
-                  onChange={(values) => formik.setFieldValue('topicIds', values)}
+                  selectedValues={formik.values.topic_ids}
+                  onChange={(values) => formik.setFieldValue('topic_ids', values)}
                   placeholder='Select topics (optional)'
                 />
                 <div className='form-text'>Select one or more topics (optional)</div>
@@ -230,21 +236,21 @@ const ExerciseNewPage: FC = () => {
                 <select
                   className={clsx(
                     'form-select form-select-solid form-select-lg',
-                    {'is-invalid': formik.touched.exerciseTypeId && formik.errors.exerciseTypeId},
-                    {'is-valid': formik.touched.exerciseTypeId && !formik.errors.exerciseTypeId && formik.values.exerciseTypeId}
+                    {'is-invalid': formik.touched.type && formik.errors.type},
+                    {'is-valid': formik.touched.type && !formik.errors.type && formik.values.type}
                   )}
-                  {...formik.getFieldProps('exerciseTypeId')}
+                  {...formik.getFieldProps('type')}
                 >
                   <option value=''>Select an exercise type...</option>
                   {exerciseTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
+                    <option key={type.type_id} value={type.type_id}>
                       {type.name}
                     </option>
                   ))}
                 </select>
-                {formik.touched.exerciseTypeId && formik.errors.exerciseTypeId && (
+                {formik.touched.type && formik.errors.type && (
                   <div className='fv-plugins-message-container'>
-                    <div className='fv-help-block'>{formik.errors.exerciseTypeId}</div>
+                    <div className='fv-help-block'>{formik.errors.type}</div>
                   </div>
                 )}
               </div>
@@ -262,8 +268,8 @@ const ExerciseNewPage: FC = () => {
                       creating || 
                       formik.isSubmitting || 
                       !formik.isValid || 
-                      !formik.values.name.trim() || 
-                      !formik.values.exerciseTypeId
+                      !formik.values.title.trim() || 
+                      !formik.values.type
                     }
                   >
                     <span className='indicator-label'>
