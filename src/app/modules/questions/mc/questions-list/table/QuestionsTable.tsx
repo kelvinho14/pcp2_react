@@ -38,7 +38,7 @@ const QuestionsTable = ({ search, selectedTags, tagLogic }: Props) => {
         sort: sort?.id,
         order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
         search: search || undefined,
-        type: 'lq',
+        type: 'mc',
         tags: selectedTags.length > 0 ? selectedTags : undefined,
         tagLogic: selectedTags.length > 0 ? tagLogic : undefined,
       })

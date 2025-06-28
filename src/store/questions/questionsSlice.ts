@@ -10,10 +10,24 @@ export interface LQQuestion {
   answer_content: string
 }
 
+export interface MCOption {
+  option_letter: string
+  is_correct: boolean
+}
+
+export interface MCQuestion {
+  options: MCOption[]
+  correct_option: string
+  answer_content?: string
+}
+
 export interface QuestionFormData {
-  type: 'lq'
+  type: 'lq' | 'mc'
+  name?: string
   question_content: string
-  lq_question: LQQuestion
+  teacher_remark?: string
+  lq_question?: LQQuestion
+  mc_question?: MCQuestion
   tags?: Array<{ tag_id?: string; name?: string; score?: number }>
 }
 
@@ -24,6 +38,7 @@ export interface Question {
   question_content: string
   teacher_remark?: string
   lq_question?: LQQuestion
+  mc_question?: MCQuestion
   tag_ids?: string[]
   tags?: Array<{ tag_id?: string; name?: string; score?: number }>
   created_at?: string
@@ -51,22 +66,58 @@ export const createQuestion = createAsyncThunk(
 
 export const fetchQuestions = createAsyncThunk(
   'questions/fetchQuestions',
-  async ({ page, items_per_page, sort, order, search }: {
+  async ({ page, items_per_page, sort, order, search, type, tags, tagLogic }: {
     page: number
     items_per_page: number
     sort?: string
     order?: 'asc' | 'desc'
     search?: string
+    type?: 'lq' | 'mc'
+    tags?: string[]
+    tagLogic?: 'and' | 'or'
   }) => {
-    const params: any = { page, items_per_page }
+    const params: any = {}
+    
+    // Only include page if no tags are selected
+    if (!tags || tags.length === 0) {
+      params.page = page
+      params.items_per_page = items_per_page
+    }
+    
     if (sort) params.sort = sort
     if (order) params.order = order
     if (search) params.search = search
+    if (type) params.type = type
+    
+    // Build the URL with proper tag_ids format
+    let url = `${API_URL}/questions`
+    const queryParams = new URLSearchParams()
+    
+    // Add all params except tag_ids
+    Object.keys(params).forEach(key => {
+      queryParams.append(key, params[key])
+    })
+    
+    // Add tag_ids as separate parameters
+    if (tags && tags.length > 0) {
+      tags.forEach(tagId => {
+        queryParams.append('tag_ids', tagId)
+      })
+      
+      // Add tag logic parameter
+      if (tagLogic) {
+        queryParams.append('logic', tagLogic)
+      }
+    }
+    
+    const queryString = queryParams.toString()
+    if (queryString) {
+      url += `?${queryString}`
+    }
 
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/questions`)
-      const response = await axios.get(`${API_URL}/questions`, { 
-        params, 
+      const headers = getHeadersWithSchoolSubject(url)
+      const response = await axios.get(url, { 
         headers,
         withCredentials: true 
       })

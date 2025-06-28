@@ -21,7 +21,7 @@ const QuestionsListHeader: React.FC<Props> = ({ setSearch, setSelectedTags, setT
 
   // Fetch question tags on component mount
   useEffect(() => {
-    dispatch(fetchQuestionTags('lq'))
+    dispatch(fetchQuestionTags('mc'))
   }, [dispatch])
 
   const handleTagChange = (selectedOptions: any) => {

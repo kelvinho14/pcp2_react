@@ -23,7 +23,7 @@ const QuestionActionsCell: FC<Props> = ({id}) => {
   }, [])
 
   const openEditModal = () => {
-    navigate(`/questions/lq/edit/${id}`)
+    navigate(`/questions/mc/edit/${id}`)
   }
 
   const handleDelete = async () => {
@@ -33,7 +33,8 @@ const QuestionActionsCell: FC<Props> = ({id}) => {
       await dispatch(deleteQuestion(String(id))).unwrap()
       toast.success('Question deleted successfully!', 'Success')
       setShowConfirmDialog(false)
-      dispatch(fetchQuestions({ type: 'lq', page: 1, items_per_page: 10 }))
+      // Refresh the MC questions list
+      dispatch(fetchQuestions({ type: 'mc', page: 1, items_per_page: 10 }))
     } catch (error) {
       console.error('Error deleting question:', error)
       // Error toast is handled by the thunk

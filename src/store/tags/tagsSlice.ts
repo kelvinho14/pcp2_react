@@ -11,6 +11,12 @@ export interface Tag {
   name: string
 }
 
+export interface QuestionTag {
+  tag_id: string
+  name: string
+  usage_count: number
+}
+
 // API response interface
 interface APITag {
   tag_id: string
@@ -48,16 +54,43 @@ export const fetchTags = createAsyncThunk(
   }
 )
 
+export const fetchQuestionTags = createAsyncThunk(
+  'tags/fetchQuestionTags',
+  async (type?: 'lq' | 'mc') => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/questions/tags`)
+      const params: any = { all: 1 }
+      if (type) params.type = type
+      
+      const response = await axios.get(`${API_URL}/questions/tags`, { 
+        params,
+        headers,
+        withCredentials: true 
+      })
+
+      return response.data.data || []
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to fetch question tags'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 // Initial state
 interface TagsState {
   tags: Tag[]
+  questionTags: QuestionTag[]
   loading: boolean
+  questionTagsLoading: boolean
   error: string | null
 }
 
 const initialState: TagsState = {
   tags: [],
+  questionTags: [],
   loading: false,
+  questionTagsLoading: false,
   error: null,
 }
 
@@ -84,6 +117,19 @@ const tagsSlice = createSlice({
       .addCase(fetchTags.rejected, (state, action) => {
         state.loading = false
         state.error = action.error.message || 'Failed to fetch tags'
+      })
+      // Fetch question tags
+      .addCase(fetchQuestionTags.pending, (state) => {
+        state.questionTagsLoading = true
+        state.error = null
+      })
+      .addCase(fetchQuestionTags.fulfilled, (state, action) => {
+        state.questionTagsLoading = false
+        state.questionTags = action.payload
+      })
+      .addCase(fetchQuestionTags.rejected, (state, action) => {
+        state.questionTagsLoading = false
+        state.error = action.error.message || 'Failed to fetch question tags'
       })
   },
 })

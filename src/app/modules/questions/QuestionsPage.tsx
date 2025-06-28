@@ -5,7 +5,9 @@ import {getCSSVariableValue} from '../../../_metronic/assets/ts/_utils'
 import {WithChildren} from '../../../_metronic/helpers'
 
 const LQFormPage = lazy(() => import('./lq/LQFormPage'))
-const QuestionsListWrapper = lazy(() => import('./lq/questions-list/QuestionsList').then(module => ({ default: module.QuestionsListWrapper })))
+const QuestionsListWrapper = lazy(() => import('./lq/questions-list/QuestionsList'))
+const MCFormPage = lazy(() => import('./mc/MCFormPage'))
+const MCListWrapper = lazy(() => import('./mc/questions-list/QuestionsList'))
 
 const QuestionsPage: FC = () => {
   return (
@@ -23,6 +25,21 @@ const QuestionsPage: FC = () => {
       <Route path='lq/list' element={
         <SuspensedView>
           <QuestionsListWrapper />
+        </SuspensedView>
+      } />
+      <Route path='mc/create' element={
+        <SuspensedView>
+          <MCFormPage />
+        </SuspensedView>
+      } />
+      <Route path='mc/edit/:qId' element={
+        <SuspensedView>
+          <MCFormPage />
+        </SuspensedView>
+      } />
+      <Route path='mc/list' element={
+        <SuspensedView>
+          <MCListWrapper />
         </SuspensedView>
       } />
       <Route path='*' element={<Navigate to='lq/create' />} />
