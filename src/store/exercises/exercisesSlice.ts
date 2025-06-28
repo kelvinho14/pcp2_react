@@ -22,6 +22,15 @@ export interface Exercise {
   school_subject_id: string
   created_at: string
   updated_at: string
+  question_count: number
+}
+
+export interface ExerciseFormData {
+  title: string
+  description: string
+  topic_ids: string[]
+  type: string
+  status?: number
 }
 
 // Async thunks
@@ -58,6 +67,45 @@ export const fetchExercises = createAsyncThunk(
   }
 )
 
+export const updateExercise = createAsyncThunk(
+  'exercises/updateExercise',
+  async ({ exerciseId, data }: { exerciseId: string; data: ExerciseFormData }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/${exerciseId}`)
+      
+      // Transform the data to match the required API format
+      const payload = {
+        title: data.title,
+        description: data.description || '',
+        topic_ids: data.topic_ids || [],
+        type_id: data.type,
+        status: data.status || 0
+      }
+      
+      const response = await axios.put(
+        `${API_URL}/exercises/${exerciseId}`,
+        payload,
+        { 
+          headers,
+          withCredentials: true 
+        }
+      )
+      
+      if (response.data.status === 'success') {
+        toast.success('Exercise updated successfully!', 'Success')
+      } else {
+        toast.error('Failed to update exercise. Please try again.', 'Error')
+      }
+      
+      return response.data
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to update exercise'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 export const deleteExercise = createAsyncThunk(
   'exercises/deleteExercise',
   async (exerciseId: string) => {
@@ -82,6 +130,7 @@ interface ExercisesState {
   loading: boolean
   error: string | null
   total: number
+  updating: boolean
 }
 
 const initialState: ExercisesState = {
@@ -89,6 +138,7 @@ const initialState: ExercisesState = {
   loading: false,
   error: null,
   total: 0,
+  updating: false,
 }
 
 // Slice
@@ -115,6 +165,18 @@ const exercisesSlice = createSlice({
       .addCase(fetchExercises.rejected, (state, action) => {
         state.loading = false
         state.error = action.error.message || 'Failed to fetch exercises'
+      })
+      // Update exercise
+      .addCase(updateExercise.pending, (state) => {
+        state.updating = true
+        state.error = null
+      })
+      .addCase(updateExercise.fulfilled, (state) => {
+        state.updating = false
+      })
+      .addCase(updateExercise.rejected, (state, action) => {
+        state.updating = false
+        state.error = action.error.message || 'Failed to update exercise'
       })
       // Delete exercise
       .addCase(deleteExercise.pending, (state) => {

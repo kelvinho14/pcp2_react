@@ -7,10 +7,16 @@ type Props = {
 }
 
 const CustomRow: FC<Props> = ({row}) => {
+  const rowProps = row.getRowProps()
+  const {key: rowKey, ...restRowProps} = rowProps
+
   return (
-    <tr {...row.getRowProps()}>
+    <tr key={rowKey} {...restRowProps}>
       {row.cells.map((cell) => {
-        return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+        const cellProps = cell.getCellProps()
+        const {key: cellKey, ...restCellProps} = cellProps
+        
+        return <td key={cellKey} {...restCellProps}>{cell.render('Cell')}</td>
       })}
     </tr>
   )

@@ -38,7 +38,7 @@ export const createExercise = createAsyncThunk(
         description: exerciseData.description || '',
         topic_ids: exerciseData.topic_ids || [],
         type_id: exerciseData.type,
-        status: exerciseData.status || 0
+        status: exerciseData.status !== undefined ? exerciseData.status : 0
       }
       
       const response = await axios.post(

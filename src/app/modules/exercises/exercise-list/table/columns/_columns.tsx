@@ -3,7 +3,7 @@ import { ExerciseSelectionCell } from './ExerciseSelectionCell'
 import { ExerciseActionsCell } from './ExerciseActionsCell'
 import { Exercise } from '../../../../../../store/exercises/exercisesSlice'
 import { ID } from '../../../../../../_metronic/helpers'
-import { KTSVG } from '../../../../../../_metronic/helpers'
+import { useNavigate } from 'react-router-dom'
 
 const exercisesColumns: ReadonlyArray<Column<Exercise>> = [
   {
@@ -17,6 +17,7 @@ const exercisesColumns: ReadonlyArray<Column<Exercise>> = [
     id: 'title',
     Cell: ({ ...props }) => {
       const exercise = props.data[props.row.index]
+      const navigate = useNavigate()
       const truncateText = (text: string, maxLength: number = 50) => {
         if (!text) return ''
         return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
@@ -30,8 +31,7 @@ const exercisesColumns: ReadonlyArray<Column<Exercise>> = [
               className='text-gray-800 text-hover-primary mb-1'
               onClick={(e) => {
                 e.preventDefault()
-                // Navigation will be handled by the actions menu
-                console.log('Navigate to exercise:', exercise.exercise_id)
+                navigate(`/exercises/edit/${exercise.exercise_id}`)
               }}
             >
               {exercise.title || 'Untitled Exercise'}
@@ -68,17 +68,28 @@ const exercisesColumns: ReadonlyArray<Column<Exercise>> = [
       const getStatusBadge = (status: number) => {
         switch (status) {
           case 0:
-            return <span className='badge badge-light-warning'>Draft</span>
+            return <span className='badge badge-light-warning'>Inactive</span>
           case 1:
             return <span className='badge badge-light-success'>Active</span>
-          case 2:
-            return <span className='badge badge-light-danger'>Inactive</span>
           default:
             return <span className='badge badge-light-secondary'>Unknown</span>
         }
       }
       
       return getStatusBadge(status)
+    },
+  },
+  {
+    Header: 'Questions',
+    accessor: 'question_count',
+    id: 'question_count',
+    Cell: ({ ...props }) => {
+      const questionCount = props.data[props.row.index].question_count || 0
+      return (
+        <div className='text-center'>
+          <span className='badge badge-light-success fs-7 fw-bold'>{questionCount}</span>
+        </div>
+      )
     },
   },
   {

@@ -31,9 +31,23 @@ const CustomHeaderColumn: FC<Props> = ({column, onSort}) => {
     )
   }
 
+  // If this is the actions column, render without sorting functionality
+  if (column.id === 'actions') {
+    return (
+      <th className='text-end min-w-100px'>
+        {column.render('Header')}
+      </th>
+    )
+  }
+
   return (
     <th
-      {...column.getHeaderProps(column.getSortByToggleProps())}
+      key={column.getHeaderProps(column.getSortByToggleProps()).key}
+      {...(() => {
+        const props = column.getHeaderProps(column.getSortByToggleProps())
+        const {key, ...restProps} = props
+        return restProps
+      })()}
       className='min-w-125px cursor-pointer'
       onClick={onSort}
     >
