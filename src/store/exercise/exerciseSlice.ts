@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import axios from 'axios'
 import { toast } from '../../_metronic/helpers/toast'
+import { getHeadersWithSchoolSubject } from '../../_metronic/helpers/axios'
 
 const API_URL = import.meta.env.VITE_APP_API_URL
 
@@ -11,15 +12,17 @@ export interface Topic {
 }
 
 export interface ExerciseType {
-  id: string
+  type_id: string
   name: string
+  created_at?: string
 }
 
 export interface ExerciseFormData {
-  name: string
+  title: string
   description: string
-  topicIds: string[]
-  exerciseTypeId: string
+  topic_ids: string[]
+  type: string
+  status?: number
 }
 
 // Async thunks
@@ -27,10 +30,24 @@ export const createExercise = createAsyncThunk(
   'exercise/createExercise',
   async (exerciseData: ExerciseFormData) => {
     try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises`)
+      
+      // Transform the data to match the required API format
+      const payload = {
+        title: exerciseData.title,
+        description: exerciseData.description || '',
+        topic_ids: exerciseData.topic_ids || [],
+        type_id: exerciseData.type,
+        status: exerciseData.status !== undefined ? exerciseData.status : 0
+      }
+      
       const response = await axios.post(
         `${API_URL}/exercises`,
-        exerciseData,
-        { withCredentials: true }
+        payload,
+        { 
+          headers,
+          withCredentials: true 
+        }
       )
       
       if (response.data.status === 'success') {
@@ -52,7 +69,9 @@ export const fetchTopics = createAsyncThunk(
   'exercise/fetchTopics',
   async () => {
     try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercise/topiclist`)
       const response = await axios.get(`${API_URL}/exercise/topiclist`, { 
+        headers,
         withCredentials: true 
       })
       return response.data.data || []
@@ -68,7 +87,9 @@ export const fetchExerciseTypes = createAsyncThunk(
   'exercise/fetchExerciseTypes',
   async () => {
     try {
-      const response = await axios.get(`${API_URL}/exercise/type`, { 
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercise-types`)
+      const response = await axios.get(`${API_URL}/exercise-types`, { 
+        headers,
         withCredentials: true 
       })
       return response.data.data || []
@@ -91,28 +112,8 @@ interface ExerciseState {
 }
 
 const initialState: ExerciseState = {
-  topics: [
-    { id: '1', name: 'Mathematics' },
-    { id: '2', name: 'Physics' },
-    { id: '3', name: 'Chemistry' },
-    { id: '4', name: 'Biology' },
-    { id: '5', name: 'Computer Science' },
-    { id: '6', name: 'English Literature' },
-    { id: '7', name: 'History' },
-    { id: '8', name: 'Geography' },
-    { id: '9', name: 'Economics' },
-    { id: '10', name: 'Psychology' },
-  ],
-  exerciseTypes: [
-    { id: '1', name: 'Multiple Choice' },
-    { id: '2', name: 'True/False' },
-    { id: '3', name: 'Short Answer' },
-    { id: '4', name: 'Essay' },
-    { id: '5', name: 'Problem Solving' },
-    { id: '6', name: 'Fill in the Blanks' },
-    { id: '7', name: 'Matching' },
-    { id: '8', name: 'Coding Exercise' },
-  ],
+  topics: [],
+  exerciseTypes: [],
   loading: false,
   creating: false,
   error: null,

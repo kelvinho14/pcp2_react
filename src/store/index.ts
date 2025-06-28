@@ -4,6 +4,7 @@ import exerciseReducer from './exercise/exerciseSlice'
 import adminReducer from './admin/adminSlice'
 import tagsReducer from './tags/tagsSlice'
 import questionsReducer from './questions/questionsSlice'
+import exercisesReducer from './exercises/exercisesSlice'
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     admin: adminReducer,
     tags: tagsReducer,
     questions: questionsReducer,
+    exercises: exercisesReducer,
   },
 })
 

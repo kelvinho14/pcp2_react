@@ -6,7 +6,6 @@ import {fetchQuestions} from '../../../../store/questions/questionsSlice'
 import {fetchQuestionTags} from '../../../../store/tags/tagsSlice'
 import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
 import {KTCard} from '../../../../_metronic/helpers'
-import {KTSVG} from '../../../../_metronic/helpers'
 import {TablePagination} from '../../../../_metronic/helpers/TablePagination'
 import {QuestionsActionsCell} from './components/QuestionsActionsCell'
 import {QuestionSelectionCell} from './components/QuestionSelectionCell'
@@ -154,7 +153,6 @@ const MCListPage: FC = () => {
               className='btn btn-sm btn-light-primary me-3'
               onClick={() => navigate('/questions/mc/create')}
             >
-              <KTSVG path='/media/icons/duotune/arrows/arr075.svg' className='svg-icon-2' />
               Create New MC
             </button>
           </div>

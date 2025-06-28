@@ -4,7 +4,7 @@ import TopBarProgress from 'react-topbar-progress-indicator'
 import {getCSSVariableValue} from '../../../_metronic/assets/ts/_utils'
 import {WithChildren} from '../../../_metronic/helpers'
 
-const ExerciseNewPage = lazy(() => import('./exercise-new/ExerciseNewPage'))
+const ExerciseFormPage = lazy(() => import('./ExerciseFormPage'))
 const ExerciseListPage = lazy(() => import('./exercise-list/ExerciseListPage'))
 const ExerciseAssignedListPage = lazy(() => import('./exercise-assigned-list/ExerciseAssignedListPage'))
 
@@ -13,7 +13,12 @@ const ExercisePage: FC = () => {
     <Routes>
       <Route path='create' element={
         <SuspensedView>
-          <ExerciseNewPage />
+          <ExerciseFormPage />
+        </SuspensedView>
+      } />
+      <Route path='edit/:exerciseId' element={
+        <SuspensedView>
+          <ExerciseFormPage />
         </SuspensedView>
       } />
       <Route path='list' element={
