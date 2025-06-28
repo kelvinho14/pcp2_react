@@ -88,8 +88,9 @@ const MCFormPage: FC = () => {
 
   // AI Image to Text function using Redux
   const handleAIImageToText = async (content: string, field: 'question' | 'answer') => {
+    // Check if there are images in the current content
     if (!content.includes('<img')) {
-      toast.warning('No images found in the content to process.', 'Warning')
+      toast.warning(`No images found in the ${field} content.`, 'Warning')
       return
     }
 
@@ -405,29 +406,27 @@ const MCFormPage: FC = () => {
                     height={300}
                     placeholder='Enter the question content...'
                   />
-                  {formik.values.question.includes('<img') && (
-                    <div className='mt-2'>
-                      <button
-                        type='button'
-                        className='btn btn-sm btn-primary'
-                        style={{ backgroundColor: '#009ef7', borderColor: '#009ef7' }}
-                        disabled={processingField === 'question'}
-                        onClick={() => handleAIImageToText(formik.values.question, 'question')}
-                      >
-                        {processingField === 'question' ? (
-                          <>
-                            <span className='spinner-border spinner-border-sm me-1'></span>
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <i className='fas fa-robot me-1'></i>
-                            AI Image to Text
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
+                  <div className='mt-2'>
+                    <button
+                      type='button'
+                      className='btn btn-sm btn-primary'
+                      style={{ backgroundColor: '#009ef7', borderColor: '#009ef7' }}
+                      disabled={processingField === 'question'}
+                      onClick={() => handleAIImageToText(formik.values.question, 'question')}
+                    >
+                      {processingField === 'question' ? (
+                        <>
+                          <span className='spinner-border spinner-border-sm me-1'></span>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <i className='fas fa-robot me-1'></i>
+                          AI Image to Text
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 {formik.touched.question && formik.errors.question && (
                   <div className='fv-plugins-message-container invalid-feedback d-block'>
@@ -454,29 +453,27 @@ const MCFormPage: FC = () => {
                     height={300}
                     placeholder='Enter the answer content...'
                   />
-                  {formik.values.answer.includes('<img') && (
-                    <div className='mt-2'>
-                      <button
-                        type='button'
-                        className='btn btn-sm btn-primary'
-                        style={{ backgroundColor: '#009ef7', borderColor: '#009ef7' }}
-                        disabled={processingField === 'answer'}
-                        onClick={() => handleAIImageToText(formik.values.answer, 'answer')}
-                      >
-                        {processingField === 'answer' ? (
-                          <>
-                            <span className='spinner-border spinner-border-sm me-1'></span>
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <i className='fas fa-robot me-1'></i>
-                            AI Image to Text
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
+                  <div className='mt-2'>
+                    <button
+                      type='button'
+                      className='btn btn-sm btn-primary'
+                      style={{ backgroundColor: '#009ef7', borderColor: '#009ef7' }}
+                      disabled={processingField === 'answer'}
+                      onClick={() => handleAIImageToText(formik.values.answer, 'answer')}
+                    >
+                      {processingField === 'answer' ? (
+                        <>
+                          <span className='spinner-border spinner-border-sm me-1'></span>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <i className='fas fa-robot me-1'></i>
+                          AI Image to Text
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 {formik.touched.answer && formik.errors.answer && (
                   <div className='fv-plugins-message-container invalid-feedback d-block'>
