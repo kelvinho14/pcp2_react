@@ -14,7 +14,9 @@ import {toast} from '../../../../_metronic/helpers/toast'
 import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
 import Select from 'react-select'
 import TagWithScore, {TagWithScoreData} from '../components/TagWithScore'
+import AIEditorWithButton from '../../../../components/AI/AIEditorWithButton'
 import AIProcessedContentModal from '../../../../components/AI/AIProcessedContentModal'
+import {useAIImageToText} from '../../../../hooks/useAIImageToText'
 
 const mcValidationSchema = Yup.object().shape({
   questionName: Yup.string()
@@ -61,13 +63,14 @@ const MCFormPage: FC = () => {
   const { qId } = useParams<{ qId: string }>()
   const dispatch = useDispatch<AppDispatch>()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [processingField, setProcessingField] = useState<'question' | 'answer' | null>(null)
   const isEditMode = !!qId
+
+  // Custom hook for AI functionality
+  const { processingField, handleAIImageToText } = useAIImageToText()
 
   // Redux selectors
   const { tags, loading: tagsLoading } = useSelector((state: RootState) => state.tags)
   const { creating, currentQuestion, loading: questionLoading } = useSelector((state: RootState) => state.questions)
-  const { processing: aiProcessing } = useSelector((state: RootState) => state.ai)
 
   // Helper function to transform tags to the required format
   const transformTags = (selectedTags: TagWithScoreData[]) => {
@@ -84,29 +87,6 @@ const MCFormPage: FC = () => {
       }
     })
     return result
-  }
-
-  // AI Image to Text function using Redux
-  const handleAIImageToText = async (content: string, field: 'question' | 'answer') => {
-    // Check if there are images in the current content
-    if (!content.includes('<img')) {
-      toast.warning(`No images found in the ${field} content.`, 'Warning')
-      return
-    }
-
-    setProcessingField(field)
-    try {
-      const processedText = await dispatch(processContentToText(content)).unwrap()
-      
-      // Show the modal with processed content
-      dispatch(setProcessedContent({ content: processedText, field }))
-      
-    } catch (error: any) {
-      console.error('Error processing AI image to text:', error)
-      // Error handling is already done in the Redux thunk
-    } finally {
-      setProcessingField(null)
-    }
   }
 
   // Handle accepting processed content from modal
@@ -395,39 +375,19 @@ const MCFormPage: FC = () => {
                 Question
               </label>
               <div className='col-lg-8'>
-                <div className='d-flex flex-column'>
-                  <TinyMCEEditor
-                    key={`question-editor-${isEditMode ? qId : 'create'}`}
-                    value={formik.values.question}
-                    onBlur={(content) => {
-                      formik.setFieldValue('question', content)
-                      formik.setFieldTouched('question', true)
-                    }}
-                    height={300}
-                    placeholder='Enter the question content...'
-                  />
-                  <div className='mt-2'>
-                    <button
-                      type='button'
-                      className='btn btn-sm btn-primary'
-                      style={{ backgroundColor: '#009ef7', borderColor: '#009ef7' }}
-                      disabled={processingField === 'question'}
-                      onClick={() => handleAIImageToText(formik.values.question, 'question')}
-                    >
-                      {processingField === 'question' ? (
-                        <>
-                          <span className='spinner-border spinner-border-sm me-1'></span>
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <i className='fas fa-robot me-1'></i>
-                          AI Image to Text
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
+                <AIEditorWithButton
+                  field='question'
+                  value={formik.values.question}
+                  onBlur={(content) => {
+                    formik.setFieldValue('question', content)
+                    formik.setFieldTouched('question', true)
+                  }}
+                  isProcessing={processingField === 'question'}
+                  onAIClick={handleAIImageToText}
+                  height={300}
+                  placeholder='Enter the question content...'
+                  editorKey={`question-editor-${isEditMode ? qId : 'create'}`}
+                />
                 {formik.touched.question && formik.errors.question && (
                   <div className='fv-plugins-message-container invalid-feedback d-block'>
                     <div>{formik.errors.question}</div>
@@ -442,39 +402,19 @@ const MCFormPage: FC = () => {
                 Answer
               </label>
               <div className='col-lg-8'>
-                <div className='d-flex flex-column'>
-                  <TinyMCEEditor
-                    key={`answer-editor-${isEditMode ? qId : 'create'}`}
-                    value={formik.values.answer}
-                    onBlur={(content) => {
-                      formik.setFieldValue('answer', content)
-                      formik.setFieldTouched('answer', true)
-                    }}
-                    height={300}
-                    placeholder='Enter the answer content...'
-                  />
-                  <div className='mt-2'>
-                    <button
-                      type='button'
-                      className='btn btn-sm btn-primary'
-                      style={{ backgroundColor: '#009ef7', borderColor: '#009ef7' }}
-                      disabled={processingField === 'answer'}
-                      onClick={() => handleAIImageToText(formik.values.answer, 'answer')}
-                    >
-                      {processingField === 'answer' ? (
-                        <>
-                          <span className='spinner-border spinner-border-sm me-1'></span>
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <i className='fas fa-robot me-1'></i>
-                          AI Image to Text
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
+                <AIEditorWithButton
+                  field='answer'
+                  value={formik.values.answer}
+                  onBlur={(content) => {
+                    formik.setFieldValue('answer', content)
+                    formik.setFieldTouched('answer', true)
+                  }}
+                  isProcessing={processingField === 'answer'}
+                  onAIClick={handleAIImageToText}
+                  height={300}
+                  placeholder='Enter the answer content...'
+                  editorKey={`answer-editor-${isEditMode ? qId : 'create'}`}
+                />
                 {formik.touched.answer && formik.errors.answer && (
                   <div className='fv-plugins-message-container invalid-feedback d-block'>
                     <div>{formik.errors.answer}</div>
