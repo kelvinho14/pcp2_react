@@ -1,39 +1,114 @@
 import {KTIcon} from '../../../../../../../_metronic/helpers'
 import {useListView} from '../../core/ListViewProvider'
-import {useDispatch} from 'react-redux'
-import {AppDispatch} from '../../../../../../../store'
+import {useDispatch, useSelector} from 'react-redux'
+import {AppDispatch, RootState} from '../../../../../../../store'
 import {ConfirmationDialog} from '../../../../../../../_metronic/helpers/ConfirmationDialog'
 import {useState} from 'react'
-import {bulkDeleteQuestions, fetchQuestions, generateSimilarQuestions} from '../../../../../../../store/questions/questionsSlice'
+import {bulkDeleteQuestions, fetchQuestions, generateSimilarQuestions, createMultipleQuestions, createSingleQuestion, clearGeneratedQuestions} from '../../../../../../../store/questions/questionsSlice'
 import {toast} from '../../../../../../../_metronic/helpers/toast'
+import AIGenerateSimilarModal from '../../../../components/AIGenerateSimilarModal'
+import AIGeneratedQuestionsModal from '../../../../components/AIGeneratedQuestionsModal'
 
 const QuestionsListGrouping = () => {
   const {selected, clearSelected} = useListView()
   const dispatch = useDispatch<AppDispatch>()
+  const {generatedQuestions, generatingSimilarQuestions, creatingMultipleQuestions, creating} = useSelector((state: RootState) => state.questions)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [showQuestionTypeDialog, setShowQuestionTypeDialog] = useState(false)
-  const [selectedQuestionType, setSelectedQuestionType] = useState<'mc' | 'lq'>('lq')
-  const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'medium' | 'hard' | 'challenging'>('medium')
-  const [questionCount, setQuestionCount] = useState<number>(1)
+  const [showAIGenerateModal, setShowAIGenerateModal] = useState(false)
+  const [showGeneratedQuestionsModal, setShowGeneratedQuestionsModal] = useState(false)
 
-  const handleAIGenerateSimilar = async () => {
+  const handleAIGenerateSimilar = async (questionType: 'mc' | 'lq', difficulty: 'easy' | 'medium' | 'hard' | 'challenging', count: number) => {
     try {
       const questionIds = selected.filter(id => id !== undefined && id !== null).map(id => String(id))
       await dispatch(generateSimilarQuestions({ 
         questionIds, 
-        questionType: selectedQuestionType,
-        difficulty: selectedDifficulty,
-        count: questionCount
+        questionType,
+        difficulty,
+        count
       })).unwrap()
-      toast.success(`${questionCount} similar ${selectedQuestionType.toUpperCase()} question(s) generated successfully!`, 'Success')
-      clearSelected()
-      setShowQuestionTypeDialog(false)
-      // Refresh the LQ questions list
-      dispatch(fetchQuestions({ type: 'lq', page: 1, items_per_page: 10 }))
+      setShowAIGenerateModal(false)
+      setShowGeneratedQuestionsModal(true) // Show the review modal
     } catch (error) {
       console.error('Error generating similar questions:', error)
       // Error toast is handled by the thunk
     }
+  }
+
+  const handleAcceptGeneratedQuestions = async (questions: any[]) => {
+    try {
+      // Convert the questions to the format expected by the API
+      const questionData = questions.map(q => ({
+        type: q.type,
+        name: q.name,
+        question_content: q.question_content,
+        teacher_remark: q.teacher_remark,
+        ...(q.type === 'lq' && q.lq_question && {
+          lq_question: {
+            answer_content: q.lq_question.answer_content
+          }
+        }),
+        ...(q.type === 'mc' && q.mc_question && {
+          mc_question: {
+            options: q.mc_question.options.map((opt: string, idx: number) => ({
+              option_letter: String.fromCharCode(65 + idx),
+              is_correct: idx === q.mc_question.correct_answer
+            })),
+            correct_option: String.fromCharCode(65 + q.mc_question.correct_answer)
+          }
+        })
+      }))
+
+      await dispatch(createMultipleQuestions(questionData)).unwrap()
+      toast.success(`${questions.length} questions created successfully!`, 'Success')
+      clearSelected()
+      setShowGeneratedQuestionsModal(false)
+      dispatch(clearGeneratedQuestions())
+      // Refresh the LQ questions list
+      dispatch(fetchQuestions({ type: 'lq', page: 1, items_per_page: 10 }))
+    } catch (error) {
+      console.error('Error creating questions:', error)
+      // Error toast is handled by the thunk
+    }
+  }
+
+  const handleAcceptSingleQuestion = async (question: any) => {
+    try {
+      // Convert the question to the format expected by the API
+      const questionData = {
+        type: question.type,
+        name: question.name,
+        question_content: question.question_content,
+        teacher_remark: question.teacher_remark,
+        ...(question.type === 'lq' && question.lq_question && {
+          lq_question: {
+            answer_content: question.lq_question.answer_content
+          }
+        }),
+        ...(question.type === 'mc' && question.mc_question && {
+          mc_question: {
+            options: question.mc_question.options.map((opt: string, idx: number) => ({
+              option_letter: String.fromCharCode(65 + idx),
+              is_correct: idx === question.mc_question.correct_answer
+            })),
+            correct_option: String.fromCharCode(65 + question.mc_question.correct_answer)
+          }
+        })
+      }
+
+      await dispatch(createSingleQuestion(questionData)).unwrap()
+      toast.success('Question created successfully!', 'Success')
+      // Refresh the LQ questions list
+      dispatch(fetchQuestions({ type: 'lq', page: 1, items_per_page: 10 }))
+    } catch (error) {
+      console.error('Error creating question:', error)
+      // Error toast is handled by the thunk
+      throw error // Re-throw to let the modal handle the error state
+    }
+  }
+
+  const handleDismissGeneratedQuestions = () => {
+    setShowGeneratedQuestionsModal(false)
+    dispatch(clearGeneratedQuestions())
   }
 
   const handleBulkDelete = async () => {
@@ -52,7 +127,7 @@ const QuestionsListGrouping = () => {
   }
 
   const handleAIGenerateClick = () => {
-    setShowQuestionTypeDialog(true)
+    setShowAIGenerateModal(true)
   }
 
   return (
@@ -77,153 +152,6 @@ const QuestionsListGrouping = () => {
         </button>
       </div>
 
-      {/* Question Type Selection Dialog */}
-      {showQuestionTypeDialog && (
-        <div className='modal fade show d-block' style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-          <div className='modal-dialog modal-dialog-centered modal-lg'>
-            <div className='modal-content'>
-              <div className='modal-header'>
-                <h5 className='modal-title'>Generate Similar Questions</h5>
-                <button 
-                  type='button' 
-                  className='btn-close' 
-                  onClick={() => setShowQuestionTypeDialog(false)}
-                ></button>
-              </div>
-              <div className='modal-body'>
-                {/* Question Type Selection */}
-                <div className='mb-4'>
-                  <h6 className='mb-3'>Choose the type of questions you want to generate:</h6>
-                  <div className='d-flex justify-content-center gap-3'>
-                    <button 
-                      type='button' 
-                      className={`btn btn-lg ${selectedQuestionType === 'mc' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setSelectedQuestionType('mc')}
-                    >
-                      <div className='d-flex flex-column align-items-center'>
-                        <KTIcon iconName='check' className='fs-1 mb-2' />
-                        <span className='fw-bold'>Multiple Choice</span>
-                        <small className='text-muted'>MC Questions</small>
-                      </div>
-                    </button>
-                    <button 
-                      type='button' 
-                      className={`btn btn-lg ${selectedQuestionType === 'lq' ? 'btn-info' : 'btn-outline-info'}`}
-                      onClick={() => setSelectedQuestionType('lq')}
-                    >
-                      <div className='d-flex flex-column align-items-center'>
-                        <KTIcon iconName='document' className='fs-1 mb-2' />
-                        <span className='fw-bold'>Long Question</span>
-                        <small className='text-muted'>LQ Questions</small>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Difficulty Selection */}
-                <div className='mb-4'>
-                  <h6 className='mb-3'>Choose the difficulty level:</h6>
-                  <div className='d-flex justify-content-center gap-2'>
-                    <button 
-                      type='button' 
-                      className={`btn ${selectedDifficulty === 'easy' ? 'btn-success' : 'btn-outline-success'}`}
-                      onClick={() => setSelectedDifficulty('easy')}
-                    >
-                      <div className='d-flex flex-column align-items-center'>
-                        <KTIcon iconName='star' className='fs-4 mb-1' />
-                        <span className='fw-bold'>Easy</span>
-                      </div>
-                    </button>
-                    <button 
-                      type='button' 
-                      className={`btn ${selectedDifficulty === 'medium' ? 'btn-warning' : 'btn-outline-warning'}`}
-                      onClick={() => setSelectedDifficulty('medium')}
-                    >
-                      <div className='d-flex flex-column align-items-center'>
-                        <KTIcon iconName='star' className='fs-4 mb-1' />
-                        <span className='fw-bold'>Medium</span>
-                      </div>
-                    </button>
-                    <button 
-                      type='button' 
-                      className={`btn ${selectedDifficulty === 'hard' ? 'btn-danger' : 'btn-outline-danger'}`}
-                      onClick={() => setSelectedDifficulty('hard')}
-                    >
-                      <div className='d-flex flex-column align-items-center'>
-                        <KTIcon iconName='star' className='fs-4 mb-1' />
-                        <span className='fw-bold'>Hard</span>
-                      </div>
-                    </button>
-                    <button 
-                      type='button' 
-                      className={`btn ${selectedDifficulty === 'challenging' ? 'btn-dark' : 'btn-outline-dark'}`}
-                      onClick={() => setSelectedDifficulty('challenging')}
-                    >
-                      <div className='d-flex flex-column align-items-center'>
-                        <KTIcon iconName='star' className='fs-4 mb-1' />
-                        <span className='fw-bold'>Challenging</span>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Question Count Selection */}
-                <div className='mb-4'>
-                  <h6 className='mb-3'>Number of questions to generate:</h6>
-                  <div className='d-flex justify-content-center'>
-                    <div className='input-group' style={{ maxWidth: '200px' }}>
-                      <input
-                        type='number'
-                        className='form-control form-control-lg text-center fw-bold'
-                        min='1'
-                        max='4'
-                        value={questionCount}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value)
-                          if (value >= 1 && value <= 4) {
-                            setQuestionCount(value)
-                          }
-                        }}
-                        onBlur={(e) => {
-                          const value = parseInt(e.target.value)
-                          if (value < 1) setQuestionCount(1)
-                          if (value > 4) setQuestionCount(4)
-                        }}
-                        style={{ 
-                          fontSize: '1.5rem',
-                          border: '2px solid #e1e3ea',
-                          backgroundColor: '#ffffff'
-                        }}
-                      />
-                      <span className='input-group-text fw-semibold'>(max 4)</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className='modal-footer'>
-                <button 
-                  type='button' 
-                  className='btn btn-secondary' 
-                  onClick={() => setShowQuestionTypeDialog(false)}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type='button' 
-                  className='btn btn-primary' 
-                  onClick={() => {
-                    setShowQuestionTypeDialog(false)
-                    handleAIGenerateSimilar()
-                  }}
-                >
-                  Generate
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <ConfirmationDialog
         show={showDeleteDialog}
         onHide={() => setShowDeleteDialog(false)}
@@ -234,8 +162,25 @@ const QuestionsListGrouping = () => {
         confirmText="Delete"
         cancelText="Cancel"
       />
+
+      <AIGenerateSimilarModal
+        show={showAIGenerateModal}
+        onHide={() => setShowAIGenerateModal(false)}
+        onGenerate={handleAIGenerateSimilar}
+        defaultQuestionType='lq'
+        isLoading={generatingSimilarQuestions}
+      />
+
+      <AIGeneratedQuestionsModal
+        show={showGeneratedQuestionsModal}
+        onHide={handleDismissGeneratedQuestions}
+        onAccept={handleAcceptGeneratedQuestions}
+        onAcceptSingle={handleAcceptSingleQuestion}
+        questions={generatedQuestions}
+        isLoading={generatingSimilarQuestions || creatingMultipleQuestions || creating}
+      />
     </>
   )
 }
 
-export {QuestionsListGrouping} 
+export default QuestionsListGrouping 
