@@ -51,9 +51,8 @@ const AIGenerateSimilarModal: FC<AIGenerateSimilarModalProps> = ({
                   disabled={isLoading}
                 >
                   <div className='d-flex flex-column align-items-center'>
-                    <KTIcon iconName='check' className='fs-1 mb-2' />
+                    <i className='fa fa-solid fa-square-check fs-1 mb-2' />
                     <span className='fw-bold'>Multiple Choice</span>
-                    <small className='text-muted'>MC Questions</small>
                   </div>
                 </button>
                 <button 
@@ -63,9 +62,8 @@ const AIGenerateSimilarModal: FC<AIGenerateSimilarModalProps> = ({
                   disabled={isLoading}
                 >
                   <div className='d-flex flex-column align-items-center'>
-                    <KTIcon iconName='document' className='fs-1 mb-2' />
+                    <i className='fa fa-solid fa-pencil fs-1 mb-2' />
                     <span className='fw-bold'>Long Question</span>
-                    <small className='text-muted'>LQ Questions</small>
                   </div>
                 </button>
               </div>

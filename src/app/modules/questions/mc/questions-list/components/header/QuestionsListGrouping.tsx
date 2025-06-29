@@ -8,6 +8,7 @@ import {bulkDeleteQuestions, fetchQuestions, generateSimilarQuestions, createMul
 import {toast} from '../../../../../../../_metronic/helpers/toast'
 import AIGenerateSimilarModal from '../../../../components/AIGenerateSimilarModal'
 import AIGeneratedQuestionsModal from '../../../../components/AIGeneratedQuestionsModal'
+import { transformQuestionsForBackend, transformSingleQuestionForBackend } from '../../../../components/questionTransformers'
 
 const QuestionsListGrouping = () => {
   const {selected, clearSelected} = useListView()
@@ -16,6 +17,9 @@ const QuestionsListGrouping = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false)
   const [showGeneratedQuestionsModal, setShowGeneratedQuestionsModal] = useState(false)
+
+  const isValidLetter = (letter: string, options: any[]) =>
+    !!letter && options.some(opt => opt.option_letter === letter)
 
   const handleAIGenerateSimilar = async (questionType: 'mc' | 'lq', difficulty: 'easy' | 'medium' | 'hard' | 'challenging', count: number) => {
     try {
@@ -36,28 +40,7 @@ const QuestionsListGrouping = () => {
 
   const handleAcceptGeneratedQuestions = async (questions: any[]) => {
     try {
-      // Convert the questions to the format expected by the API
-      const questionData = questions.map(q => ({
-        type: q.type,
-        name: q.name,
-        question_content: q.question_content,
-        teacher_remark: q.teacher_remark,
-        ...(q.type === 'lq' && q.lq_question && {
-          lq_question: {
-            answer_content: q.lq_question.answer_content
-          }
-        }),
-        ...(q.type === 'mc' && q.mc_question && {
-          mc_question: {
-            options: q.mc_question.options.map((opt: string, idx: number) => ({
-              option_letter: String.fromCharCode(65 + idx),
-              is_correct: idx === q.mc_question.correct_answer
-            })),
-            correct_option: String.fromCharCode(65 + q.mc_question.correct_answer)
-          }
-        })
-      }))
-
+      const questionData = transformQuestionsForBackend(questions)
       await dispatch(createMultipleQuestions(questionData)).unwrap()
       toast.success(`${questions.length} questions created successfully!`, 'Success')
       clearSelected()
@@ -73,28 +56,7 @@ const QuestionsListGrouping = () => {
 
   const handleAcceptSingleQuestion = async (question: any) => {
     try {
-      // Convert the question to the format expected by the API
-      const questionData = {
-        type: question.type,
-        name: question.name,
-        question_content: question.question_content,
-        teacher_remark: question.teacher_remark,
-        ...(question.type === 'lq' && question.lq_question && {
-          lq_question: {
-            answer_content: question.lq_question.answer_content
-          }
-        }),
-        ...(question.type === 'mc' && question.mc_question && {
-          mc_question: {
-            options: question.mc_question.options.map((opt: string, idx: number) => ({
-              option_letter: String.fromCharCode(65 + idx),
-              is_correct: idx === question.mc_question.correct_answer
-            })),
-            correct_option: String.fromCharCode(65 + question.mc_question.correct_answer)
-          }
-        })
-      }
-
+      const questionData = transformSingleQuestionForBackend(question)
       await dispatch(createSingleQuestion(questionData)).unwrap()
       toast.success('Question created successfully!', 'Success')
       // Refresh the MC questions list

@@ -1,5 +1,11 @@
 import {FC, useState, useEffect} from 'react'
 import {KTIcon} from '../../../../_metronic/helpers'
+import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
+
+interface MCOption {
+  option_letter: string
+  option_text: string
+}
 
 interface GeneratedQuestion {
   type: 'mc' | 'lq'
@@ -10,8 +16,9 @@ interface GeneratedQuestion {
     answer_content: string
   }
   mc_question?: {
-    options: string[]
-    correct_answer: number
+    options: MCOption[]
+    correct_option: string
+    answer_content?: string
   }
 }
 
@@ -58,6 +65,17 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
       return () => clearTimeout(timer)
     }
   }, [acceptedQuestions.size, dismissedQuestions.size, editedQuestions.length, onHide])
+
+  // 1. After AI API (in parent, but here log on modal open)
+  useEffect(() => {
+    if (questions && questions.length > 0) {
+      questions.forEach((q, idx) => {
+        if (q.type === 'mc' && q.mc_question) {
+          console.log(`[Modal Open] Question ${idx + 1} initial correct_option:`, q.mc_question.correct_option);
+        }
+      });
+    }
+  }, [questions]);
 
   const handleQuestionContentChange = (index: number, content: string) => {
     const updated = [...editedQuestions]
@@ -224,53 +242,102 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
                         {/* Question Content */}
                         <div className='mb-3'>
                           <label className='form-label fw-bold'>Question:</label>
-                          <textarea
-                            className='form-control'
-                            rows={3}
-                            value={question.question_content.replace(/<[^>]*>/g, '')} // Remove HTML tags for editing
-                            onChange={(e) => handleQuestionContentChange(index, e.target.value)}
-                            placeholder='Enter question content...'
-                            disabled={isLoading || isCreating}
+                          <TinyMCEEditor
+                            value={question.question_content}
+                            onChange={(content: string) => handleQuestionContentChange(index, content)}
+                            height={200}
                           />
                         </div>
 
                         {/* Answer Content (for LQ questions) */}
-                        {question.type === 'lq' && question.lq_question && (
+                        {question.lq_question?.answer_content && (
                           <div className='mb-3'>
                             <label className='form-label fw-bold'>Answer:</label>
-                            <textarea
-                              className='form-control'
-                              rows={4}
-                              value={question.lq_question.answer_content.replace(/<[^>]*>/g, '')} // Remove HTML tags for editing
-                              onChange={(e) => handleAnswerContentChange(index, e.target.value)}
-                              placeholder='Enter answer content...'
-                              disabled={isLoading || isCreating}
+                            <TinyMCEEditor
+                              value={question.lq_question.answer_content}
+                              onChange={(content: string) => handleAnswerContentChange(index, content)}
+                              height={300}
                             />
                           </div>
                         )}
 
-                        {/* MC Options (for MC questions) */}
+                        {/* MC Options and Answer Explanation */}
                         {question.type === 'mc' && question.mc_question && (
                           <div className='mb-3'>
                             <label className='form-label fw-bold'>Options:</label>
-                            {question.mc_question.options.map((option, optionIndex) => (
-                              <div key={optionIndex} className='input-group mb-2'>
+                            {question.mc_question!.options.map((option, optionIndex) => (
+                              <div key={optionIndex} className='input-group mb-2 align-items-center'>
                                 <span className='input-group-text'>
-                                  {optionIndex === question.mc_question!.correct_answer ? (
-                                    <KTIcon iconName='check' className='text-success' />
-                                  ) : (
-                                    <span className='text-muted'>{String.fromCharCode(65 + optionIndex)}</span>
-                                  )}
+                                  <input
+                                    type='radio'
+                                    name={`correct-option-${index}`}
+                                    checked={question.mc_question!.correct_option === option.option_letter}
+                                    onChange={() => {
+                                      const updated = [...editedQuestions]
+                                      if (updated[index].mc_question) {
+                                        updated[index] = {
+                                          ...updated[index],
+                                          mc_question: {
+                                            ...updated[index].mc_question!,
+                                            correct_option: option.option_letter
+                                          }
+                                        }
+                                        setEditedQuestions(updated)
+                                        console.log(`[User Select] Question ${index + 1} set correct_option:`, option.option_letter);
+                                      }
+                                    }}
+                                    className='form-check-input me-2'
+                                  />
+                                  {option.option_letter}
                                 </span>
                                 <input
                                   type='text'
                                   className='form-control'
-                                  value={option}
-                                  readOnly
-                                  placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
+                                  value={option.option_text}
+                                  onChange={e => {
+                                    const updated = [...editedQuestions]
+                                    if (updated[index].mc_question) {
+                                      const newOptions = updated[index].mc_question.options.map((opt, i) =>
+                                        i === optionIndex ? { ...opt, option_text: e.target.value } : opt
+                                      )
+                                      updated[index] = {
+                                        ...updated[index],
+                                        mc_question: {
+                                          ...updated[index].mc_question!,
+                                          options: newOptions
+                                        }
+                                      }
+                                      setEditedQuestions(updated)
+                                    }
+                                  }}
+                                  placeholder={`Option ${option.option_letter}`}
+                                  disabled={isLoading || isCreating}
                                 />
                               </div>
                             ))}
+                            {/* MC Answer Explanation */}
+                            {question.mc_question.answer_content && (
+                              <div className='mb-3'>
+                                <label className='form-label fw-bold'>Answer Explanation:</label>
+                                <TinyMCEEditor
+                                  value={question.mc_question.answer_content}
+                                  onChange={(content: string) => {
+                                    const updated = [...editedQuestions]
+                                    if (updated[index].mc_question) {
+                                      updated[index] = {
+                                        ...updated[index],
+                                        mc_question: {
+                                          ...updated[index].mc_question!,
+                                          answer_content: content
+                                        }
+                                      }
+                                      setEditedQuestions(updated)
+                                    }
+                                  }}
+                                  height={200}
+                                />
+                              </div>
+                            )}
                           </div>
                         )}
 
