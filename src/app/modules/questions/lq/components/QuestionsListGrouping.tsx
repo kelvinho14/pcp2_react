@@ -1,17 +1,35 @@
+import {FC, useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
 import {AppDispatch, RootState} from '../../../../../store'
-import {deleteQuestions, generateSimilarQuestions} from '../../../../../store/questions/questionsSlice'
+import {generateSimilarQuestions, bulkDeleteQuestions} from '../../../../../store/questions/questionsSlice'
 import AIGenerateSimilarModal from '../../components/AIGenerateSimilarModal'
+import {useListView} from '../questions-list/core/ListViewProvider'
+
+interface Props {
+  list: any[]
+}
 
 const QuestionsListGrouping: FC<Props> = ({list}) => {
+  const {selected, clearSelected} = useListView()
   const dispatch = useDispatch<AppDispatch>()
-  const {selected, isAllSelected} = useSelector((state: RootState) => state.questions)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false)
 
   const handleAIGenerate = (questionType: 'mc' | 'lq', difficulty: 'easy' | 'medium' | 'hard' | 'challenging', count: number) => {
-    dispatch(generateSimilarQuestions({questionIds: selected, questionType, difficulty, count}))
+    const questionIds = selected.filter(id => id !== undefined && id !== null).map(id => String(id))
+    dispatch(generateSimilarQuestions({questionIds, questionType, difficulty, count}))
     setShowAIGenerateModal(false)
+  }
+
+  const handleDelete = async () => {
+    try {
+      const questionIds = selected.filter(id => id !== undefined && id !== null).map(id => String(id))
+      await dispatch(bulkDeleteQuestions(questionIds)).unwrap()
+      clearSelected()
+      setShowDeleteConfirm(false)
+    } catch (error) {
+      console.error('Error deleting questions:', error)
+    }
   }
 
   return (
