@@ -251,48 +251,6 @@ const LQFormPage: FC = () => {
               </div>
             </div>
 
-            {/* Tags */}
-            <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
-                Tags with Scores
-              </label>
-              <div className='col-lg-9'>
-                <TagWithScore
-                  options={tags}
-                  selectedTags={formik.values.selectedTags}
-                  onChange={(tags) => formik.setFieldValue('selectedTags', tags)}
-                  placeholder='Select tags or type to create new ones (optional)'
-                />
-                
-              </div>
-            </div>
-
-            {/* Teacher Remark */}
-            <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
-                Teacher Remark
-              </label>
-              <div className='col-lg-9'>
-                <textarea
-                  className={clsx(
-                    'form-control form-control-lg form-control-solid',
-                    {
-                      'is-valid': formik.touched.teacherRemark && !formik.errors.teacherRemark,
-                      'is-invalid': formik.touched.teacherRemark && formik.errors.teacherRemark,
-                    }
-                  )}
-                  rows={3}
-                  placeholder='Enter any teacher remarks or notes...'
-                  {...formik.getFieldProps('teacherRemark')}
-                />
-                {formik.touched.teacherRemark && formik.errors.teacherRemark && (
-                  <div className='fv-plugins-message-container invalid-feedback'>
-                    <div>{formik.errors.teacherRemark}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Question Content */}
             <div className='row mb-6'>
               <label className='col-lg-3 col-form-label fw-semibold fs-6'>
@@ -347,6 +305,48 @@ const LQFormPage: FC = () => {
               </div>
             </div>
 
+{/* Tags */}
+<div className='row mb-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+                Tags with Scores
+              </label>
+              <div className='col-lg-9'>
+                <TagWithScore
+                  options={tags}
+                  selectedTags={formik.values.selectedTags}
+                  onChange={(tags) => formik.setFieldValue('selectedTags', tags)}
+                  placeholder='Select tags or type to create new ones (optional)'
+                />
+                
+              </div>
+            </div>
+
+            {/* Teacher Remark */}
+            <div className='row mb-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+                Teacher Remark
+              </label>
+              <div className='col-lg-9'>
+                <textarea
+                  className={clsx(
+                    'form-control form-control-lg form-control-solid',
+                    {
+                      'is-valid': formik.touched.teacherRemark && !formik.errors.teacherRemark,
+                      'is-invalid': formik.touched.teacherRemark && formik.errors.teacherRemark,
+                    }
+                  )}
+                  rows={3}
+                  placeholder='Enter any teacher remarks or notes...'
+                  {...formik.getFieldProps('teacherRemark')}
+                />
+                {formik.touched.teacherRemark && formik.errors.teacherRemark && (
+                  <div className='fv-plugins-message-container invalid-feedback'>
+                    <div>{formik.errors.teacherRemark}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
             {/* Form Actions */}
             <div className='row mb-6'>
               <div className='col-lg-9 offset-lg-3'>

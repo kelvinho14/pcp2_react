@@ -102,6 +102,7 @@ const QuestionsTable = ({ search, selectedTags, tagLogic }: Props) => {
                   key={column.id}
                   column={column as ColumnInstance<Question> & UseSortByColumnProps<Question>}
                   onSort={() => handleSortChange(column)}
+                  currentSort={sort}
                 />
               ))}
             </tr>

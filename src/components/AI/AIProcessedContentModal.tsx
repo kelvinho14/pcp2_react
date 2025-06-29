@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState, AppDispatch } from '../../store'
 import { acceptProcessedContent, rejectProcessedContent } from '../../store/ai/aiSlice'
+import TinyMCEEditor from '../Editor/TinyMCEEditor'
 
 interface AIProcessedContentModalProps {
   onAccept: (content: string, field: 'question' | 'answer') => void
@@ -59,13 +60,11 @@ const AIProcessedContentModal: React.FC<AIProcessedContentModalProps> = ({ onAcc
             </div>
             
             <div className='mb-3'>
-              <textarea
-                className='form-control'
-                rows={12}
+              <TinyMCEEditor
                 value={editableContent}
-                onChange={(e) => setEditableContent(e.target.value)}
+                onChange={setEditableContent}
+                height={300}
                 placeholder='Edit the processed content here...'
-                style={{ fontFamily: 'inherit', resize: 'vertical' }}
               />
             </div>
             

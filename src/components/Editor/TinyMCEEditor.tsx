@@ -20,16 +20,17 @@ const TinyMCEEditor = ({
 }: TinyMCEEditorProps) => {
   const editorRef = useRef<any>(null);
   const editorId = useRef<string>(`editor-${Math.random().toString(36).substr(2, 9)}`);
+  const lastValueRef = useRef<string>('');
 
-  // Update editor content when value prop changes
+  // Update editor content when value prop changes, but only if it's different
   useEffect(() => {
-    if (editorRef.current && value !== undefined) {
-      // Add a small delay to ensure editor is fully ready
-      setTimeout(() => {
-        if (editorRef.current) {
-          editorRef.current.setContent(value);
-        }
-      }, 100);
+    if (editorRef.current && value !== undefined && value !== lastValueRef.current) {
+      lastValueRef.current = value;
+      // Only update if the content is actually different
+      const currentContent = editorRef.current.getContent();
+      if (currentContent !== value) {
+        editorRef.current.setContent(value);
+      }
     }
   }, [value]);
 
@@ -40,6 +41,7 @@ const TinyMCEEditor = ({
         editorRef.current = editor
         // Always set content immediately when editor is ready
         if (value !== undefined) {
+          lastValueRef.current = value;
           // Add a small delay to ensure editor is fully ready
           setTimeout(() => {
             editor.setContent(value);

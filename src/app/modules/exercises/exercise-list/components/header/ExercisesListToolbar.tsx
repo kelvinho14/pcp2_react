@@ -6,9 +6,10 @@ const ExercisesListToolbar: React.FC = () => {
   return (
     <button
       type='button'
-      className='btn btn-sm btn-light-primary me-3'
+      className='btn btn-sm btn-primary me-3'
       onClick={() => navigate('/exercises/create')}
     >
+      <i className='fas fa-plus me-1'></i>
       Create New Exercise
     </button>
   )

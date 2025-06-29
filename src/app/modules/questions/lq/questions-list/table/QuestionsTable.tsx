@@ -65,7 +65,10 @@ const QuestionsTable = ({ search, selectedTags, tagLogic }: Props) => {
       disableMultiSort: true,
       manualPagination: true,
       initialState: {
-        sortBy: [],
+        sortBy: sort ? [{ id: sort.id, desc: sort.desc }] : [],
+      },
+      state: {
+        sortBy: sort ? [{ id: sort.id, desc: sort.desc }] : [],
       },
     } as unknown as TableOptions<Question>,
     useSortBy
@@ -102,6 +105,7 @@ const QuestionsTable = ({ search, selectedTags, tagLogic }: Props) => {
                   key={column.id}
                   column={column as ColumnInstance<Question> & UseSortByColumnProps<Question>}
                   onSort={() => handleSortChange(column)}
+                  currentSort={sort}
                 />
               ))}
             </tr>

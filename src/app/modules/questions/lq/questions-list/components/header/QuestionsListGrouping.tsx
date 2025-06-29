@@ -98,14 +98,14 @@ const QuestionsListGrouping = () => {
 
         <button 
           type='button' 
-          className='btn btn-primary me-3' 
+          className='btn btn-sm btn-primary me-3'
           onClick={handleAIGenerateClick}
         >
-          <KTIcon iconName='magic' className='fs-2' />
+          <i className='fas fa-robot me-1'></i>
           AI Generate Similar
         </button>
 
-        <button type='button' className='btn btn-danger' onClick={() => setShowDeleteDialog(true)}>
+        <button type='button' className='btn btn-danger btn-sm' onClick={() => setShowDeleteDialog(true)}>
           <KTIcon iconName='trash' className='fs-2' />
           Delete Selected
         </button>

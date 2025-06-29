@@ -114,6 +114,7 @@ const SubjectsTable = ({ search }: Props) => {
                   key={column.id}
                   column={column as ColumnInstance<Subject> & UseSortByColumnProps<Subject>}
                   onSort={() => handleSortChange(column)}
+                  currentSort={sort}
                 />
               ))}
             </tr>
