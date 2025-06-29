@@ -101,6 +101,7 @@ const UsersTable = ({ search }: Props) => {
                   key={column.id}
                   column={column as ColumnInstance<User> & UseSortByColumnProps<User>}
                   onSort={() => handleSortChange(column)}
+                  currentSort={sort}
                 />
               ))}
             </tr>

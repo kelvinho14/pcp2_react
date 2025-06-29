@@ -17,13 +17,13 @@ const QuestionInfoCell: FC<Props> = ({question}) => {
     <div className='d-flex align-items-center'>
       <div className='d-flex flex-column'>
         <span 
-          className='text-dark fw-bold text-hover-primary mb-1 fs-6 cursor-pointer'
+          className='text-gray-800 text-hover-primary fw-bold mb-1 fs-6 cursor-pointer'
           onClick={handleQuestionNameClick}
           style={{ cursor: 'pointer' }}
         >
           {question.name}
         </span>
-      </div>
+      </div>  
     </div>
   )
 }

@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '../../../../../../../store'
 import { fetchQuestionTags } from '../../../../../../../store/tags/tagsSlice'
 import Select from 'react-select'
+import clsx from 'clsx'
 
 type Props = {
   setSearch: (value: string) => void
@@ -18,6 +19,7 @@ const QuestionsListHeader: React.FC<Props> = ({ setSearch, setSelectedTags, setT
   const { selected } = useListView()
   const dispatch = useDispatch<AppDispatch>()
   const { questionTags, questionTagsLoading } = useSelector((state: RootState) => state.tags)
+  const [selectedLogic, setSelectedLogic] = useState<'and' | 'or'>('and')
 
   // Fetch question tags on component mount
   useEffect(() => {
@@ -30,14 +32,15 @@ const QuestionsListHeader: React.FC<Props> = ({ setSearch, setSelectedTags, setT
   }
 
   const handleLogicChange = (logic: 'and' | 'or') => {
+    setSelectedLogic(logic)
     setTagLogic(logic)
   }
 
   return (
-    <div className='card-header border-0 pt-6'>
-      <div className='d-flex flex-column gap-4'>
-        {/* Tag Filter */}
-        <div className='d-flex align-items-center gap-3'>
+    <div className='card-header border-0 pt-6 d-block'>
+      <div className='row align-items-center mb-4'>
+        {/* Left: Tag Filter and Logic */}
+        <div className='col-lg-7 d-flex align-items-center gap-3'>
           <label htmlFor='tag-filter' className='form-label mb-0'>Filter by Tag:</label>
           <div style={{ minWidth: '300px' }}>
             <Select
@@ -54,7 +57,6 @@ const QuestionsListHeader: React.FC<Props> = ({ setSearch, setSelectedTags, setT
               isSearchable
             />
           </div>
-          
           {/* Logic Toggle */}
           <div className='d-flex align-items-center gap-2'>
             <span className='text-muted'>Logic:</span>
@@ -65,33 +67,32 @@ const QuestionsListHeader: React.FC<Props> = ({ setSearch, setSelectedTags, setT
                 name='tagLogic'
                 id='tagLogicAnd'
                 value='and'
-                defaultChecked
+                checked={selectedLogic === 'and'}
                 onChange={() => handleLogicChange('and')}
               />
-              <label className='btn btn-outline-primary' htmlFor='tagLogicAnd'>
+              <label className={clsx('btn', selectedLogic === 'and' ? 'btn-light-primary' : 'btn-outline-primary')} htmlFor='tagLogicAnd'>
                 All (AND)
               </label>
-              
               <input
                 type='radio'
                 className='btn-check'
                 name='tagLogic'
                 id='tagLogicOr'
                 value='or'
+                checked={selectedLogic === 'or'}
                 onChange={() => handleLogicChange('or')}
               />
-              <label className='btn btn-outline-primary' htmlFor='tagLogicOr'>
+              <label className={clsx('btn', selectedLogic === 'or' ? 'btn-light-primary' : 'btn-outline-primary')} htmlFor='tagLogicOr'>
                 Any (OR)
               </label>
             </div>
           </div>
         </div>
-        
-        <QuestionsListSearchComponent setSearch={setSearch} />
-      </div>
-      
-      <div className='card-toolbar'>
-        {selected.length > 0 ? <QuestionsListGrouping /> : <QuestionsListToolbar />}
+        {/* Right: Search and Create Controls */}
+        <div className='col-lg-5 d-flex align-items-center justify-content-end gap-3'>
+          <QuestionsListSearchComponent setSearch={setSearch} />
+          {selected.length > 0 ? <QuestionsListGrouping /> : <QuestionsListToolbar />}
+        </div>
       </div>
     </div>
   )

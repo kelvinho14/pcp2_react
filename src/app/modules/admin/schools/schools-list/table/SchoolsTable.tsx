@@ -114,6 +114,7 @@ const SchoolsTable = ({ search }: Props) => {
                   key={column.id}
                   column={column as ColumnInstance<School> & UseSortByColumnProps<School>}
                   onSort={() => handleSortChange(column)}
+                  currentSort={sort}
                 />
               ))}
             </tr>

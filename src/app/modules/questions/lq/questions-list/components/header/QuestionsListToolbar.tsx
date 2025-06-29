@@ -8,9 +8,11 @@ const QuestionsListToolbar = () => {
     <div className='d-flex justify-content-end' data-kt-question-table-toolbar='base'>
       <button
         type='button'
-        className='btn btn-primary'
+        className='btn btn-sm btn-primary me-3'
         onClick={() => navigate('/questions/lq/create')}
-      > Create New LQ
+      >
+        <i className='fas fa-plus me-1'></i>
+        Create New LQ
       </button>
     </div>
   )

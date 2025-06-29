@@ -304,10 +304,10 @@ const MCFormPage: FC = () => {
           <form onSubmit={formik.handleSubmit} className='form'>
             {/* Question Name */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label required fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label required fw-semibold fs-6'>
                 Question Name
               </label>
-              <div className='col-lg-8'>
+              <div className='col-lg-9'>
                 <input
                   type='text'
                   className={clsx(
@@ -328,53 +328,12 @@ const MCFormPage: FC = () => {
               </div>
             </div>
 
-            {/* Tags */}
-            <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
-                Tags with Scores
-              </label>
-              <div className='col-lg-8'>
-                <TagWithScore
-                  options={tags}
-                  selectedTags={formik.values.selectedTags}
-                  onChange={(tags) => formik.setFieldValue('selectedTags', tags)}
-                  placeholder='Select tags or type to create new ones (optional)'
-                />
-              </div>
-            </div>
-
-            {/* Teacher Remark */}
-            <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
-                Teacher Remark
-              </label>
-              <div className='col-lg-8'>
-                <textarea
-                  className={clsx(
-                    'form-control form-control-lg form-control-solid',
-                    {
-                      'is-valid': formik.touched.teacherRemark && !formik.errors.teacherRemark,
-                      'is-invalid': formik.touched.teacherRemark && formik.errors.teacherRemark,
-                    }
-                  )}
-                  rows={3}
-                  placeholder='Enter any teacher remarks or notes...'
-                  {...formik.getFieldProps('teacherRemark')}
-                />
-                {formik.touched.teacherRemark && formik.errors.teacherRemark && (
-                  <div className='fv-plugins-message-container invalid-feedback'>
-                    <div>{formik.errors.teacherRemark}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Question Content */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
                 Question
               </label>
-              <div className='col-lg-8'>
+              <div className='col-lg-9'>
                 <AIEditorWithButton
                   field='question'
                   value={formik.values.question}
@@ -398,10 +357,10 @@ const MCFormPage: FC = () => {
 
             {/* Answer Content */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
                 Answer
               </label>
-              <div className='col-lg-8'>
+              <div className='col-lg-9'>
                 <AIEditorWithButton
                   field='answer'
                   value={formik.values.answer}
@@ -425,10 +384,10 @@ const MCFormPage: FC = () => {
 
             {/* Multiple Choice Options */}
             <div className='row mb-6'>
-              <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
                 Options
               </label>
-              <div className='col-lg-8'>
+              <div className='col-lg-9'>
                 <div className='d-flex flex-column gap-4'>
                   {formik.values.options.map((option, index) => (
                     <div key={index} className='border rounded p-4'>
@@ -459,6 +418,47 @@ const MCFormPage: FC = () => {
                 {formik.touched.options && formik.errors.options && (
                   <div className='fv-plugins-message-container invalid-feedback d-block mt-2'>
                     <div>{Array.isArray(formik.errors.options) ? formik.errors.options.join(', ') : formik.errors.options}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+             {/* Tags */}
+             <div className='row mb-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+                Tags with Scores
+              </label>
+              <div className='col-lg-9'>
+                <TagWithScore
+                  options={tags}
+                  selectedTags={formik.values.selectedTags}
+                  onChange={(tags) => formik.setFieldValue('selectedTags', tags)}
+                  placeholder='Select tags or type to create new ones (optional)'
+                />
+              </div>
+            </div>
+
+            {/* Teacher Remark */}
+            <div className='row mb-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+                Teacher Remark
+              </label>
+              <div className='col-lg-9'>
+                <textarea
+                  className={clsx(
+                    'form-control form-control-lg form-control-solid',
+                    {
+                      'is-valid': formik.touched.teacherRemark && !formik.errors.teacherRemark,
+                      'is-invalid': formik.touched.teacherRemark && formik.errors.teacherRemark,
+                    }
+                  )}
+                  rows={3}
+                  placeholder='Enter any teacher remarks or notes...'
+                  {...formik.getFieldProps('teacherRemark')}
+                />
+                {formik.touched.teacherRemark && formik.errors.teacherRemark && (
+                  <div className='fv-plugins-message-container invalid-feedback'>
+                    <div>{formik.errors.teacherRemark}</div>
                   </div>
                 )}
               </div>
