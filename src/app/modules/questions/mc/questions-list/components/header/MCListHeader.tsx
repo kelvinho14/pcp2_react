@@ -1,6 +1,6 @@
 import { useListView } from '../../core/ListViewProvider'
 import { QuestionsListToolbar } from './QuestionsListToolbar'
-import { QuestionsListGrouping } from './QuestionsListGrouping'
+import QuestionsListGrouping from './QuestionsListGrouping'
 import { QuestionsListSearchComponent } from './QuestionsListSearchComponent'
 
 type Props = {

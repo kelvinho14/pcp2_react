@@ -206,14 +206,85 @@ export const bulkDeleteQuestions = createAsyncThunk(
   }
 )
 
+export const generateSimilarQuestions = createAsyncThunk(
+  'questions/generateSimilarQuestions',
+  async ({ questionIds, questionType, difficulty, count }: { 
+    questionIds: string[], 
+    questionType: 'mc' | 'lq', 
+    difficulty: 'easy' | 'medium' | 'hard' | 'challenging',
+    count: number 
+  }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/ai/generate-similar-questions`)
+      const response = await axios.post(`${API_URL}/ai/generate-similar-questions`, { 
+        question_ids: questionIds,
+        question_type: questionType,
+        difficulty: difficulty,
+        num_questions: count
+      }, { 
+        headers,
+        withCredentials: true 
+      })
+      return response.data.data[0].questions // Return the questions array from the response
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to generate similar questions'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
+export const createMultipleQuestions = createAsyncThunk(
+  'questions/createMultipleQuestions',
+  async (questions: QuestionFormData[]) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/questions`)
+      const promises = questions.map(questionData => 
+        axios.post(`${API_URL}/questions`, questionData, { 
+          headers,
+          withCredentials: true 
+        })
+      )
+      const responses = await Promise.all(promises)
+      const createdQuestions = responses.map(response => response.data.data)
+      return createdQuestions
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to create questions'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
+export const createSingleQuestion = createAsyncThunk(
+  'questions/createSingleQuestion',
+  async (questionData: QuestionFormData) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/questions`)
+      const response = await axios.post(`${API_URL}/questions`, questionData, { 
+        headers,
+        withCredentials: true 
+      })
+      return response.data.data
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to create question'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 // Initial state
 interface QuestionsState {
   questions: Question[]
   currentQuestion: Question | null
+  generatedQuestions: any[] // Store generated questions for review
   loading: boolean
   creating: boolean
   updating: boolean
   deleting: boolean
+  generatingSimilarQuestions: boolean
+  creatingMultipleQuestions: boolean
   error: string | null
   success: string | null
   total: number
@@ -222,10 +293,13 @@ interface QuestionsState {
 const initialState: QuestionsState = {
   questions: [],
   currentQuestion: null,
+  generatedQuestions: [],
   loading: false,
   creating: false,
   updating: false,
   deleting: false,
+  generatingSimilarQuestions: false,
+  creatingMultipleQuestions: false,
   error: null,
   success: null,
   total: 0,
@@ -248,6 +322,9 @@ const questionsSlice = createSlice({
     },
     clearCurrentQuestion: (state) => {
       state.currentQuestion = null
+    },
+    clearGeneratedQuestions: (state) => {
+      state.generatedQuestions = []
     },
   },
   extraReducers: (builder) => {
@@ -347,6 +424,57 @@ const questionsSlice = createSlice({
         state.deleting = false
         state.error = action.error.message || 'Failed to delete questions'
       })
+
+    // Generate similar questions
+    builder
+      .addCase(generateSimilarQuestions.pending, (state) => {
+        state.generatingSimilarQuestions = true
+        state.error = null
+      })
+      .addCase(generateSimilarQuestions.fulfilled, (state, action) => {
+        state.generatingSimilarQuestions = false
+        state.generatedQuestions = action.payload // Store generated questions for review
+        state.success = 'Similar questions generated successfully'
+      })
+      .addCase(generateSimilarQuestions.rejected, (state, action) => {
+        state.generatingSimilarQuestions = false
+        state.error = action.error.message || 'Failed to generate similar questions'
+      })
+
+    // Create multiple questions
+    builder
+      .addCase(createMultipleQuestions.pending, (state) => {
+        state.creatingMultipleQuestions = true
+        state.error = null
+        state.success = null
+      })
+      .addCase(createMultipleQuestions.fulfilled, (state, action) => {
+        state.creatingMultipleQuestions = false
+        state.questions.push(...action.payload) // Add created questions to the list
+        state.generatedQuestions = [] // Clear generated questions
+        state.success = 'Questions created successfully'
+      })
+      .addCase(createMultipleQuestions.rejected, (state, action) => {
+        state.creatingMultipleQuestions = false
+        state.error = action.error.message || 'Failed to create questions'
+      })
+
+    // Create single question
+    builder
+      .addCase(createSingleQuestion.pending, (state) => {
+        state.creating = true
+        state.error = null
+        state.success = null
+      })
+      .addCase(createSingleQuestion.fulfilled, (state, action) => {
+        state.creating = false
+        state.questions.push(action.payload) // Add created question to the list
+        state.success = 'Question created successfully'
+      })
+      .addCase(createSingleQuestion.rejected, (state, action) => {
+        state.creating = false
+        state.error = action.error.message || 'Failed to create question'
+      })
   },
 })
 
@@ -354,7 +482,8 @@ export const {
   clearError, 
   clearSuccess, 
   clearMessages, 
-  clearCurrentQuestion 
+  clearCurrentQuestion,
+  clearGeneratedQuestions
 } = questionsSlice.actions
 
 export default questionsSlice.reducer 
