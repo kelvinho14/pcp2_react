@@ -95,7 +95,7 @@ const AuthInit: FC<WithChildren> = ({children}) => {
           }
           
           setCurrentUser(user)
-          webSocketService.connect(true)
+          // webSocketService.connect(true)
         } else {
           console.log('❌ Authentication failed - no user data in response')
           setCurrentUser(undefined)

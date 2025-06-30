@@ -53,7 +53,7 @@ export function Login() {
           }
           
           setCurrentUser(user)
-          webSocketService.connect(true)
+          // webSocketService.connect(true)
         } else {
           throw new Error('Invalid response format')
         }
