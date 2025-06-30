@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // Function to get the school_subject_id from localStorage
 export const getSchoolSubjectId = (): string | null => {
-  return localStorage.getItem('school_subject_id')
+  return sessionStorage.getItem('school_subject_id')
 }
 
 // Function to check if the current request is from admin slice
