@@ -46,10 +46,12 @@ export function Login() {
           const user = data.data
           console.log( user)
           
-          // Store school_subject_ids in localStorage
+          // Store school_subject_ids in sessionStorage
           if (user.school_subject_ids && Array.isArray(user.school_subject_ids) && user.school_subject_ids.length > 0 && user.school_subject_ids[0]) {
-            localStorage.setItem('school_subject_id', user.school_subject_ids[0])
-            console.log('Stored first school_subject_id in localStorage:', user.school_subject_ids[0])
+            sessionStorage.setItem('school_subject_id', user.school_subject_ids[0])
+            console.log('Stored first school_subject_id in sessionStorage:', user.school_subject_ids[0])
+            localStorage.setItem('school_subject_ids', JSON.stringify(user.school_subject_ids))
+            console.log('Stored school_subject_ids array in localStorage:', user.school_subject_ids)
           }
           
           setCurrentUser(user)
