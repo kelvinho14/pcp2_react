@@ -110,6 +110,7 @@ export const fetchSubjects = createAsyncThunk(
     if (order) params.order = order
     if (search) params.search = search
 
+    console.log('API_URL for subjects:', API_URL)
     try {
       const response = await axios.get(`${API_URL}/subjects`, { params, withCredentials: true })
       return {
@@ -167,6 +168,7 @@ export const fetchSchools = createAsyncThunk(
     order?: string
     search?: string
   }) => {
+    console.log('API_URL for schools:', API_URL)
     const response = await axios.get(`${API_URL}/schools`, { params, withCredentials: true })
     return {
       items: response.data.data,
