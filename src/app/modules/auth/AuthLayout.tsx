@@ -2,7 +2,12 @@ import {useEffect, useState} from 'react'
 import {Outlet, Link} from 'react-router-dom'
 import {toAbsoluteUrl} from '../../../_metronic/helpers'
 
-const testimonies = [
+interface Testimony {
+  text: string
+  name?: string
+}
+
+const testimonies: Testimony[] = [
   {
     text: '整體嚟講係唔錯嘅, 個平台整合曬我做過嘅所有嘢, 所以好容易追蹤我較弱嘅範疇. 同時, 我又可以知道我嘅表現相對於全班嘅表現, 令我知道自己仲有進步空間囉,加上有 video.  所以呢個平台真係好方便.'
   },
