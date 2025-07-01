@@ -35,14 +35,6 @@ const TeacherExerciseTab = () => {
               fontIcon='fa-solid fa-xmark'
               textAlign='end'
             />
-         <div className='menu-item'>
-              <div className='menu-content pt-8 pb-2'>
-              <span className='menu-section text-muted text-uppercase fs-8 ls-1'><i className='fa-regular fa-file-lines fs-3 me-2'></i>Exercise</span>
-              </div>
-          </div>
-          <AsideMenuItem to='/exercises/create' title='Create' hasBullet={true} />
-          <AsideMenuItem to='/exercises/list' title='Exercise Bank' hasBullet={true} />
-          <AsideMenuItem to='/exercises/assignedlist' title='Assigned Exercise' hasBullet={true} />   
           <div className='menu-item'>
               <div className='menu-content pt-8 pb-2'>
               <span className='menu-section text-muted text-uppercase fs-8 ls-1'><i className='fa-solid fa-square-minus fs-3 me-2'></i> MC Question</span>
@@ -65,6 +57,21 @@ const TeacherExerciseTab = () => {
           </div>
           <AsideMenuItem to='/questions/tf/create' title='Create'  hasBullet={true}/>
           <AsideMenuItem to='/questions/tf/list' title='Question Bank' hasBullet={true} />
+
+          <div className='menu-item'>
+            <div className='menu-content py-4'>
+              <div className='separator separator-dashed border-gray-300 opacity-75'></div>
+            </div>
+          </div>
+
+          <div className='menu-item'>
+              <div className='menu-content pt-8 pb-2'>
+              <span className='menu-section text-muted text-uppercase fs-8 ls-1'><i className='fa-regular fa-file-lines fs-3 me-2'></i>Exercise</span>
+              </div>
+          </div>
+          <AsideMenuItem to='/exercises/create' title='Create' hasBullet={true} />
+          <AsideMenuItem to='/exercises/list' title='Exercise Bank' hasBullet={true} />
+          <AsideMenuItem to='/exercises/assignedlist' title='Assigned Exercise' hasBullet={true} />
         </div>
       </div>
     </div>
