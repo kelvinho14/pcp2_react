@@ -4,6 +4,7 @@ import {useAuth} from '../../../../app/modules/auth/core/Auth'
 import {ROLES} from '../../../../app/constants/roles'
 import {useLocation, useNavigate} from 'react-router-dom'
 import {DrawerComponent} from '../../../assets/ts/components'
+import {useIsDesktop} from '../../../hooks/useResponsive'
 
 type Tab = {
   link: string
@@ -108,6 +109,9 @@ const AsideTabs: FC<Props> = ({link, setLink}) => {
   const roleType = currentUser?.role?.role_type
   const navigate = useNavigate()
   const location = useLocation()
+  const isDesktop = useIsDesktop()
+  
+
 
   // Select tabs based on role type
   let tabsToShow: ReadonlyArray<Tab>
@@ -120,42 +124,53 @@ const AsideTabs: FC<Props> = ({link, setLink}) => {
     tabsToShow = tabsForTeachers
   }
 
-  const handleClick = (tab: Tab) => {
+  const handleMouseOver = (tab: Tab) => {
+    // Don't handle mouseover on touch devices
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      return
+    }
+    
     setLink(tab.link)
-    if (tab.path) {
-      navigate(tab.path)
-      // Hide the aside drawer after navigation
-      const drawerElement = document.getElementById('kt_aside')
-      if (drawerElement) {
-        const drawer = DrawerComponent.getInstance(drawerElement as any)
-        if (drawer && drawer.isShown()) {
-          drawer.hide()
-        }
-      }
-      const aside = document.getElementById('kt_aside')
-      if (aside) {
-        const asideWidth = aside.offsetWidth
-        const isMinimized = asideWidth <= 100 // Metronic's minimized width is 100px
-        if (!isMinimized) {
-          const toggleButton = document.getElementById('kt_aside_toggle')
-          if (toggleButton) {
-            toggleButton.click()
-          }
+    
+    if (isDesktop) {
+      // Desktop: Use the toggle button for aside minimize
+      const isMinimized = document.body.getAttribute('data-kt-aside-minimize') === 'on'
+      if (isMinimized) {
+        const toggleButton = document.getElementById('kt_aside_toggle_desktop')
+        if (toggleButton) {
+          toggleButton.click()
         }
       }
     } else {
-      // Only expand the aside for tabs without a 'path'
+      // Mobile/Tablet: Use the drawer system
       const aside = document.getElementById('kt_aside')
       if (aside) {
-        const asideWidth = aside.offsetWidth
-        const isMinimized = asideWidth <= 100 // Metronic's minimized width is 100px
-        if (isMinimized) {
-          const toggleButton = document.getElementById('kt_aside_toggle')
-          if (toggleButton) {
-            toggleButton.click()
-          }
+        const drawer = DrawerComponent.getInstance('kt_aside')
+        if (drawer && !drawer.isShown()) {
+          drawer.show()
         }
       }
+    }
+    
+    // Navigate if the tab has a path
+    if (tab.path) {
+      navigate(tab.path)
+    }
+  }
+
+  const handleMouseOut = () => {
+    if (isDesktop) {
+      // Desktop: Use the toggle button for aside minimize
+      const isMinimized = document.body.getAttribute('data-kt-aside-minimize') === 'on'
+      if (!isMinimized) {
+        const toggleButton = document.getElementById('kt_aside_toggle_desktop')
+        if (toggleButton) {
+          toggleButton.click()
+        }
+      }
+    } else {
+      // Mobile/Tablet: Don't auto-collapse on mouseout to prevent issues with touch events
+      // The drawer will be closed by clicking outside or using the close button
     }
   }
 
@@ -184,7 +199,19 @@ const AsideTabs: FC<Props> = ({link, setLink}) => {
                     (t.paths && t.paths.some(path => location.pathname.startsWith(path)))
                 }
               )}
-              onClick={() => handleClick(t)}
+              onMouseOver={() => handleMouseOver(t)}
+              onClick={(e) => {
+                // Prevent event bubbling to avoid closing the menu
+                e.preventDefault()
+                e.stopPropagation()
+                
+                setLink(t.link)
+                
+                // Navigate if the tab has a path
+                if (t.path) {
+                  navigate(t.path!)
+                }
+              }}
             >
               <i className={`${t.icon} fs-2x`}></i>
             </a>

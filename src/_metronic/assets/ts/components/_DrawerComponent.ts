@@ -133,7 +133,11 @@ class DrawerComponent {
       ElementStyleUtil.set(this.element, 'width', '')
       this.element.classList.remove(this.options.baseClass)
       this.element.classList.remove(`${this.options.baseClass}-${direction}`)
-      this._hide()
+      // Only hide on desktop, not on mobile to prevent closing the aside drawer
+      const isDesktop = window.innerWidth >= 992
+      if (isDesktop) {
+        this._hide()
+      }
     }
   }
 
@@ -328,7 +332,11 @@ class DrawerComponent {
         drawer = new DrawerComponent(item, defaultDrawerOptions)
       }
       drawer.element = item
-      drawer.hide()
+      // Only hide on desktop, not on mobile to prevent closing the aside drawer
+      const isDesktop = window.innerWidth >= 992
+      if (isDesktop) {
+        drawer.hide()
+      }
     })
   }
 
@@ -379,8 +387,15 @@ class DrawerComponent {
 
   public static reinitialization = () => {
     DrawerComponent.createInstances('[data-kt-drawer="true"]')
-    DrawerComponent.hideAll()
-    DrawerComponent.updateAll()
+    // Only hide all drawers on desktop, not on mobile to prevent closing the aside drawer
+    const isDesktop = window.innerWidth >= 992
+    if (isDesktop) {
+      DrawerComponent.hideAll()
+    }
+    // Don't update all drawers on mobile to prevent interfering with aside drawer state
+    if (isDesktop) {
+      DrawerComponent.updateAll()
+    }
     DrawerComponent.handleDismiss()
   }
 }

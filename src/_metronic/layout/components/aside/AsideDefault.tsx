@@ -22,7 +22,7 @@ const AsideDefault = () => {
       data-kt-drawer-overlay='true'
       data-kt-drawer-width='auto'
       data-kt-drawer-direction='start'
-      data-kt-drawer-toggle='#kt_aside_toggle'
+      data-kt-drawer-toggle='#kt_aside_toggle_mobile'
     >
       {/* begin::Primary */}
       <div className='aside-primary d-flex flex-column align-items-lg-center flex-row-auto'>
@@ -60,7 +60,7 @@ const AsideDefault = () => {
           {/* end::Secondary */}
           {/* begin::Aside Toggle */}
           <button
-            id='kt_aside_toggle'
+            id='kt_aside_toggle_desktop'
             className={clsx(
               'btn btn-sm btn-icon bg-body btn-color-gray-700 btn-active-primary position-absolute translate-middle start-100 end-0 bottom-0 shadow-sm d-none d-lg-flex',
               classes.asideToggle.join(' ')

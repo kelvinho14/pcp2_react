@@ -9,15 +9,35 @@ import {Content} from './components/Content'
 import {PageDataProvider} from './core'
 import {ActivityDrawer, DrawerMessenger, InviteUsers, UpgradePlan} from '../partials'
 import {MenuComponent} from '../assets/ts/components'
+import {useIsDesktop} from '../hooks/useResponsive'
 
 const MasterLayout = () => {
   const location = useLocation()
+  const isDesktop = useIsDesktop()
 
   useEffect(() => {
     setTimeout(() => {
       MenuComponent.reinitialization()
     }, 500)
   }, [location.key])
+
+  const handleWrapperClick = () => {
+    // Only handle this on desktop to avoid interfering with mobile touch events
+    if (isDesktop) {
+      console.log('handleWrapperClick - desktop only')
+      // Close the aside secondary panel if it's currently open
+      // The aside secondary panel is controlled by data-kt-aside-minimize attribute
+      // When data-kt-aside-minimize is "on", the secondary panel is hidden
+      // When data-kt-aside-minimize is not set, the secondary panel is visible
+      if (!document.body.getAttribute('data-kt-aside-minimize')) {
+        // Secondary panel is visible, so we need to minimize it
+        const toggleButton = document.getElementById('kt_aside_toggle_desktop')
+        if (toggleButton) {
+          toggleButton.click()
+        }
+      }
+    }
+  }
 
   return (
     <PageDataProvider>
@@ -26,7 +46,7 @@ const MasterLayout = () => {
         <div className='page d-flex flex-row flex-column-fluid'>
           <AsideDefault />
           {/* begin::Wrapper */}
-          <div className='wrapper d-flex flex-column flex-row-fluid' id='kt_wrapper'>
+                      <div className='wrapper d-flex flex-column flex-row-fluid' id='kt_wrapper' onMouseOver={handleWrapperClick}>
             <HeaderWrapper />
 
             {/* begin::Content */}
