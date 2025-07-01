@@ -13,6 +13,34 @@ type Tab = {
   paths?: string[] // Array of paths that should activate this tab
 }
 
+// Tabs for admin
+const tabsForAdmin: ReadonlyArray<Tab> = [
+  {
+    link: 'school',
+    icon: 'fa-solid fa-school',
+    tooltip: 'School',
+    paths: ['/admin/schools'],
+  },
+  {
+    link: 'user',
+    icon: 'fa-solid fa-user',
+    tooltip: 'User',
+    paths: ['/admin/users'],
+  },
+  {
+    link: 'subject',
+    icon: 'fa-solid fa-book',
+    tooltip: 'Subject',
+    paths: ['/admin/subjects'],
+  },
+  {
+    link: 'token',
+    icon: 'fa-solid fa-coins',
+    tooltip: 'Token',
+    paths: ['/admin/token'],
+  },
+]
+
 // Tabs for teachers
 const tabsForTeachers: ReadonlyArray<Tab> = [
   {
@@ -86,8 +114,9 @@ const AsideTabs: FC<Props> = ({link, setLink}) => {
 
   if (roleType === ROLES.STUDENT) {
     tabsToShow = tabsForStudents
+  } else if (roleType === ROLES.ADMIN) {
+    tabsToShow = tabsForAdmin
   } else {
-    // Default to teacher tabs for other roles
     tabsToShow = tabsForTeachers
   }
 

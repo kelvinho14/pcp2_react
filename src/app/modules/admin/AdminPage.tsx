@@ -8,6 +8,7 @@ import SchoolCreatePage from './schools/SchoolCreatePage'
 import SchoolEditPage from './schools/SchoolEditPage'
 import SchoolsPage from './schools/SchoolsPage'
 import SchoolSubjectCreatePage from './subjects/SchoolSubjectCreatePage'
+import UsersPage from '../users/UsersPage'
 
 const adminBreadcrumbs: Array<PageLink> = [
   {
@@ -87,6 +88,20 @@ const AdminPage = () => {
                 <SchoolSubjectCreatePage />
               </>
             }
+          />
+          
+          {/* Users Routes */}
+          <Route
+            path='users'
+            element={<Navigate to='/admin/users/list' replace />}
+          />
+          <Route
+            path='users/'
+            element={<Navigate to='/admin/users/list' replace />}
+          />
+          <Route
+            path='users/list'
+            element={<UsersPage />}
           />
           
           {/* Default redirect */}

@@ -114,7 +114,7 @@ export function MenuInner() {
           <MenuItem to='/apps/chat/group-chat' title='Group Chart' hasBullet={true} />
           <MenuItem to='/apps/chat/drawer-chat' title='Drawer Chart' hasBullet={true} />
         </MenuInnerWithSub>
-        <MenuItem icon='shield-tick' to='/users' title='User management' />
+        <MenuItem icon='shield-tick' to='/admin/users/list' title='User management' />
       </MenuInnerWithSub>
 
       <MenuInnerWithSub

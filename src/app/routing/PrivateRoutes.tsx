@@ -114,14 +114,6 @@ const PrivateRoutes = () => {
             </SuspensedView>
           }
         />
-        <Route
-          path='users/*'
-          element={
-            <SuspensedView>
-              <UsersPage />
-            </SuspensedView>
-          }
-        />
         {/* Admin Routes */}
         <Route
           path='admin/*'
