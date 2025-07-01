@@ -2,6 +2,10 @@ import {FC} from 'react'
 import {KTIcon} from '../../../../helpers'
 import {AuthorsTab} from './AuthorsTab'
 import {TeacherExerciseTab} from './TeacherExerciseTab'
+import {AdminUserManagementTab} from './AdminUserManagementTab.tsx'
+import {AdminSchoolManagementTab} from './AdminSchoolManagementTab.tsx'
+import {AdminSubjectManagementTab} from './AdminSubjectManagementTab.tsx'
+import {AdminTokenManagementTab} from './AdminTokenManagementTab.tsx'
 import {NotificationsTab} from './NotificationsTab'
 import {ProjectsTab} from './ProjectsTab'
 import {VideoTab} from './VideoTab'
@@ -27,6 +31,18 @@ console.log(currentUser);
         return <VideoTab />
       case 'projects':
         return <ProjectsTab />
+    }
+  } else if (roleType === ROLES.ADMIN) {
+    switch (link) {
+      case 'user':
+        return <AdminUserManagementTab />
+      case 'school':
+        return <AdminSchoolManagementTab />
+      case 'subject':
+        return <AdminSubjectManagementTab />
+      case 'token':
+        return <AdminTokenManagementTab />
+      
     }
   } else {
     switch (link) {

@@ -10,6 +10,11 @@ import {
   ElementStyleUtil,
 } from '../_utils/index'
 
+// Utility function to check if screen is desktop size
+const isDesktopScreen = (): boolean => {
+  return window.innerWidth >= 992
+}
+
 export class DrawerStore {
   static store: Map<string, DrawerComponent> = new Map()
 
@@ -133,7 +138,10 @@ class DrawerComponent {
       ElementStyleUtil.set(this.element, 'width', '')
       this.element.classList.remove(this.options.baseClass)
       this.element.classList.remove(`${this.options.baseClass}-${direction}`)
-      this._hide()
+      // Only hide on desktop, not on mobile to prevent closing the aside drawer
+      if (isDesktopScreen()) {
+        this._hide()
+      }
     }
   }
 
@@ -328,7 +336,10 @@ class DrawerComponent {
         drawer = new DrawerComponent(item, defaultDrawerOptions)
       }
       drawer.element = item
-      drawer.hide()
+      // Only hide on desktop, not on mobile to prevent closing the aside drawer
+      if (isDesktopScreen()) {
+        drawer.hide()
+      }
     })
   }
 
@@ -379,8 +390,14 @@ class DrawerComponent {
 
   public static reinitialization = () => {
     DrawerComponent.createInstances('[data-kt-drawer="true"]')
-    DrawerComponent.hideAll()
-    DrawerComponent.updateAll()
+    // Only hide all drawers on desktop, not on mobile to prevent closing the aside drawer
+    if (isDesktopScreen()) {
+      DrawerComponent.hideAll()
+    }
+    // Don't update all drawers on mobile to prevent interfering with aside drawer state
+    if (isDesktopScreen()) {
+      DrawerComponent.updateAll()
+    }
     DrawerComponent.handleDismiss()
   }
 }

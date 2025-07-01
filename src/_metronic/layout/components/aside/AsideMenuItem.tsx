@@ -4,6 +4,10 @@ import {Link, useNavigate} from 'react-router-dom'
 import {useLocation} from 'react-router'
 import {checkIsActive, KTIcon, WithChildren} from '../../../helpers'
 import {useLayout} from '../../core'
+import {DrawerComponent} from '../../../assets/ts/components'
+import {useIsDesktop} from '../../../hooks/useResponsive'
+
+
 
 type Props = {
   to: string
@@ -28,15 +32,33 @@ const AsideMenuItem: FC<Props & WithChildren> = ({
   const isActive = checkIsActive(pathname, to)
   const {config} = useLayout()
   const {aside} = config
+  const isDesktop = useIsDesktop()
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault()
-    const toggleButton = document.getElementById('kt_aside_toggle')
-    if (toggleButton) {
-      toggleButton.click()
+    
+    if (isDesktop) {
+      // Desktop: Toggle the aside
+      const toggleButton = document.getElementById('kt_aside_toggle_desktop')
+      if (toggleButton) {
+        toggleButton.click()
+      }
+      // Navigate immediately on desktop
+      navigate(to)
+    } else {
+      // Mobile: Close the drawer when clicking sub-menu items
+      const aside = document.getElementById('kt_aside')
+      if (aside) {
+        const drawer = DrawerComponent.getInstance('kt_aside')
+        if (drawer && drawer.isShown()) {
+          drawer.hide()
+        }
+      }
+      // Navigate after a longer delay to ensure drawer closes first
+      setTimeout(() => {
+        navigate(to)
+      }, 100)
     }
-    // Navigate to the page
-    navigate(to)
   }
 
   return (
