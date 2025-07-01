@@ -8,6 +8,7 @@ const API_URL = import.meta.env.VITE_APP_API_URL
 // Types
 export interface AIContentToTextRequest {
   content: string
+  content_type: 'mc_question' | 'mc_answer' | 'lq_question' | 'lq_answer'
 }
 
 export interface AIContentToTextResponse {
@@ -28,12 +29,12 @@ export interface AIState {
 // Async thunks
 export const processContentToText = createAsyncThunk(
   'ai/processContentToText',
-  async (content: string) => {
+  async ({ content, type }: { content: string; type: 'mc_question' | 'mc_answer' | 'lq_question' | 'lq_answer' }) => {
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/ai/content-to-text`)
       const response = await axios.post(
         `${API_URL}/ai/content-to-text`,
-        { content },
+        { content, content_type: type },
         { 
           headers,
           withCredentials: true 
