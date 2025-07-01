@@ -55,7 +55,7 @@ const LQFormPage: FC = () => {
   const isEditMode = !!qId
 
   // Custom hook for AI functionality
-  const { processingField, handleAIImageToText } = useAIImageToText()
+  const { processingField, handleAIImageToText } = useAIImageToText('lq')
 
   // Redux selectors
   const { tags, loading: tagsLoading } = useSelector((state: RootState) => state.tags)
@@ -264,7 +264,8 @@ const LQFormPage: FC = () => {
                     formik.setFieldValue('question', content)
                     formik.setFieldTouched('question', true)
                   }}
-                  isProcessing={processingField === 'question'}
+                  isProcessing={processingField !== null}
+                  processingField={processingField}
                   onAIClick={handleAIImageToText}
                   height={400}
                   placeholder='Enter the question content...'
@@ -291,7 +292,8 @@ const LQFormPage: FC = () => {
                     formik.setFieldValue('answer', content)
                     formik.setFieldTouched('answer', true)
                   }}
-                  isProcessing={processingField === 'answer'}
+                  isProcessing={processingField !== null}
+                  processingField={processingField}
                   onAIClick={handleAIImageToText}
                   height={400}
                   placeholder='Enter the answer content...'

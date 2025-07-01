@@ -4,7 +4,7 @@ import { AppDispatch } from '../store'
 import { processContentToText, setProcessedContent } from '../store/ai/aiSlice'
 import { toast } from '../_metronic/helpers/toast'
 
-export const useAIImageToText = () => {
+export const useAIImageToText = (questionType: 'mc' | 'lq') => {
   const dispatch = useDispatch<AppDispatch>()
   const [processingField, setProcessingField] = useState<'question' | 'answer' | null>(null)
 
@@ -17,7 +17,8 @@ export const useAIImageToText = () => {
 
     setProcessingField(field)
     try {
-      const processedText = await dispatch(processContentToText(content)).unwrap()
+      const type = `${questionType}_${field}` as 'mc_question' | 'mc_answer' | 'lq_question' | 'lq_answer'
+      const processedText = await dispatch(processContentToText({ content, type })).unwrap()
       
       // Show the modal with processed content
       dispatch(setProcessedContent({ content: processedText, field }))

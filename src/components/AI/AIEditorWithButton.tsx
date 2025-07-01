@@ -7,6 +7,7 @@ interface AIEditorWithButtonProps {
   value: string
   onBlur: (content: string) => void
   isProcessing: boolean
+  processingField: 'question' | 'answer' | null
   onAIClick: (content: string, field: 'question' | 'answer') => void
   height?: number
   placeholder?: string
@@ -18,6 +19,7 @@ const AIEditorWithButton: React.FC<AIEditorWithButtonProps> = ({
   value,
   onBlur,
   isProcessing,
+  processingField,
   onAIClick,
   height = 300,
   placeholder = 'Enter content...',
@@ -36,6 +38,7 @@ const AIEditorWithButton: React.FC<AIEditorWithButtonProps> = ({
         field={field}
         content={value}
         isProcessing={isProcessing}
+        processingField={processingField}
         onClick={onAIClick}
       />
     </div>
