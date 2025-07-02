@@ -9,11 +9,40 @@ import SchoolEditPage from './schools/SchoolEditPage'
 import SchoolsPage from './schools/SchoolsPage'
 import SchoolSubjectCreatePage from './subjects/SchoolSubjectCreatePage'
 import UsersPage from '../users/UsersPage'
+import UserAddPage from './users/UserAddPage'
+import UserEditPage from './users/UserEditPage'
 
 const adminBreadcrumbs: Array<PageLink> = [
   {
     title: 'Admin',
     path: '/admin',
+    isSeparator: false,
+    isActive: false,
+  },
+  {
+    title: '',
+    path: '',
+    isSeparator: true,
+    isActive: false,
+  },
+]
+
+const userEditBreadcrumbs: Array<PageLink> = [
+  {
+    title: 'Admin',
+    path: '/admin',
+    isSeparator: false,
+    isActive: false,
+  },
+  {
+    title: '',
+    path: '',
+    isSeparator: true,
+    isActive: false,
+  },
+  {
+    title: 'User List',
+    path: '/admin/users/list',
     isSeparator: false,
     isActive: false,
   },
@@ -102,6 +131,24 @@ const AdminPage = () => {
           <Route
             path='users/list'
             element={<UsersPage />}
+          />
+          <Route
+            path='users/add'
+            element={
+              <>
+                <PageTitle breadcrumbs={adminBreadcrumbs}>Add User</PageTitle>
+                <UserAddPage />
+              </>
+            }
+          />
+          <Route
+            path='users/edit/:user_id'
+            element={
+              <>
+                <PageTitle breadcrumbs={userEditBreadcrumbs}>Edit User</PageTitle>
+                <UserEditPage />
+              </>
+            }
           />
           
           {/* Default redirect */}
