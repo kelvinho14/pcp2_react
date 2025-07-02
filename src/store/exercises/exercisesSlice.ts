@@ -224,6 +224,38 @@ export const updateQuestionPositions = createAsyncThunk(
   }
 )
 
+export const unlinkQuestions = createAsyncThunk(
+  'exercises/unlinkQuestions',
+  async ({ exerciseId, questionIds }: { exerciseId: string, questionIds: string[] }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/unlink-questions`)
+      const response = await axios.delete(
+        `${API_URL}/exercises/unlink-questions`,
+        {
+          data: {
+            exercise_id: exerciseId,
+            question_ids: questionIds
+          },
+          headers,
+          withCredentials: true 
+        }
+      )
+      
+      if (response.data.status === 'success') {
+        toast.success('Questions unlinked successfully!', 'Success')
+      } else {
+        toast.error('Failed to unlink questions. Please try again.', 'Error')
+      }
+      
+      return response.data
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to unlink questions'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 // Initial state
 interface ExercisesState {
   exercises: Exercise[]
@@ -233,6 +265,7 @@ interface ExercisesState {
   updating: boolean
   linking: boolean
   updatingPositions: boolean
+  unlinking: boolean
   currentExercise: Exercise | null
   linkedQuestions: LinkedQuestion[]
   fetchingExercise: boolean
@@ -246,6 +279,7 @@ const initialState: ExercisesState = {
   updating: false,
   linking: false,
   updatingPositions: false,
+  unlinking: false,
   currentExercise: null,
   linkedQuestions: [],
   fetchingExercise: false,
@@ -258,6 +292,10 @@ const exercisesSlice = createSlice({
   reducers: {
     clearError: (state) => {
       state.error = null
+    },
+    removeLinkedQuestion: (state, action) => {
+      const { questionId } = action.payload
+      state.linkedQuestions = state.linkedQuestions.filter(q => q.question_id !== questionId)
     },
   },
   extraReducers: (builder) => {
@@ -339,8 +377,20 @@ const exercisesSlice = createSlice({
         state.updatingPositions = false
         state.error = action.error.message || 'Failed to update question positions'
       })
+      // Unlink questions
+      .addCase(unlinkQuestions.pending, (state) => {
+        state.unlinking = true
+        state.error = null
+      })
+      .addCase(unlinkQuestions.fulfilled, (state) => {
+        state.unlinking = false
+      })
+      .addCase(unlinkQuestions.rejected, (state, action) => {
+        state.unlinking = false
+        state.error = action.error.message || 'Failed to unlink questions'
+      })
   },
 })
 
-export const { clearError } = exercisesSlice.actions
+export const { clearError, removeLinkedQuestion } = exercisesSlice.actions
 export default exercisesSlice.reducer 

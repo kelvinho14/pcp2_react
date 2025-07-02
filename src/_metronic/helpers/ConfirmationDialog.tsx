@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import {Modal, Button} from 'react-bootstrap'
 
 export interface ConfirmationDialogProps {
@@ -54,6 +54,29 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
       onHide()
     }
   }
+
+  // Handle keyboard events
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!show || loading) return
+      
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        handleConfirm()
+      } else if (event.key === 'Escape') {
+        event.preventDefault()
+        handleHide()
+      }
+    }
+
+    if (show) {
+      document.addEventListener('keydown', handleKeyDown)
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [show, loading])
 
   // Determine confirm button variant based on dialog variant
   const getConfirmButtonVariant = () => {

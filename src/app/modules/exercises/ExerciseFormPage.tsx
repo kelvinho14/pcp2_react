@@ -20,6 +20,8 @@ import {
   updateExercise,
   fetchExerciseWithQuestions,
   updateQuestionPositions,
+  unlinkQuestions,
+  removeLinkedQuestion,
   Exercise,
   LinkedQuestion
 } from '../../../store/exercises/exercisesSlice'
@@ -28,6 +30,7 @@ import clsx from 'clsx'
 import {toast} from '../../../_metronic/helpers/toast'
 import { hasImages, renderHtmlSafely, getTextPreview } from '../../../_metronic/helpers/htmlRenderer'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { ConfirmationDialog } from '../../../_metronic/helpers/ConfirmationDialog'
 
 const exerciseValidationSchema = Yup.object().shape({
   title: Yup.string()
@@ -89,13 +92,15 @@ const ExerciseFormPage: FC = () => {
   const { exerciseId } = useParams<{ exerciseId: string }>()
   const dispatch = useDispatch<AppDispatch>()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false)
+  const [questionToUnlink, setQuestionToUnlink] = useState<string | null>(null)
   const isEditMode = !!exerciseId
   
   // Redux selectors
   const { topics, exerciseTypes, loading, creating } = useSelector(
     (state: RootState) => state.exercise
   )
-  const { exercises, loading: exercisesLoading, updating, updatingPositions, currentExercise, linkedQuestions, fetchingExercise } = useSelector(
+  const { exercises, loading: exercisesLoading, updating, updatingPositions, unlinking, currentExercise, linkedQuestions, fetchingExercise } = useSelector(
     (state: RootState) => state.exercises
   )
 
@@ -260,6 +265,31 @@ const ExerciseFormPage: FC = () => {
     } catch (error) {
       console.error('Error updating question positions:', error)
       // Error toast is handled by the thunk
+    }
+  }
+
+  const handleUnlinkQuestion = (questionId: string) => {
+    setQuestionToUnlink(questionId)
+    setShowUnlinkConfirm(true)
+  }
+
+  const handleConfirmUnlink = async () => {
+    if (!exerciseId || !questionToUnlink) return
+
+    try {
+      await dispatch(unlinkQuestions({ 
+        exerciseId, 
+        questionIds: [questionToUnlink] 
+      })).unwrap()
+
+      // Update local state instead of refreshing
+      dispatch(removeLinkedQuestion({ questionId: questionToUnlink }))
+    } catch (error) {
+      console.error('Error unlinking question:', error)
+      // Error toast is handled by the thunk
+    } finally {
+      setShowUnlinkConfirm(false)
+      setQuestionToUnlink(null)
     }
   }
 
@@ -594,6 +624,20 @@ const ExerciseFormPage: FC = () => {
                                       >
                                         <i className='fas fa-edit'></i>
                                       </button>
+                                      <button
+                                        type='button'
+                                        className='btn btn-sm btn-light-danger indicator'
+                                        data-kt-indicator={unlinking ? 'on' : 'off'}
+                                        onClick={() => handleUnlinkQuestion(question.question_id)}
+                                        disabled={unlinking}
+                                      >
+                                        <span className='indicator-label'>
+                                          <i className='fas fa-trash'></i>
+                                        </span>
+                                        <span className='indicator-progress'>
+                                          <span className='spinner-border spinner-border-sm align-middle'></span>
+                                        </span>
+                                      </button>
                                     </div>
                                   </td>
                                 </tr>
@@ -611,6 +655,17 @@ const ExerciseFormPage: FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmationDialog
+        show={showUnlinkConfirm}
+        onHide={() => setShowUnlinkConfirm(false)}
+        onConfirm={handleConfirmUnlink}
+        title="Confirm Unlink"
+        message="Are you sure you want to unlink this question from the exercise? This action cannot be undone."
+        confirmText={unlinking ? "Unlinking..." : "Unlink"}
+        cancelText="Cancel"
+        variant="danger"
+      />
     </>
   )
 }

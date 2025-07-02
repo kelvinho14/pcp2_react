@@ -129,11 +129,11 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
                     <table className="table table-sm table-bordered">
                       <thead>
                         <tr>
+                          <th style={{ width: '50px' }}>Drag</th>
                           <th style={{ width: '50px' }}>#</th>
                           <th style={{ width: '80px' }}>Type</th>
                           <th style={{ width: '150px' }}>Name</th>
                           <th>Content</th>
-                          <th style={{ width: '50px' }}>Drag</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -149,6 +149,11 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
                                   {...provided.draggableProps}
                                   className={snapshot.isDragging ? 'table-active' : ''}
                                 >
+                                  <td className="text-center">
+                                    <div {...provided.dragHandleProps}>
+                                      <i className="fas fa-grip-vertical text-muted"></i>
+                                    </div>
+                                  </td>
                                   <td className="text-center fw-bold">{index + 1}</td>
                                   <td className="text-center">
                                     {question.type === 'mc' ? 
@@ -171,11 +176,6 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
                                           {getTextPreview(question.question_content, 100)}
                                         </div>
                                       )}
-                                    </div>
-                                  </td>
-                                  <td className="text-center">
-                                    <div {...provided.dragHandleProps}>
-                                      <i className="fas fa-grip-vertical text-muted"></i>
                                     </div>
                                   </td>
                                 </tr>
