@@ -1,7 +1,6 @@
 import {FC, useEffect, useState} from 'react'
 import {MenuComponent} from '../../../../../../_metronic/assets/ts/components'
 import {ID, KTIcon} from '../../../../../../_metronic/helpers'
-import {useListView} from '../../core/ListViewProvider'
 import {User} from '../../core/_models'
 import {useIntl} from 'react-intl'
 import {useDispatch} from 'react-redux'
@@ -9,23 +8,20 @@ import {AppDispatch} from '../../../../../../store'
 import {deleteUser} from '../../../../../../store/user/userSlice'
 import {ConfirmationDialog} from '../../../../../../_metronic/helpers/ConfirmationDialog'
 import toast from '../../../../../../_metronic/helpers/toast'
+import {useNavigate} from 'react-router-dom'
 
 type Props = {
   id: ID
 }
 
 const UserActionsCell: FC<Props> = ({id}) => {
-  const {setItemIdForUpdate} = useListView()
   const dispatch = useDispatch<AppDispatch>()
+  const navigate = useNavigate()
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   useEffect(() => {
     MenuComponent.reinitialization()
   }, [])
-
-  const openEditModal = () => {
-    setItemIdForUpdate(id)
-  }
 
   const handleDelete = async () => {
     if (!id) return
@@ -60,12 +56,15 @@ const UserActionsCell: FC<Props> = ({id}) => {
       >
         {/* begin::Menu item */}
         <div className='menu-item px-3'>
-          <a className='menu-link px-3' onClick={openEditModal}>
+          <a
+            className='menu-link px-3'
+            onClick={() => navigate(`/admin/users/edit/${id}`)}
+          >
             Edit
           </a>
         </div>
         {/* end::Menu item */}
-
+        
         {/* begin::Menu item */}
         <div className='menu-item px-3'>
           <a

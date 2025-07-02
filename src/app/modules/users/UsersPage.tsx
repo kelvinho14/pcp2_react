@@ -9,12 +9,6 @@ const usersBreadcrumbs: Array<PageLink> = [
     isActive: false,
   },
   {
-    title: 'User Management',
-    path: '/admin/users/list',
-    isSeparator: false,
-    isActive: false,
-  },
-  {
     title: '',
     path: '',
     isSeparator: true,

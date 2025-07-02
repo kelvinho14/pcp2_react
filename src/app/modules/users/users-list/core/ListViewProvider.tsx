@@ -17,7 +17,6 @@ const ListViewContext = createContext<ListViewContextProps>(initialListView)
 
 const ListViewProvider: FC<WithChildren> = ({children}) => {
   const [selected, setSelected] = useState<Array<ID>>(initialListView.selected)
-  const [itemIdForUpdate, setItemIdForUpdate] = useState<ID>(initialListView.itemIdForUpdate)
   
   // Use Redux data instead of QueryResponseProvider
   const users = useSelector((state: RootState) => state.users.users)
@@ -43,8 +42,8 @@ const ListViewProvider: FC<WithChildren> = ({children}) => {
     <ListViewContext.Provider
       value={{
         selected,
-        itemIdForUpdate,
-        setItemIdForUpdate,
+        itemIdForUpdate: undefined,
+        setItemIdForUpdate: () => {},
         disabled,
         isAllSelected,
         onSelect: (id: ID) => {
