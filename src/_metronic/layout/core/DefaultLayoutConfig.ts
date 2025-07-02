@@ -21,7 +21,7 @@ export const DefaultLayoutConfig: ILayout = {
   },
   header: {
     display: true, // Set true|false to show or hide Header
-    width: 'fixed', // Set fixed|fluid to change width type
+    width: 'fluid', // Set fixed|fluid to change width type
     fixed: {
       desktop: true, // Set true|false to set fixed Header for desktop mode
       tabletAndMobile: true, // Set true|false to set fixed Header for tablet and mobile modes
@@ -54,7 +54,7 @@ export const DefaultLayoutConfig: ILayout = {
     },
   },
   footer: {
-    width: 'fixed', // Set fixed|fluid to change width type
+    width: 'fluid', // Set fixed|fluid to change width type
   },
   pageTitle: {
     display: true,

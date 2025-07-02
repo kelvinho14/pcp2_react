@@ -2,6 +2,8 @@ import {FC} from 'react'
 import {ToggleHelpDrawer} from './help-drawer/ToggleHelpDrawer'
 import {HelpDrawer} from './help-drawer/HelpDrawer'
 import {PurchaseButton} from './purchase/PurchaseButton'
+import {PurchaseDrawer} from './purchase/PurchaseDrawer.tsx'
+
 
 const RightToolbar: FC = () => {
   return (
@@ -12,6 +14,7 @@ const RightToolbar: FC = () => {
       </div>
 
       <HelpDrawer />
+      <PurchaseDrawer />
     </>
   )
 }

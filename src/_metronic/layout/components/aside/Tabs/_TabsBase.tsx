@@ -94,7 +94,7 @@ const TabsBase: FC<Props> = ({link}) => {
           data-bs-offset='0,5'
           data-bs-dismiss-='click'
         >
-          <span className='btn-label'>Docs & Components</span>
+          <span className='btn-label'>Update log</span>
           <KTIcon iconName='document' className='btn-icon fs-4 ms-2' />
         </a>
       </div>
