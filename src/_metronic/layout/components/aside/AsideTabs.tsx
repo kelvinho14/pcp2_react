@@ -125,33 +125,17 @@ const AsideTabs: FC<Props> = ({link, setLink}) => {
   }
 
   const handleMouseOver = (tab: Tab) => {
-    // Don't handle mouseover on touch devices
-    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-      return
-    }
     
     setLink(tab.link)
     
-    if (isDesktop) {
-      // Desktop: Use the toggle button for aside minimize
-      const isMinimized = document.body.getAttribute('data-kt-aside-minimize') === 'on'
-      if (isMinimized) {
-        const toggleButton = document.getElementById('kt_aside_toggle_desktop')
-        if (toggleButton) {
-          toggleButton.click()
-        }
-      }
-    } else {
-      // Mobile/Tablet: Use the drawer system
-      const aside = document.getElementById('kt_aside')
-      if (aside) {
-        const drawer = DrawerComponent.getInstance('kt_aside')
-        if (drawer && !drawer.isShown()) {
-          drawer.show()
-        }
+    const isMinimized = document.body.getAttribute('data-kt-aside-minimize') === 'on'
+    if (isMinimized) {
+      const toggleButton = document.getElementById('kt_aside_toggle_desktop')
+      if (toggleButton) {
+        toggleButton.click()
       }
     }
-    
+   
     // Navigate if the tab has a path
     if (tab.path) {
       navigate(tab.path)
