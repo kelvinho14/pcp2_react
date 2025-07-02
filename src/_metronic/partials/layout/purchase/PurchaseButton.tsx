@@ -1,12 +1,17 @@
 import React, {FC} from 'react'
 
 const PurchaseButton: FC = () => (
-  <a
-    href={import.meta.env.VITE_APP_PURCHASE_URL}
-    className='engage-purchase-link btn btn-flex h-35px bg-body btn-color-gray-700 btn-active-color-gray-900 px-5 shadow-sm rounded-top-0'
+  <button
+    id='kt_help_toggle'
+    className='engage-help-toggle btn btn-flex h-35px bg-body btn-color-gray-700 btn-active-color-gray-900 shadow-sm px-5 rounded-top-0'
+    title='Learn & Get Inspired'
+    data-bs-toggle='tooltip'
+    data-bs-placement='left'
+    data-bs-dismiss='click'
+    data-bs-trigger='hover'
   >
-    Buy Now
-  </a>
+    Add tokens
+  </button>
 )
 
 export {PurchaseButton}
