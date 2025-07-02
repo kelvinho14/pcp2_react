@@ -84,6 +84,10 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
     setSortedQuestionIds(newOrder)
   }
 
+  const handleRemoveQuestion = (questionId: string) => {
+    setSortedQuestionIds(prev => prev.filter(id => id !== questionId))
+  }
+
   const handleInputChange = (inputValue: string) => {
     setSearchTerm(inputValue)
     
@@ -103,7 +107,7 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
   }
 
   return (
-    <Modal show={show} onHide={handleClose} size="lg">
+    <Modal show={show} onHide={handleClose} size="xl">
       <Modal.Header closeButton>
         <Modal.Title>Assign to Exercise(s)</Modal.Title>
       </Modal.Header>
@@ -116,7 +120,6 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
 
         {/* Questions Table */}
         <div className="mb-4">
-          <label className="form-label">Selected Questions (Drag to reorder)</label>
           {selectedQuestions.length > 0 ? (
             <DragDropContext onDragEnd={handleDragEnd}>
               <Droppable droppableId="questions">
@@ -129,11 +132,12 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
                     <table className="table table-sm table-bordered">
                       <thead>
                         <tr>
-                          <th style={{ width: '50px' }}>Drag</th>
+                          <th style={{ width: '50px' }}></th>
                           <th style={{ width: '50px' }}>#</th>
                           <th style={{ width: '80px' }}>Type</th>
                           <th style={{ width: '150px' }}>Name</th>
                           <th>Content</th>
+                          <th style={{ width: '50px' }}></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -169,7 +173,7 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
                                       {hasImages(question.question_content) ? (
                                         <div 
                                           className="d-flex align-items-center"
-                                          dangerouslySetInnerHTML={{ __html: renderHtmlSafely(question.question_content, { maxImageWidth: 200, maxImageHeight: 120 }) }}
+                                          dangerouslySetInnerHTML={{ __html: renderHtmlSafely(question.question_content, { maxImageWidth: 439, maxImageHeight: 264 }) }}
                                         />
                                       ) : (
                                         <div className="text-muted">
@@ -177,6 +181,16 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
                                         </div>
                                       )}
                                     </div>
+                                  </td>
+                                  <td className="text-center">
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-light-danger"
+                                      onClick={() => handleRemoveQuestion(questionId)}
+                                      title="Remove question"
+                                    >
+                                      <i className="fas fa-trash"></i>
+                                    </button>
                                   </td>
                                 </tr>
                               )}
