@@ -151,6 +151,26 @@ export const fetchQuestionById = createAsyncThunk(
   }
 )
 
+export const fetchQuestionsByIds = createAsyncThunk(
+  'questions/fetchQuestionsByIds',
+  async (questionIds: string[]) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/questions`)
+      const params = { question_ids: questionIds.join(',') }
+      const response = await axios.get(`${API_URL}/questions`, { 
+        params,
+        headers,
+        withCredentials: true 
+      })
+      return response.data.data || []
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to fetch questions'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 export const updateQuestion = createAsyncThunk(
   'questions/updateQuestion',
   async ({ qId, questionData }: { qId: string; questionData: Partial<QuestionFormData> }) => {
@@ -279,12 +299,14 @@ interface QuestionsState {
   questions: Question[]
   currentQuestion: Question | null
   generatedQuestions: any[] // Store generated questions for review
+  selectedQuestions: Question[] // Store selected questions for assignment
   loading: boolean
   creating: boolean
   updating: boolean
   deleting: boolean
   generatingSimilarQuestions: boolean
   creatingMultipleQuestions: boolean
+  fetchingSelectedQuestions: boolean
   error: string | null
   success: string | null
   total: number
@@ -294,12 +316,14 @@ const initialState: QuestionsState = {
   questions: [],
   currentQuestion: null,
   generatedQuestions: [],
+  selectedQuestions: [],
   loading: false,
   creating: false,
   updating: false,
   deleting: false,
   generatingSimilarQuestions: false,
   creatingMultipleQuestions: false,
+  fetchingSelectedQuestions: false,
   error: null,
   success: null,
   total: 0,
@@ -374,6 +398,21 @@ const questionsSlice = createSlice({
       .addCase(fetchQuestionById.rejected, (state, action) => {
         state.loading = false
         state.error = action.error.message || 'Failed to fetch question'
+      })
+
+    // Fetch questions by IDs
+    builder
+      .addCase(fetchQuestionsByIds.pending, (state) => {
+        state.fetchingSelectedQuestions = true
+        state.error = null
+      })
+      .addCase(fetchQuestionsByIds.fulfilled, (state, action) => {
+        state.fetchingSelectedQuestions = false
+        state.selectedQuestions = action.payload
+      })
+      .addCase(fetchQuestionsByIds.rejected, (state, action) => {
+        state.fetchingSelectedQuestions = false
+        state.error = action.error.message || 'Failed to fetch questions'
       })
 
     // Update question

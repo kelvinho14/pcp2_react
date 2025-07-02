@@ -9,14 +9,16 @@ import {toast} from '../../../../../../../_metronic/helpers/toast'
 import AIGenerateSimilarModal from '../../../../components/AIGenerateSimilarModal'
 import AIGeneratedQuestionsModal from '../../../../components/AIGeneratedQuestionsModal'
 import { transformQuestionsForBackend, transformSingleQuestionForBackend } from '../../../../components/questionTransformers'
+import AssignToExerciseModal from '../../../../components/AssignToExerciseModal'
 
 const QuestionsListGrouping = () => {
   const {selected, clearSelected} = useListView()
   const dispatch = useDispatch<AppDispatch>()
-  const {generatedQuestions, generatingSimilarQuestions, creatingMultipleQuestions, creating} = useSelector((state: RootState) => state.questions)
+  const {generatedQuestions, generatingSimilarQuestions, creatingMultipleQuestions, creating, questions} = useSelector((state: RootState) => state.questions)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false)
   const [showGeneratedQuestionsModal, setShowGeneratedQuestionsModal] = useState(false)
+  const [showAssignToExerciseModal, setShowAssignToExerciseModal] = useState(false)
 
   const isValidLetter = (letter: string, options: any[]) =>
     !!letter && options.some(opt => opt.option_letter === letter)
@@ -92,6 +94,10 @@ const QuestionsListGrouping = () => {
     setShowAIGenerateModal(true)
   }
 
+  const handleAssignToExerciseClick = () => {
+    setShowAssignToExerciseModal(true)
+  }
+
   return (
     <>
       <div className='d-flex justify-content-end align-items-center' data-kt-question-table-toolbar='selected'>
@@ -106,6 +112,15 @@ const QuestionsListGrouping = () => {
         >
           <i className='fas fa-robot me-1 btn-sm'></i>
           AI Generate Similar
+        </button>
+
+        <button 
+          type='button' 
+          className='btn btn-sm btn-success me-3'
+          onClick={handleAssignToExerciseClick}
+        >
+          <i className='fas fa-tasks me-1 btn-sm'></i>
+          Assign to Exercise
         </button>
 
         <button type='button' className='btn btn-danger btn-sm' onClick={() => setShowDeleteDialog(true)}>
@@ -140,6 +155,14 @@ const QuestionsListGrouping = () => {
         onAcceptSingle={handleAcceptSingleQuestion}
         questions={generatedQuestions}
         isLoading={generatingSimilarQuestions || creatingMultipleQuestions || creating}
+      />
+
+      <AssignToExerciseModal
+        show={showAssignToExerciseModal}
+        onHide={() => setShowAssignToExerciseModal(false)}
+        questionIds={selected.filter(id => id !== undefined && id !== null).map(id => String(id))}
+        questionType="mc"
+        questions={questions}
       />
     </>
   )

@@ -18,11 +18,19 @@ import {
 import {
   fetchExercises,
   updateExercise,
-  Exercise
+  fetchExerciseWithQuestions,
+  updateQuestionPositions,
+  unlinkQuestions,
+  removeLinkedQuestion,
+  Exercise,
+  LinkedQuestion
 } from '../../../store/exercises/exercisesSlice'
 import Select from 'react-select'
 import clsx from 'clsx'
 import {toast} from '../../../_metronic/helpers/toast'
+import { hasImages, renderHtmlSafely, getTextPreview } from '../../../_metronic/helpers/htmlRenderer'
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import { ConfirmationDialog } from '../../../_metronic/helpers/ConfirmationDialog'
 
 const exerciseValidationSchema = Yup.object().shape({
   title: Yup.string()
@@ -84,24 +92,33 @@ const ExerciseFormPage: FC = () => {
   const { exerciseId } = useParams<{ exerciseId: string }>()
   const dispatch = useDispatch<AppDispatch>()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false)
+  const [questionToUnlink, setQuestionToUnlink] = useState<string | null>(null)
   const isEditMode = !!exerciseId
   
   // Redux selectors
   const { topics, exerciseTypes, loading, creating } = useSelector(
     (state: RootState) => state.exercise
   )
-  const { exercises, loading: exercisesLoading, updating } = useSelector(
+  const { exercises, loading: exercisesLoading, updating, updatingPositions, unlinking, currentExercise, linkedQuestions, fetchingExercise } = useSelector(
     (state: RootState) => state.exercises
   )
 
   // Get current exercise data if in edit mode
-  const currentExercise = isEditMode ? exercises.find((ex: Exercise) => ex.exercise_id === exerciseId) : null
+  const exerciseFromList = isEditMode ? exercises.find((ex: Exercise) => ex.exercise_id === exerciseId) : null
 
   // Fetch exercise types and topics on component mount
   useEffect(() => {
     dispatch(fetchExerciseTypes())
     dispatch(fetchTopics())
   }, [dispatch])
+
+  // Fetch exercise with questions if in edit mode
+  useEffect(() => {
+    if (isEditMode && exerciseId) {
+      dispatch(fetchExerciseWithQuestions(exerciseId))
+    }
+  }, [isEditMode, exerciseId, dispatch])
 
   // Clear messages on component unmount
   useEffect(() => {
@@ -193,16 +210,17 @@ const ExerciseFormPage: FC = () => {
 
   // Update form values when exercise data is loaded (edit mode)
   useEffect(() => {
-    if (isEditMode && currentExercise) {
+    if (isEditMode && (currentExercise || exerciseFromList)) {
+      const exercise = currentExercise || exerciseFromList
       formik.setValues({
-        title: currentExercise.title || '',
-        description: currentExercise.description || '',
+        title: exercise?.title || '',
+        description: exercise?.description || '',
         topic_ids: [], // TODO: Add topic_ids to Exercise type when API supports it
-        type: currentExercise.type_id || '',
-        status: currentExercise.status || 0,
+        type: exercise?.type_id || '',
+        status: exercise?.status || 0,
       })
     }
-  }, [currentExercise, isEditMode])
+  }, [currentExercise, exerciseFromList, isEditMode])
 
   const handleAIGenerateDescription = () => {
     // TODO: Implement AI description generation
@@ -215,7 +233,67 @@ const ExerciseFormPage: FC = () => {
       <span className='badge badge-light-info'>LQ</span>
   }
 
-  if (loading || (isEditMode && exercisesLoading)) {
+  const handleDragEnd = async (result: any) => {
+    if (!result.destination) return
+
+    try {
+      // Create a copy of the linkedQuestions array
+      const reorderedQuestions = Array.from(linkedQuestions)
+      
+      // Remove the dragged item from its original position
+      const [draggedQuestion] = reorderedQuestions.splice(result.source.index, 1)
+      
+      // Insert the dragged item at its new position
+      reorderedQuestions.splice(result.destination.index, 0, draggedQuestion)
+      
+      // Create the question positions array based on the new order
+      const questionPositions = reorderedQuestions.map((question, index) => ({
+        question_id: question.question_id,
+        new_position: index + 1
+      }))
+
+      // Call the API to update question positions
+      await dispatch(updateQuestionPositions({ 
+        exerciseId: exerciseId!, 
+        questionPositions 
+      })).unwrap()
+
+      // Refresh the exercise data to get updated order
+      if (exerciseId) {
+        dispatch(fetchExerciseWithQuestions(exerciseId))
+      }
+    } catch (error) {
+      console.error('Error updating question positions:', error)
+      // Error toast is handled by the thunk
+    }
+  }
+
+  const handleUnlinkQuestion = (questionId: string) => {
+    setQuestionToUnlink(questionId)
+    setShowUnlinkConfirm(true)
+  }
+
+  const handleConfirmUnlink = async () => {
+    if (!exerciseId || !questionToUnlink) return
+
+    try {
+      await dispatch(unlinkQuestions({ 
+        exerciseId, 
+        questionIds: [questionToUnlink] 
+      })).unwrap()
+
+      // Update local state instead of refreshing
+      dispatch(removeLinkedQuestion({ questionId: questionToUnlink }))
+    } catch (error) {
+      console.error('Error unlinking question:', error)
+      // Error toast is handled by the thunk
+    } finally {
+      setShowUnlinkConfirm(false)
+      setQuestionToUnlink(null)
+    }
+  }
+
+  if (loading || (isEditMode && exercisesLoading) || (isEditMode && fetchingExercise)) {
     return (
       <>
         <PageTitle breadcrumbs={breadcrumbs}>
@@ -459,6 +537,135 @@ const ExerciseFormPage: FC = () => {
           </form>
         </div>
       </div>
+
+      {/* Linked Questions Table - Only show in edit mode */}
+      {isEditMode && (
+        <div className='card mt-6'>
+          <div className='card-header'>
+            <h3 className='card-title'>Linked Questions ({linkedQuestions.length})</h3>
+          </div>
+          <div className='card-body'>
+            {linkedQuestions.length === 0 ? (
+              <div className='text-center py-4'>
+                <p className='text-muted'>No questions linked to this exercise yet.</p>
+              </div>
+            ) : (
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="linkedQuestions">
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="table-responsive"
+                    >
+                      <table className='table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3'>
+                        <thead>
+                          <tr className='fw-bold text-muted'>
+                            <th className='min-w-50px'>#</th>
+                            <th className='min-w-125px'>Type</th>
+                            <th className='min-w-125px'>Name</th>
+                            <th className='min-w-400px'>Question Content</th>
+                            <th className='min-w-125px'>Created</th>
+                            <th className='min-w-100px'>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {linkedQuestions.map((question: LinkedQuestion, index: number) => (
+                            <Draggable key={question.question_id} draggableId={question.question_id} index={index}>
+                              {(provided, snapshot) => (
+                                <tr
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={snapshot.isDragging ? 'table-active' : ''}
+                                >
+                                  <td className="text-center fw-bold" {...provided.dragHandleProps}>
+                                    <div className="d-flex align-items-center justify-content-center">
+                                      <i className="fas fa-grip-vertical text-muted me-2"></i>
+                                      <span>{index + 1}</span>
+                                    </div>
+                                  </td>
+                                  <td>
+                                    {getQuestionTypeBadge(question.type)}
+                                  </td>
+                                  <td>
+                                    <div className='d-flex align-items-center'>
+                                      <div className='d-flex justify-content-start flex-column'>
+                                        <span className='text-dark fw-bold text-hover-primary fs-6'>
+                                          {question.name}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <div className='d-flex flex-column' style={{ maxWidth: '400px' }}>
+                                      {hasImages(question.question_content) ? (
+                                        <div 
+                                          className="d-flex align-items-center"
+                                          dangerouslySetInnerHTML={{ __html: renderHtmlSafely(question.question_content, { maxImageWidth: 520, maxImageHeight: 312 }) }}
+                                        />
+                                      ) : (
+                                        <div className="text-dark fw-bold text-hover-primary fs-6">
+                                          {getTextPreview(question.question_content, 150)}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <div className='text-muted fw-semibold fs-6'>
+                                      {new Date(question.created_at).toLocaleDateString()}
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <div className='d-flex gap-2'>
+                                      <button
+                                        type='button'
+                                        className='btn btn-sm btn-light-primary'
+                                        onClick={() => navigate(`/questions/${question.type}/edit/${question.question_id}`)}
+                                      >
+                                        <i className='fas fa-edit'></i>
+                                      </button>
+                                      <button
+                                        type='button'
+                                        className='btn btn-sm btn-light-danger indicator'
+                                        data-kt-indicator={unlinking ? 'on' : 'off'}
+                                        onClick={() => handleUnlinkQuestion(question.question_id)}
+                                        disabled={unlinking}
+                                      >
+                                        <span className='indicator-label'>
+                                          <i className='fas fa-trash'></i>
+                                        </span>
+                                        <span className='indicator-progress'>
+                                          <span className='spinner-border spinner-border-sm align-middle'></span>
+                                        </span>
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+            )}
+          </div>
+        </div>
+      )}
+
+      <ConfirmationDialog
+        show={showUnlinkConfirm}
+        onHide={() => setShowUnlinkConfirm(false)}
+        onConfirm={handleConfirmUnlink}
+        title="Confirm Unlink"
+        message="Are you sure you want to unlink this question from the exercise? This action cannot be undone."
+        confirmText={unlinking ? "Unlinking..." : "Unlink"}
+        cancelText="Cancel"
+        variant="danger"
+      />
     </>
   )
 }

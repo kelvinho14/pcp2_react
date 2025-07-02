@@ -25,6 +25,19 @@ export interface Exercise {
   question_count: number
 }
 
+export interface LinkedQuestion {
+  question_id: string
+  type: 'mc' | 'lq'
+  name: string
+  question_content: string
+  teacher_remark: string
+  created_at: string
+  updated_at: string
+  answer_content: string
+  options?: string[]
+  correct_option?: string
+}
+
 export interface ExerciseFormData {
   title: string
   description: string
@@ -36,17 +49,19 @@ export interface ExerciseFormData {
 // Async thunks
 export const fetchExercises = createAsyncThunk(
   'exercises/fetchExercises',
-  async ({ page, items_per_page, sort, order, search }: {
+  async ({ page, items_per_page, sort, order, search, all }: {
     page: number
     items_per_page: number
     sort?: string
     order?: 'asc' | 'desc'
     search?: string
+    all?: number
   }) => {
     const params: any = { page, items_per_page }
     if (sort) params.sort = sort
     if (order) params.order = order
     if (search) params.search = search
+    if (all) params.all = all
 
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises`)
@@ -124,6 +139,123 @@ export const deleteExercise = createAsyncThunk(
   }
 )
 
+export const linkQuestionsToExercises = createAsyncThunk(
+  'exercises/linkQuestionsToExercises',
+  async ({ questionIds, exerciseIds }: { questionIds: string[], exerciseIds: string[] }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/link-questions`)
+      const response = await axios.post(
+        `${API_URL}/exercises/link-questions`,
+        {
+          question_ids: questionIds,
+          exercise_ids: exerciseIds
+        },
+        { 
+          headers,
+          withCredentials: true 
+        }
+      )
+      
+      if (response.data.status === 'success') {
+        toast.success('Questions linked to exercises successfully!', 'Success')
+      } else {
+        toast.error('Failed to link questions to exercises. Please try again.', 'Error')
+      }
+      
+      return response.data
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to link questions to exercises'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
+export const fetchExerciseWithQuestions = createAsyncThunk(
+  'exercises/fetchExerciseWithQuestions',
+  async (exerciseId: string) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/${exerciseId}`)
+      const response = await axios.get(`${API_URL}/exercises/${exerciseId}`, { 
+        headers,
+        withCredentials: true 
+      })
+      return response.data.data || response.data
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to fetch exercise details'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
+export const updateQuestionPositions = createAsyncThunk(
+  'exercises/updateQuestionPositions',
+  async ({ exerciseId, questionPositions }: { 
+    exerciseId: string, 
+    questionPositions: Array<{ question_id: string, new_position: number }> 
+  }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/update-question-positions`)
+      const response = await axios.put(
+        `${API_URL}/exercises/update-question-positions`,
+        {
+          exercise_id: exerciseId,
+          question_positions: questionPositions
+        },
+        { 
+          headers,
+          withCredentials: true 
+        }
+      )
+      
+      if (response.data.status === 'success') {
+        toast.success('Question positions updated successfully!', 'Success')
+      } else {
+        toast.error('Failed to update question positions. Please try again.', 'Error')
+      }
+      
+      return response.data
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to update question positions'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
+export const unlinkQuestions = createAsyncThunk(
+  'exercises/unlinkQuestions',
+  async ({ exerciseId, questionIds }: { exerciseId: string, questionIds: string[] }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/unlink-questions`)
+      const response = await axios.delete(
+        `${API_URL}/exercises/unlink-questions`,
+        {
+          data: {
+            exercise_id: exerciseId,
+            question_ids: questionIds
+          },
+          headers,
+          withCredentials: true 
+        }
+      )
+      
+      if (response.data.status === 'success') {
+        toast.success('Questions unlinked successfully!', 'Success')
+      } else {
+        toast.error('Failed to unlink questions. Please try again.', 'Error')
+      }
+      
+      return response.data
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to unlink questions'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 // Initial state
 interface ExercisesState {
   exercises: Exercise[]
@@ -131,6 +263,12 @@ interface ExercisesState {
   error: string | null
   total: number
   updating: boolean
+  linking: boolean
+  updatingPositions: boolean
+  unlinking: boolean
+  currentExercise: Exercise | null
+  linkedQuestions: LinkedQuestion[]
+  fetchingExercise: boolean
 }
 
 const initialState: ExercisesState = {
@@ -139,6 +277,12 @@ const initialState: ExercisesState = {
   error: null,
   total: 0,
   updating: false,
+  linking: false,
+  updatingPositions: false,
+  unlinking: false,
+  currentExercise: null,
+  linkedQuestions: [],
+  fetchingExercise: false,
 }
 
 // Slice
@@ -148,6 +292,10 @@ const exercisesSlice = createSlice({
   reducers: {
     clearError: (state) => {
       state.error = null
+    },
+    removeLinkedQuestion: (state, action) => {
+      const { questionId } = action.payload
+      state.linkedQuestions = state.linkedQuestions.filter(q => q.question_id !== questionId)
     },
   },
   extraReducers: (builder) => {
@@ -191,8 +339,58 @@ const exercisesSlice = createSlice({
         state.loading = false
         state.error = action.error.message || 'Failed to delete exercise'
       })
+      // Link questions to exercises
+      .addCase(linkQuestionsToExercises.pending, (state) => {
+        state.linking = true
+        state.error = null
+      })
+      .addCase(linkQuestionsToExercises.fulfilled, (state) => {
+        state.linking = false
+      })
+      .addCase(linkQuestionsToExercises.rejected, (state, action) => {
+        state.linking = false
+        state.error = action.error.message || 'Failed to link questions to exercises'
+      })
+      // Fetch exercise with questions
+      .addCase(fetchExerciseWithQuestions.pending, (state) => {
+        state.fetchingExercise = true
+        state.error = null
+      })
+      .addCase(fetchExerciseWithQuestions.fulfilled, (state, action) => {
+        state.fetchingExercise = false
+        state.currentExercise = action.payload.exercise || action.payload
+        state.linkedQuestions = action.payload.questions || action.payload.linked_questions || []
+      })
+      .addCase(fetchExerciseWithQuestions.rejected, (state, action) => {
+        state.fetchingExercise = false
+        state.error = action.error.message || 'Failed to fetch exercise details'
+      })
+      // Update question positions
+      .addCase(updateQuestionPositions.pending, (state) => {
+        state.updatingPositions = true
+        state.error = null
+      })
+      .addCase(updateQuestionPositions.fulfilled, (state) => {
+        state.updatingPositions = false
+      })
+      .addCase(updateQuestionPositions.rejected, (state, action) => {
+        state.updatingPositions = false
+        state.error = action.error.message || 'Failed to update question positions'
+      })
+      // Unlink questions
+      .addCase(unlinkQuestions.pending, (state) => {
+        state.unlinking = true
+        state.error = null
+      })
+      .addCase(unlinkQuestions.fulfilled, (state) => {
+        state.unlinking = false
+      })
+      .addCase(unlinkQuestions.rejected, (state, action) => {
+        state.unlinking = false
+        state.error = action.error.message || 'Failed to unlink questions'
+      })
   },
 })
 
-export const { clearError } = exercisesSlice.actions
+export const { clearError, removeLinkedQuestion } = exercisesSlice.actions
 export default exercisesSlice.reducer 
