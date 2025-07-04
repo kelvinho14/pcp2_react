@@ -29,7 +29,26 @@ import Select from 'react-select'
 import clsx from 'clsx'
 import {toast} from '../../../_metronic/helpers/toast'
 import { hasImages, renderHtmlSafely, getTextPreview } from '../../../_metronic/helpers/htmlRenderer'
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { ConfirmationDialog } from '../../../_metronic/helpers/ConfirmationDialog'
 
 const exerciseValidationSchema = Yup.object().shape({
@@ -55,7 +74,7 @@ interface MultiSelectProps {
 const MultiSelect: FC<MultiSelectProps> = ({ options, selectedValues, onChange, placeholder, className }) => {
   // Convert options to react-select format
   const selectOptions = options.map(option => ({
-    value: option.id,
+    value: option.id || option.topic_id || '', // Handle both id and topic_id
     label: option.name
   }))
 
@@ -86,6 +105,104 @@ const MultiSelect: FC<MultiSelectProps> = ({ options, selectedValues, onChange, 
   )
 }
 
+// Sortable Row Component for @dnd-kit
+const SortableRow: FC<{ question: LinkedQuestion; index: number; onUnlink: (questionId: string) => void; unlinking: boolean; navigate: any; getQuestionTypeBadge: (type: string) => JSX.Element }> = ({ 
+  question, 
+  index, 
+  onUnlink, 
+  unlinking, 
+  navigate, 
+  getQuestionTypeBadge 
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: question.question_id })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.8 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+    position: isDragging ? 'relative' : 'static',
+  }
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={isDragging ? 'table-active dragging' : ''}
+    >
+      <td className="text-center fw-bold" {...attributes} {...listeners}>
+        <div className="d-flex align-items-center justify-content-center">
+          <i className="fas fa-grip-vertical text-muted me-2"></i>
+          <span>{index + 1}</span>
+        </div>
+      </td>
+      <td>
+        {getQuestionTypeBadge(question.type)}
+      </td>
+      <td>
+        <div className='d-flex align-items-center'>
+          <div className='d-flex justify-content-start flex-column'>
+            <span className='text-dark fw-bold text-hover-primary fs-6'>
+              {question.name}
+            </span>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div className='d-flex flex-column' style={{ maxWidth: '400px' }}>
+          {hasImages(question.question_content) ? (
+            <div 
+              className="d-flex align-items-center"
+              dangerouslySetInnerHTML={{ __html: renderHtmlSafely(question.question_content, { maxImageWidth: 520, maxImageHeight: 312 }) }}
+            />
+          ) : (
+            <div className="text-dark fw-bold text-hover-primary fs-6">
+              {getTextPreview(question.question_content, 150)}
+            </div>
+          )}
+        </div>
+      </td>
+      <td>
+        <div className='text-muted fw-semibold fs-6'>
+          {new Date(question.created_at).toLocaleDateString()}
+        </div>
+      </td>
+      <td>
+        <div className='d-flex gap-2'>
+          <button
+            type='button'
+            className='btn btn-sm btn-light-primary'
+            onClick={() => navigate(`/questions/${question.type}/edit/${question.question_id}`)}
+          >
+            <i className='fas fa-edit'></i>
+          </button>
+          <button
+            type='button'
+            className='btn btn-sm btn-light-danger indicator'
+            data-kt-indicator={unlinking ? 'on' : 'off'}
+            onClick={() => onUnlink(question.question_id)}
+            disabled={unlinking}
+          >
+            <span className='indicator-label'>
+              <i className='fas fa-trash'></i>
+            </span>
+            <span className='indicator-progress'>
+              <span className='spinner-border spinner-border-sm align-middle'></span>
+            </span>
+          </button>
+        </div>
+      </td>
+    </tr>
+  )
+}
+
 const ExerciseFormPage: FC = () => {
   const intl = useIntl()
   const navigate = useNavigate()
@@ -95,6 +212,15 @@ const ExerciseFormPage: FC = () => {
   const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false)
   const [questionToUnlink, setQuestionToUnlink] = useState<string | null>(null)
   const isEditMode = !!exerciseId
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
   
   // Redux selectors
   const { topics, exerciseTypes, loading, creating } = useSelector(
@@ -233,18 +359,26 @@ const ExerciseFormPage: FC = () => {
       <span className='badge badge-light-info'>LQ</span>
   }
 
-  const handleDragEnd = async (result: any) => {
-    if (!result.destination) return
+  const handleDragStart = (event: any) => {
+    setActiveId(event.active.id)
+  }
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveId(null)
+    const { active, over } = event
+
+    if (!over || active.id === over.id) {
+      return
+    }
 
     try {
-      // Create a copy of the linkedQuestions array
-      const reorderedQuestions = Array.from(linkedQuestions)
-      
-      // Remove the dragged item from its original position
-      const [draggedQuestion] = reorderedQuestions.splice(result.source.index, 1)
-      
-      // Insert the dragged item at its new position
-      reorderedQuestions.splice(result.destination.index, 0, draggedQuestion)
+      const oldIndex = linkedQuestions.findIndex(q => q.question_id === active.id)
+      const newIndex = linkedQuestions.findIndex(q => q.question_id === over.id)
+
+      if (oldIndex === -1 || newIndex === -1) return
+
+      // Create a copy of the linkedQuestions array with the new order
+      const reorderedQuestions = arrayMove(linkedQuestions, oldIndex, newIndex)
       
       // Create the question positions array based on the new order
       const questionPositions = reorderedQuestions.map((question, index) => ({
@@ -550,107 +684,67 @@ const ExerciseFormPage: FC = () => {
                 <p className='text-muted'>No questions linked to this exercise yet.</p>
               </div>
             ) : (
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="linkedQuestions">
-                  {(provided) => (
-                    <div
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className="table-responsive"
-                    >
-                      <table className='table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3'>
-                        <thead>
-                          <tr className='fw-bold text-muted'>
-                            <th className='min-w-50px'>#</th>
-                            <th className='min-w-125px'>Type</th>
-                            <th className='min-w-125px'>Name</th>
-                            <th className='min-w-400px'>Question Content</th>
-                            <th className='min-w-125px'>Created</th>
-                            <th className='min-w-100px'>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {linkedQuestions.map((question: LinkedQuestion, index: number) => (
-                            <Draggable key={question.question_id} draggableId={question.question_id} index={index}>
-                              {(provided, snapshot) => (
-                                <tr
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  className={snapshot.isDragging ? 'table-active' : ''}
-                                >
-                                  <td className="text-center fw-bold" {...provided.dragHandleProps}>
-                                    <div className="d-flex align-items-center justify-content-center">
-                                      <i className="fas fa-grip-vertical text-muted me-2"></i>
-                                      <span>{index + 1}</span>
-                                    </div>
-                                  </td>
-                                  <td>
-                                    {getQuestionTypeBadge(question.type)}
-                                  </td>
-                                  <td>
-                                    <div className='d-flex align-items-center'>
-                                      <div className='d-flex justify-content-start flex-column'>
-                                        <span className='text-dark fw-bold text-hover-primary fs-6'>
-                                          {question.name}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td>
-                                    <div className='d-flex flex-column' style={{ maxWidth: '400px' }}>
-                                      {hasImages(question.question_content) ? (
-                                        <div 
-                                          className="d-flex align-items-center"
-                                          dangerouslySetInnerHTML={{ __html: renderHtmlSafely(question.question_content, { maxImageWidth: 520, maxImageHeight: 312 }) }}
-                                        />
-                                      ) : (
-                                        <div className="text-dark fw-bold text-hover-primary fs-6">
-                                          {getTextPreview(question.question_content, 150)}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td>
-                                    <div className='text-muted fw-semibold fs-6'>
-                                      {new Date(question.created_at).toLocaleDateString()}
-                                    </div>
-                                  </td>
-                                  <td>
-                                    <div className='d-flex gap-2'>
-                                      <button
-                                        type='button'
-                                        className='btn btn-sm btn-light-primary'
-                                        onClick={() => navigate(`/questions/${question.type}/edit/${question.question_id}`)}
-                                      >
-                                        <i className='fas fa-edit'></i>
-                                      </button>
-                                      <button
-                                        type='button'
-                                        className='btn btn-sm btn-light-danger indicator'
-                                        data-kt-indicator={unlinking ? 'on' : 'off'}
-                                        onClick={() => handleUnlinkQuestion(question.question_id)}
-                                        disabled={unlinking}
-                                      >
-                                        <span className='indicator-label'>
-                                          <i className='fas fa-trash'></i>
-                                        </span>
-                                        <span className='indicator-progress'>
-                                          <span className='spinner-border spinner-border-sm align-middle'></span>
-                                        </span>
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={linkedQuestions.map(q => q.question_id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="table-responsive">
+                    <table className='table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3'>
+                      <thead>
+                        <tr className='fw-bold text-muted'>
+                          <th className='min-w-50px'>#</th>
+                          <th className='min-w-125px'>Type</th>
+                          <th className='min-w-125px'>Name</th>
+                          <th className='min-w-400px'>Question Content</th>
+                          <th className='min-w-125px'>Created</th>
+                          <th className='min-w-100px'>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {linkedQuestions.map((question: LinkedQuestion, index: number) => (
+                          <SortableRow
+                            key={question.question_id}
+                            question={question}
+                            index={index}
+                            onUnlink={handleUnlinkQuestion}
+                            unlinking={unlinking}
+                            navigate={navigate}
+                            getQuestionTypeBadge={getQuestionTypeBadge}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </SortableContext>
+                {/* DragOverlay for better drag appearance */}
+                <DragOverlay>
+                  {activeId ? (
+                    (() => {
+                      const q = linkedQuestions.find(q => q.question_id === activeId)
+                      return q ? (
+                        <table style={{width: '100%'}}>
+                          <tbody>
+                            <SortableRow
+                              question={q}
+                              index={0}
+                              onUnlink={() => {}}
+                              unlinking={false}
+                              navigate={() => {}}
+                              getQuestionTypeBadge={getQuestionTypeBadge}
+                            />
+                          </tbody>
+                        </table>
+                      ) : null
+                    })()
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
             )}
           </div>
         </div>

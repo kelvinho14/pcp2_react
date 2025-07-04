@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, FC } from 'react'
 import { Modal, Button, Spinner } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '../../../../store'
@@ -7,7 +7,26 @@ import { fetchQuestionsByIds, Question } from '../../../../store/questions/quest
 import { toast } from '../../../../_metronic/helpers/toast'
 import Select from 'react-select'
 import { hasImages, renderHtmlSafely, getTextPreview } from '../../../../_metronic/helpers/htmlRenderer'
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface AssignToExerciseModalProps {
   show: boolean
@@ -15,6 +34,78 @@ interface AssignToExerciseModalProps {
   questionIds: string[]
   questionType: 'mc' | 'lq'
   questions: Question[] // Pass questions data directly
+}
+
+// Sortable Row Component for @dnd-kit
+const SortableRow: FC<{ question: Question; index: number; onRemove: (questionId: string) => void }> = ({ 
+  question, 
+  index, 
+  onRemove 
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: question.q_id })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.8 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+    position: isDragging ? 'relative' : 'static',
+  }
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={isDragging ? 'table-active dragging' : ''}
+    >
+      <td className="text-center">
+        <div {...attributes} {...listeners}>
+          <i className="fas fa-grip-vertical text-muted"></i>
+        </div>
+      </td>
+      <td className="text-center fw-bold">{index + 1}</td>
+      <td className="text-center">
+        {question.type === 'mc' ? 
+          <span className="badge badge-light-primary">MC</span> : 
+          <span className="badge badge-light-info">LQ</span>
+        }
+      </td>
+      <td>
+        <div className="fw-bold text-dark">{question.name}</div>
+      </td>
+      <td>
+        <div style={{ maxWidth: '400px' }}>
+          {hasImages(question.question_content) ? (
+            <div 
+              className="d-flex align-items-center"
+              dangerouslySetInnerHTML={{ __html: renderHtmlSafely(question.question_content, { maxImageWidth: 439, maxImageHeight: 264 }) }}
+            />
+          ) : (
+            <div className="text-muted">
+              {getTextPreview(question.question_content, 100)}
+            </div>
+          )}
+        </div>
+      </td>
+      <td className="text-center">
+        <button
+          type="button"
+          className="btn btn-sm btn-light-danger"
+          onClick={() => onRemove(question.q_id)}
+          title="Remove question"
+        >
+          <i className="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  )
 }
 
 const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
@@ -30,6 +121,15 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('')
   const [hasSearched, setHasSearched] = useState(false)
   const [sortedQuestionIds, setSortedQuestionIds] = useState<string[]>([])
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   // Filter questions based on selected IDs
   const selectedQuestions = questions.filter(q => questionIds.includes(q.q_id))
@@ -72,15 +172,28 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
     setSearchTerm('')
     setHasSearched(false)
     setSortedQuestionIds([])
+    setActiveId(null)
     onHide()
   }
 
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return
+  const handleDragStart = (event: any) => {
+    setActiveId(event.active.id)
+  }
 
-    const newOrder = [...sortedQuestionIds]
-    const [reorderedItem] = newOrder.splice(result.source.index, 1)
-    newOrder.splice(result.destination.index, 0, reorderedItem)
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null)
+    const { active, over } = event
+
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    const oldIndex = sortedQuestionIds.findIndex(id => id === active.id)
+    const newIndex = sortedQuestionIds.findIndex(id => id === over.id)
+
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const newOrder = arrayMove(sortedQuestionIds, oldIndex, newIndex)
     setSortedQuestionIds(newOrder)
   }
 
@@ -121,89 +234,66 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
         {/* Questions Table */}
         <div className="mb-4">
           {selectedQuestions.length > 0 ? (
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <Droppable droppableId="questions">
-                {(provided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className="table-responsive"
-                  >
-                    <table className="table table-sm table-bordered">
-                      <thead>
-                        <tr>
-                          <th style={{ width: '50px' }}></th>
-                          <th style={{ width: '50px' }}>#</th>
-                          <th style={{ width: '80px' }}>Type</th>
-                          <th style={{ width: '150px' }}>Name</th>
-                          <th>Content</th>
-                          <th style={{ width: '50px' }}></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sortedQuestionIds.map((questionId, index) => {
-                          const question = selectedQuestions.find(q => q.q_id === questionId)
-                          if (!question) return null
-                          
-                          return (
-                            <Draggable key={questionId} draggableId={questionId} index={index}>
-                              {(provided, snapshot) => (
-                                <tr
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  className={snapshot.isDragging ? 'table-active' : ''}
-                                >
-                                  <td className="text-center">
-                                    <div {...provided.dragHandleProps}>
-                                      <i className="fas fa-grip-vertical text-muted"></i>
-                                    </div>
-                                  </td>
-                                  <td className="text-center fw-bold">{index + 1}</td>
-                                  <td className="text-center">
-                                    {question.type === 'mc' ? 
-                                      <span className="badge badge-light-primary">MC</span> : 
-                                      <span className="badge badge-light-info">LQ</span>
-                                    }
-                                  </td>
-                                  <td>
-                                    <div className="fw-bold text-dark">{question.name}</div>
-                                  </td>
-                                  <td>
-                                    <div style={{ maxWidth: '400px' }}>
-                                      {hasImages(question.question_content) ? (
-                                        <div 
-                                          className="d-flex align-items-center"
-                                          dangerouslySetInnerHTML={{ __html: renderHtmlSafely(question.question_content, { maxImageWidth: 439, maxImageHeight: 264 }) }}
-                                        />
-                                      ) : (
-                                        <div className="text-muted">
-                                          {getTextPreview(question.question_content, 100)}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="text-center">
-                                    <button
-                                      type="button"
-                                      className="btn btn-sm btn-light-danger"
-                                      onClick={() => handleRemoveQuestion(questionId)}
-                                      title="Remove question"
-                                    >
-                                      <i className="fas fa-trash"></i>
-                                    </button>
-                                  </td>
-                                </tr>
-                              )}
-                            </Draggable>
-                          )
-                        })}
-                        {provided.placeholder}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={sortedQuestionIds}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="table-responsive">
+                  <table className="table table-sm table-bordered">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '50px' }}></th>
+                        <th style={{ width: '50px' }}>#</th>
+                        <th style={{ width: '80px' }}>Type</th>
+                        <th style={{ width: '150px' }}>Name</th>
+                        <th>Content</th>
+                        <th style={{ width: '50px' }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedQuestionIds.map((questionId, index) => {
+                        const question = selectedQuestions.find(q => q.q_id === questionId)
+                        if (!question) return null
+                        
+                        return (
+                          <SortableRow
+                            key={questionId}
+                            question={question}
+                            index={index}
+                            onRemove={handleRemoveQuestion}
+                          />
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </SortableContext>
+              {/* DragOverlay for better drag appearance */}
+              <DragOverlay>
+                {activeId ? (
+                  (() => {
+                    const q = selectedQuestions.find(q => q.q_id === activeId)
+                    return q ? (
+                      <table style={{width: '100%'}}>
+                        <tbody>
+                          <SortableRow
+                            question={q}
+                            index={0}
+                            onRemove={() => {}}
+                          />
+                        </tbody>
+                      </table>
+                    ) : null
+                  })()
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           ) : (
             <div className="text-center py-3">
               <p className="text-muted">No questions loaded</p>
