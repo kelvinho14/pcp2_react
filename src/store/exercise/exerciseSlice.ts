@@ -7,7 +7,8 @@ const API_URL = import.meta.env.VITE_APP_API_URL
 
 // Types
 export interface Topic {
-  id: string
+  id?: string
+  topic_id?: string
   name: string
 }
 
