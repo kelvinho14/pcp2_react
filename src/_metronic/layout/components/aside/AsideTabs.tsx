@@ -45,6 +45,12 @@ const tabsForAdmin: ReadonlyArray<Tab> = [
 // Tabs for teachers
 const tabsForTeachers: ReadonlyArray<Tab> = [
   {
+    link: 'user',
+    icon: 'fa-solid fa-user',
+    tooltip: 'User',
+    paths: ['/users'],
+  },
+  {
     link: 'exercise',
     icon: 'fa-solid fa-pen',
     tooltip: 'Exercise',

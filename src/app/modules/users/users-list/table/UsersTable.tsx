@@ -3,7 +3,7 @@ import { useTable, useSortBy, ColumnInstance, Row, UseSortByState, TableState, T
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchUsers } from '../../../../../store/user/userSlice'
 import { RootState, AppDispatch } from '../../../../../store'
-import { usersColumns } from './columns/_columns'
+import { useUsersColumns } from './columns/_columns'
 import { User } from '../core/_models'
 import { CustomHeaderColumn } from './columns/CustomHeaderColumn'
 import { CustomRow } from './columns/CustomRow'
@@ -13,9 +13,12 @@ import { KTCardBody } from '../../../../../_metronic/helpers'
 
 type Props = {
   search: string   // <-- accept search from parent
+  roleFilter?: string
+  schoolFilter?: string
+  subjectFilter?: string
 }
 
-const UsersTable = ({ search }: Props) => {
+const UsersTable = ({ search, roleFilter, schoolFilter, subjectFilter }: Props) => {
   const dispatch = useDispatch<AppDispatch>()
   const dispatchRef = useRef(dispatch)
   dispatchRef.current = dispatch
@@ -30,14 +33,6 @@ const UsersTable = ({ search }: Props) => {
 
   // Memoize the fetch function to prevent unnecessary re-renders
   const fetchUsersData = useCallback(() => {
-    console.log('🔄 Fetching users data with params:', {
-      page,
-      items_per_page: itemsPerPage,
-      sort: sort?.id,
-      order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
-      search: search || undefined,
-    })
-    
     dispatchRef.current(
       fetchUsers({
         page,
@@ -45,16 +40,19 @@ const UsersTable = ({ search }: Props) => {
         sort: sort?.id,
         order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
         search: search || undefined,
+        role: roleFilter || undefined,
+        school: schoolFilter || undefined,
+        subject: subjectFilter || undefined,
       })
     )
-  }, [page, sort, search, itemsPerPage])
+  }, [page, sort, search, itemsPerPage, roleFilter, schoolFilter, subjectFilter])
 
   useEffect(() => {
     fetchUsersData()
   }, [fetchUsersData])
 
   const data = useMemo(() => (Array.isArray(users) ? users : []), [users])
-  const columns = useMemo(() => usersColumns, [])
+  const columns = useUsersColumns()
 
   const { getTableProps, getTableBodyProps, headers, rows, prepareRow } = useTable(
     {

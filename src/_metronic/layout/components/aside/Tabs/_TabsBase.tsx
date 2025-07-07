@@ -6,6 +6,7 @@ import {AdminUserManagementTab} from './AdminUserManagementTab.tsx'
 import {AdminSchoolManagementTab} from './AdminSchoolManagementTab.tsx'
 import {AdminSubjectManagementTab} from './AdminSubjectManagementTab.tsx'
 import {AdminTokenManagementTab} from './AdminTokenManagementTab.tsx'
+import {TeacherUserManagementTab} from './TeacherUserManagementTab.tsx'
 import {NotificationsTab} from './NotificationsTab'
 import {ProjectsTab} from './ProjectsTab'
 import {VideoTab} from './VideoTab'
@@ -22,7 +23,7 @@ type Props = {
 const SelectedTab: FC<Props> = ({link}) => {
   const { currentUser } = useAuth()
   const roleType = currentUser?.role?.role_type
-console.log(currentUser);
+
   if (roleType === ROLES.STUDENT) {
     switch (link) {
       case 'exercise':
@@ -46,6 +47,8 @@ console.log(currentUser);
     }
   } else {
     switch (link) {
+      case 'user':
+        return <TeacherUserManagementTab />
       case 'exercise':
         return <TeacherExerciseTab />
       case 'video':

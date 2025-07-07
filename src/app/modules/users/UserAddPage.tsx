@@ -2,16 +2,18 @@ import {FC, useEffect, useState} from 'react'
 import {useFormik} from 'formik'
 import * as Yup from 'yup'
 import {useDispatch, useSelector} from 'react-redux'
-import {AppDispatch, RootState} from '../../../../store'
-import {fetchSchools} from '../../../../store/admin/adminSlice'
-import {KTCard, KTCardBody} from '../../../../_metronic/helpers'
-import {useNavigate, useParams} from 'react-router-dom'
-import toast from '../../../../_metronic/helpers/toast'
+import {AppDispatch, RootState} from '../../../store'
+import {fetchSchools} from '../../../store/admin/adminSlice'
+import {KTCard, KTCardBody} from '../../../_metronic/helpers'
+import {useNavigate, useLocation} from 'react-router-dom'
+import toast from '../../../_metronic/helpers/toast'
 import axios from 'axios'
 import Select from 'react-select'
-import {LANGUAGES, DEFAULT_LANGUAGE} from '../../../constants/languages'
+import {LANGUAGES, DEFAULT_LANGUAGE} from '../../constants/languages'
+import {useAuth} from '../auth/core/Auth'
+import {getSchoolSubjectId, getHeadersWithSchoolSubject} from '../../../_metronic/helpers/axios'
 
-const userEditSchema = Yup.object().shape({
+const userAddSchema = Yup.object().shape({
   name: Yup.string()
     .min(2, 'Minimum 2 symbols')
     .max(50, 'Maximum 50 symbols')
@@ -21,24 +23,29 @@ const userEditSchema = Yup.object().shape({
     .min(3, 'Minimum 3 symbols')
     .max(50, 'Maximum 50 symbols')
     .required('Email is required'),
+  password: Yup.string()
+    .min(8, 'Password must be at least 8 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
+    .required('Password is required'),
   preferred_language: Yup.string()
     .required('Preferred language is required'),
   status: Yup.number()
     .required('Status is required'),
 })
 
-const UserEditPage: FC = () => {
+const UserAddPage: FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
-  const {user_id} = useParams<{user_id: string}>()
+  const location = useLocation()
+  const {currentUser} = useAuth()
   const {schools, loading} = useSelector((state: RootState) => state.admin)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [roles, setRoles] = useState<Array<{value: string, label: string}>>([])
+  const [roles, setRoles] = useState<Array<{value: number, label: string}>>([])
   const [rolesLoading, setRolesLoading] = useState(false)
   const [subjects, setSubjects] = useState<Array<{value: string, label: string}>>([])
   const [subjectsLoading, setSubjectsLoading] = useState(false)
-  const [subjectsBySchool, setSubjectsBySchool] = useState<Map<string, Array<{value: string, label: string}>>>(new Map())
+  const [showPassword, setShowPassword] = useState(false)
+  const [currentSchool, setCurrentSchool] = useState<any>(null)
   const [schoolCards, setSchoolCards] = useState<Array<{
     id: string
     school_id: string
@@ -46,15 +53,122 @@ const UserEditPage: FC = () => {
       subject_id: string
       role_id: string
       status: number
-      user_subject_id?: string // Will be undefined for new subjects
     }>
   }>>([])
+  const [subjectsBySchool, setSubjectsBySchool] = useState<Map<string, Array<{value: string, label: string}>>>(new Map())
+  
+  // Check if this is a non-admin user (accessing from /users/add)
+  const isNonAdmin = location.pathname.startsWith('/users/')
 
+  // Password strength checker
+  const getPasswordStrength = (password: string) => {
+    if (!password) return { score: 0, label: '', color: '' }
+    
+    let score = 0
+    let feedback = []
+    
+    if (password.length >= 8) score += 1
+    if (/[a-z]/.test(password)) score += 1
+    if (/[A-Z]/.test(password)) score += 1
+    if (/\d/.test(password)) score += 1
+    if (/[@$!%*?&]/.test(password)) score += 1
+    
+    let label = ''
+    let color = ''
+    
+    if (score <= 1) {
+      label = 'Very Weak'
+      color = 'danger'
+    } else if (score === 2) {
+      label = 'Weak'
+      color = 'warning'
+    } else if (score === 3) {
+      label = 'Fair'
+      color = 'info'
+    } else if (score === 4) {
+      label = 'Good'
+      color = 'primary'
+    } else {
+      label = 'Strong'
+      color = 'success'
+    }
+    
+    return { score, label, color }
+  }
 
+  // Generate random password
+  const generatePassword = () => {
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz'
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    const numbers = '0123456789'
+    const symbols = '@$!%*?&'
+    const allChars = lowercase + uppercase + numbers + symbols
+    
+    let password = ''
+    
+    // Ensure at least one character from each category
+    password += lowercase[Math.floor(Math.random() * lowercase.length)]
+    password += uppercase[Math.floor(Math.random() * uppercase.length)]
+    password += numbers[Math.floor(Math.random() * numbers.length)]
+    password += symbols[Math.floor(Math.random() * symbols.length)]
+    
+    // Fill the rest with random characters
+    for (let i = 4; i < 12; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)]
+    }
+    
+    // Shuffle the password
+    password = password.split('').sort(() => Math.random() - 0.5).join('')
+    
+    formik.setFieldValue('password', password)
+  }
 
   useEffect(() => {
-    dispatch(fetchSchools({page: 1, items_per_page: 1000}))
-  }, [dispatch])
+    // Only fetch schools for admin users
+    if (!isNonAdmin) {
+      dispatch(fetchSchools({page: 1, items_per_page: 1000}))
+    }
+  }, [dispatch, isNonAdmin])
+
+  // Get current school for non-admin users
+  useEffect(() => {
+    if (isNonAdmin) {
+      const getCurrentSchool = async () => {
+        const schoolSubjectId = getSchoolSubjectId()
+        if (schoolSubjectId) {
+          try {
+            const response = await axios.get(`${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/${schoolSubjectId}`, {
+              withCredentials: true
+            })
+            if (response.data.status === 'success' && response.data.data) {
+              const schoolData = {
+                school_id: response.data.data.school_id,
+                name: response.data.data.school_name,
+                code: response.data.data.school_code
+              }
+              setCurrentSchool(schoolData)
+              
+              // Initialize with current school card
+              const initialCard = {
+                id: `current-${Date.now()}`,
+                school_id: schoolData.school_id,
+                subjects: []
+              }
+              setSchoolCards([initialCard])
+              
+              // Fetch subjects for current school
+              await fetchSubjectsForCard(schoolData.school_id, 0)
+            }
+          } catch (error) {
+            console.error('Error fetching current school:', error)
+            toast.error('Failed to load current school information', 'Error')
+          }
+        }
+      }
+
+      getCurrentSchool()
+    }
+  }, [isNonAdmin])
 
   // Fetch roles from API
   useEffect(() => {
@@ -81,93 +195,6 @@ const UserEditPage: FC = () => {
 
     fetchRoles()
   }, [])
-
-  // Fetch user data
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (!user_id) return
-      
-      setIsLoading(true)
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_APP_API_URL}/users/${user_id}`, {
-          withCredentials: true
-        })
-        
-        if (response.data.status === 'success' && response.data.data) {
-          const userData = response.data.data
-          
-          // Set form values
-          formik.setValues({
-            name: userData.name || '',
-            email: userData.email || '',
-            preferred_language: userData.language || DEFAULT_LANGUAGE,
-            status: userData.status || 1,
-          })
-          
-          // Process user subjects into school cards
-          if (userData.user_subjects && userData.user_subjects.length > 0) {
-            const cardsMap = new Map<string, {
-              id: string
-              school_id: string
-              subjects: Array<{
-                subject_id: string
-                role_id: string
-                status: number
-                user_subject_id?: string
-              }>
-            }>()
-            
-            userData.user_subjects.forEach((us: any) => {
-              // Group by school_id instead of school_subject_id
-              if (!cardsMap.has(us.school_id)) {
-                cardsMap.set(us.school_id, {
-                  id: `school-${us.school_id}`,
-                  school_id: us.school_id,
-                  subjects: [{
-                    subject_id: us.school_subject_id,
-                    role_id: us.role_id,
-                    status: us.status,
-                    user_subject_id: us.user_subject_id // Mark as existing enrollment
-                  }]
-                })
-              } else {
-                const card = cardsMap.get(us.school_id)!
-                card.subjects.push({
-                  subject_id: us.school_subject_id,
-                  role_id: us.role_id,
-                  status: us.status,
-                  user_subject_id: us.user_subject_id // Mark as existing enrollment
-                })
-              }
-            })
-            
-            setSchoolCards(Array.from(cardsMap.values()))
-            
-            // Fetch subjects for all schools to populate the subjects dropdowns
-            const cards = Array.from(cardsMap.values())
-            for (let i = 0; i < cards.length; i++) {
-              const card = cards[i]
-              if (card.school_id) {
-                await fetchSubjectsForCard(card.school_id, i)
-              }
-            }
-          }
-          
-
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error)
-        toast.error('Failed to load user data', 'Error')
-        navigate('/admin/users/list')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchUser()
-  }, [user_id])
-
-
 
   // Fetch subjects when school changes
   const fetchSubjects = async (schoolId: string) => {
@@ -224,57 +251,79 @@ const UserEditPage: FC = () => {
     initialValues: {
       name: '',
       email: '',
+      password: '',
       preferred_language: DEFAULT_LANGUAGE,
       status: 1, // Default to active
     },
-    validationSchema: userEditSchema,
+    validationSchema: userAddSchema,
     onSubmit: async (values, {setSubmitting, resetForm}) => {
       setIsSubmitting(true)
       try {
         // Transform form values to API payload format
+        // Only include user_subjects if there are school cards with subjects
+        const userSubjects = schoolCards.length > 0 ? schoolCards.map(card => {
+          // Group subjects by role and status for this school
+          const subjectsByRoleStatus = new Map<string, Array<{
+            subject_id: string
+            role_id: string
+            status: number
+          }>>()
+          
+          card.subjects.forEach(subject => {
+            const key = `${subject.role_id}-${subject.status}`
+            if (!subjectsByRoleStatus.has(key)) {
+              subjectsByRoleStatus.set(key, [])
+            }
+            subjectsByRoleStatus.get(key)!.push(subject)
+          })
+          
+          // Create a user_subject entry for each unique role-status combination
+          return Array.from(subjectsByRoleStatus.entries()).map(([key, subjects]) => ({
+            school_id: card.school_id,
+            role_id: subjects[0].role_id,
+            status: subjects[0].status,
+            school_subject_ids: subjects.map(s => s.subject_id)
+          }))
+        }).flat() : []
+
         const payload = {
           email: values.email,
           name: values.name,
           language: values.preferred_language,
           status: values.status,
-          user_subjects: schoolCards.map(card => {
-            // Group subjects by role and status for this school
-            const subjectsByRoleStatus = new Map<string, Array<{
-              subject_id: string
-              role_id: string
-              status: number
-            }>>()
-            
-            card.subjects.forEach(subject => {
-              const key = `${subject.role_id}-${subject.status}`
-              if (!subjectsByRoleStatus.has(key)) {
-                subjectsByRoleStatus.set(key, [])
-              }
-              subjectsByRoleStatus.get(key)!.push(subject)
-            })
-            
-            // Create a user_subject entry for each unique role-status combination
-            return Array.from(subjectsByRoleStatus.entries()).map(([key, subjects]) => ({
-              school_id: card.school_id,
-              role_id: subjects[0].role_id,
-              status: subjects[0].status,
-              school_subject_ids: subjects.map(s => s.subject_id)
-            }))
-          }).flat()
+          password: values.password,
+          user_subjects: userSubjects
         }
 
-        const response = await axios.put(`${import.meta.env.VITE_APP_API_URL}/users/${user_id}`, payload, {
+        console.log('🔍 UserAddPage payload:', JSON.stringify(payload, null, 2))
+        console.log('🔍 schoolCards:', schoolCards)
+        console.log('🔍 userSubjects:', userSubjects)
+
+        // Validate that at least one school card with subjects exists
+        const hasValidSchoolCards = schoolCards.some(card => 
+          card.school_id && card.subjects.length > 0
+        )
+        
+        if (!hasValidSchoolCards) {
+          toast.error('Please add at least one school enrollment with subjects', 'Error')
+          return
+        }
+
+        const headers = isNonAdmin ? getHeadersWithSchoolSubject(`${import.meta.env.VITE_APP_API_URL}/users/`) : {}
+        const response = await axios.post(`${import.meta.env.VITE_APP_API_URL}/users/`, payload, {
+          headers,
           withCredentials: true
         })
 
         if (response.data.status === 'success') {
-          toast.success('User updated successfully!', 'Success')
-          navigate('/admin/users/list')
+          toast.success('User created successfully!', 'Success')
+          resetForm()
+          navigate(isNonAdmin ? '/users/list' : '/admin/users/list')
         } else {
-          throw new Error(response.data.message || 'Failed to update user')
+          throw new Error(response.data.message || 'Failed to create user')
         }
       } catch (error: any) {
-        const errorMessage = error.response?.data?.message || error.message || 'Failed to update user'
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to create user'
         toast.error(errorMessage, 'Error')
       } finally {
         setIsSubmitting(false)
@@ -285,7 +334,7 @@ const UserEditPage: FC = () => {
 
   const languages = LANGUAGES
 
-  if (loading || rolesLoading || isLoading) {
+  if (loading || rolesLoading || (isNonAdmin && !currentSchool)) {
     return (
       <div className='d-flex justify-content-center align-items-center' style={{minHeight: '400px'}}>
         <div className='spinner-border text-primary' role='status'>
@@ -337,7 +386,57 @@ const UserEditPage: FC = () => {
             </div>
           </div>
 
-
+          <div className='row mb-6'>
+            <label className='col-lg-4 col-form-label required fw-semibold fs-6'>
+              Password
+            </label>
+            <div className='col-lg-8'>
+              <div className='input-group'>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className={`form-control form-control-lg form-control-solid ${
+                    formik.touched.password && formik.errors.password ? 'is-invalid' : ''
+                  }`}
+                  placeholder='Enter password'
+                  {...formik.getFieldProps('password')}
+                />
+                <button
+                  type='button'
+                  className='btn btn-outline-secondary'
+                  onClick={() => setShowPassword(!showPassword)}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  <i className={`fas fa-${showPassword ? 'eye-slash' : 'eye'}`}></i>
+                </button>
+                <button
+                  type='button'
+                  className='btn btn-secondary'
+                  onClick={generatePassword}
+                >
+                  Generate
+                </button>
+              </div>
+              {formik.touched.password && formik.errors.password && (
+                <div className='invalid-feedback'>{formik.errors.password}</div>
+              )}
+              {formik.values.password && (
+                <div className='mt-2'>
+                  <div className='d-flex align-items-center mb-1'>
+                    <span className='fw-semibold me-2'>Password Strength:</span>
+                    <span className={`badge badge-${getPasswordStrength(formik.values.password).color}`}>
+                      {getPasswordStrength(formik.values.password).label}
+                    </span>
+                  </div>
+                  <div className='progress' style={{height: '12px', width: '200px'}}>
+                    <div 
+                      className={`progress-bar bg-${getPasswordStrength(formik.values.password).color}`}
+                      style={{width: `${(getPasswordStrength(formik.values.password).score / 5) * 100}%`}}
+                    ></div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           <div className='row mb-6'>
             <label className='col-lg-4 col-form-label required fw-semibold fs-6'>
@@ -395,30 +494,40 @@ const UserEditPage: FC = () => {
             <div className='col-12'>
               <div className='d-flex justify-content-between align-items-center mb-5'>
                 <h3 className='fw-bold mb-0'>School Enrollments</h3>
-                <button
-                  type='button'
-                  className='btn btn-primary'
-                  onClick={() => {
-                    const newCard = {
-                      id: `new-${Date.now()}`,
-                      school_id: '',
-                      subjects: []
-                    }
-                    setSchoolCards([...schoolCards, newCard])
-                  }}
-                >
-                  <i className='fas fa-plus'></i> Add School Enrollment
-                </button>
+                {!isNonAdmin && (
+                  <button
+                    type='button'
+                    className='btn btn-primary'
+                    onClick={() => {
+                      const newCard = {
+                        id: `new-${Date.now()}`,
+                        school_id: '',
+                        subjects: []
+                      }
+                      setSchoolCards([...schoolCards, newCard])
+                    }}
+                  >
+                    <i className='fas fa-plus'></i> Add School Enrollment
+                  </button>
+                )}
+                {isNonAdmin && currentSchool && (
+                  <div className='badge badge-light-primary fs-7'>
+                    {currentSchool.name} {currentSchool.code}
+                  </div>
+                )}
               </div>
               
               <div className='row'>
                 {schoolCards.map((card, index) => (
-                  <div key={card.id} className='col-md-6 mb-4'>
+                  <div key={card.id} className={isNonAdmin ? 'col-12 mb-4' : 'col-md-6 mb-4'}>
                     <div className='card h-100'>
                       <div className='card-body'>
-                                                  <div className='d-flex gap-2 align-items-center mb-4'>
-                            <div className='flex-grow-1'>
-                              <label className='form-label fw-semibold'>School</label>
+                        <div className='d-flex gap-2 align-items-center mb-4'>
+                          <div className='flex-grow-1'>
+                            {isNonAdmin ? (
+                              <></>
+                            ) : (
+                              <><label className='form-label fw-semibold'>School</label>
                               <select
                                 className='form-select form-select-solid'
                                 value={card.school_id}
@@ -451,10 +560,11 @@ const UserEditPage: FC = () => {
                                     </option>
                                   ))}
                               </select>
-                            </div>
-                                                      <div className='pt-4 ms-auto'>
-                            {/* Only show delete button if no existing subjects in this card */}
-                            {!card.subjects.some(subject => subject.user_subject_id) && (
+                              </>
+                            )}
+                          </div>
+                          {!isNonAdmin && (
+                            <div className='pt-4 ms-auto'>
                               <button
                                 type='button'
                                 className='btn btn-sm btn-outline-danger'
@@ -466,51 +576,32 @@ const UserEditPage: FC = () => {
                               >
                                 <i className='fas fa-trash'></i>
                               </button>
-                            )}
-                          </div>
-                          </div>
+                            </div>
+                          )}
+                        </div>
                         
                         <div className='mb-3'>
-                          
                           <Select
                             isMulti
                             options={subjectsBySchool.get(card.school_id) || []}
                             value={(subjectsBySchool.get(card.school_id) || []).filter(subject => 
                               card.subjects.some(s => s.subject_id === subject.value)
                             )}
-                                                          onChange={(selectedOptions) => {
-                                const currentSubjects = card.subjects
-                                const selectedValues = selectedOptions ? selectedOptions.map(option => {
-                                  // Check if this subject already exists and preserve its role/status
-                                  const existingSubject = currentSubjects.find(s => s.subject_id === option.value)
-                                  return {
-                                    subject_id: option.value,
-                                    role_id: existingSubject?.role_id || (roles.length > 0 ? roles[0].value : ''),
-                                    status: existingSubject?.status || 1,
-                                    user_subject_id: existingSubject?.user_subject_id // Preserve user_subject_id if it exists
-                                  }
-                                }) : []
-                                
-                                // Prevent removal of existing subjects - keep them if they were removed from selection
-                                const existingSubjects = currentSubjects.filter(s => s.user_subject_id)
-                                const finalSubjects = [...existingSubjects, ...selectedValues.filter(s => !s.user_subject_id)]
-                                
-                                // Check if any existing subjects were attempted to be removed
-                                const attemptedRemovals = existingSubjects.filter(existing => 
-                                  !selectedValues.some(selected => selected.subject_id === existing.subject_id)
-                                )
-                                
-                                if (attemptedRemovals.length > 0) {
-                                  toast.warning(
-                                    'Existing enrollments cannot be removed. You can only modify their role and status.',
-                                    'Cannot Remove Enrollment'
-                                  )
+                            onChange={(selectedOptions) => {
+                              const currentSubjects = card.subjects
+                              const selectedValues = selectedOptions ? selectedOptions.map(option => {
+                                // Check if this subject already exists and preserve its role/status
+                                const existingSubject = currentSubjects.find(s => s.subject_id === option.value)
+                                return {
+                                  subject_id: option.value,
+                                  role_id: existingSubject?.role_id || (roles.length > 0 ? roles[0].value.toString() : ''),
+                                  status: existingSubject?.status || 1
                                 }
-                                
-                                const newCards = [...schoolCards]
-                                newCards[index].subjects = finalSubjects
-                                setSchoolCards(newCards)
-                              }}
+                              }) : []
+                              const newCards = [...schoolCards]
+                              newCards[index].subjects = selectedValues
+                              setSchoolCards(newCards)
+                            }}
                             placeholder='Select subjects...'
                             className='react-select-container'
                             classNamePrefix='react-select'
@@ -532,35 +623,18 @@ const UserEditPage: FC = () => {
                                   <div key={subject.subject_id} className='mb-3'>
                                     <div className='d-flex justify-content-between align-items-center mb-2'>
                                       <div className='fw-semibold text-primary'>{subjectData?.label}</div>
-                                      {/* Only show delete button for new subjects (not saved in DB) */}
-                                      {!subject.user_subject_id ? (
-                                        <button
-                                          type='button'
-                                          className='btn btn-sm btn-outline-danger'
-                                          onClick={() => {
-                                            const newCards = [...schoolCards]
-                                            newCards[index].subjects = newCards[index].subjects.filter((_, i) => i !== subjectIndex)
-                                            setSchoolCards(newCards)
-                                          }}
-                                          title='Remove subject'
-                                        >
-                                          <i className='fas fa-times'></i>
-                                        </button>
-                                      ) : (
-                                        <button
-                                          type='button'
-                                          className='btn btn-sm btn-outline-secondary'
-                                          onClick={() => {
-                                            toast.warning(
-                                              'Existing enrollments cannot be deleted. You can only modify their role and status.',
-                                              'Cannot Delete Enrollment'
-                                            )
-                                          }}
-                                          title='Cannot delete existing enrollment'
-                                        >
-                                          <i className='fas fa-lock'></i>
-                                        </button>
-                                      )}
+                                      <button
+                                        type='button'
+                                        className='btn btn-sm btn-outline-danger'
+                                        onClick={() => {
+                                          const newCards = [...schoolCards]
+                                          newCards[index].subjects = newCards[index].subjects.filter((_, i) => i !== subjectIndex)
+                                          setSchoolCards(newCards)
+                                        }}
+                                        title='Remove subject'
+                                      >
+                                        <i className='fas fa-times'></i>
+                                      </button>
                                     </div>
                                     <div className='row g-2'>
                                       <div className='col-md-6'>
@@ -620,21 +694,23 @@ const UserEditPage: FC = () => {
                 <button
                   type='submit'
                   className='btn btn-primary'
-                  disabled={isSubmitting || !formik.isValid}
+                  disabled={isSubmitting || !formik.isValid || !schoolCards.some(card => 
+                    card.school_id && card.subjects.length > 0
+                  )}
                 >
                   {isSubmitting ? (
                     <>
                       <span className='spinner-border spinner-border-sm me-2' role='status' aria-hidden='true'></span>
-                      Updating...
+                      Creating...
                     </>
                   ) : (
-                    'Update User'
+                    'Create User'
                   )}
                 </button>
                 <button
                   type='button'
                   className='btn btn-secondary'
-                  onClick={() => navigate('/admin/users/list')}
+                  onClick={() => navigate(isNonAdmin ? '/users/list' : '/admin/users/list')}
                   disabled={isSubmitting}
                 >
                   Cancel
@@ -648,4 +724,4 @@ const UserEditPage: FC = () => {
   )
 }
 
-export default UserEditPage 
+export default UserAddPage 

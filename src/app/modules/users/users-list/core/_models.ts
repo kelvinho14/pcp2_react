@@ -1,4 +1,21 @@
 import {ID, Response} from '../../../../../_metronic/helpers'
+
+export type UserSubject = {
+  user_subject_id: string
+  school_subject_id: string
+  school_id: string
+  subject_name: string
+  role_id: string
+  role: {
+    role_id: string
+    name: string
+    role_type: number
+  }
+  status: number
+  created_at: string
+  updated_at: string
+}
+
 export type User = {
   user_id?: ID
   name?: string
@@ -7,9 +24,12 @@ export type User = {
   position?: string
   role?: string
   last_login?: string
+  lastseen_at?: string
   two_steps?: boolean
   joined_day?: string
   online?: boolean
+  status?: number
+  user_subjects?: UserSubject[]
   initials?: {
     label: string
     state: string
