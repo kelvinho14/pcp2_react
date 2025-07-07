@@ -8,9 +8,9 @@ import SchoolCreatePage from './schools/SchoolCreatePage'
 import SchoolEditPage from './schools/SchoolEditPage'
 import SchoolsPage from './schools/SchoolsPage'
 import SchoolSubjectCreatePage from './subjects/SchoolSubjectCreatePage'
-import UsersPage from '../users/UsersPage'
-import UserAddPage from './users/UserAddPage'
-import UserEditPage from './users/UserEditPage'
+import AdminUsersPage from './AdminUsersPage'
+import UserAddPage from '../users/UserAddPage'
+import UserEditPage from '../users/UserEditPage'
 
 const adminBreadcrumbs: Array<PageLink> = [
   {
@@ -130,7 +130,7 @@ const AdminPage = () => {
           />
           <Route
             path='users/list'
-            element={<UsersPage />}
+            element={<AdminUsersPage />}
           />
           <Route
             path='users/add'

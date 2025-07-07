@@ -1,9 +1,10 @@
-
 import clsx from 'clsx'
 import {FC} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {toAbsoluteUrl} from '../../../../../../_metronic/helpers'
 import {User} from '../../core/_models'
+import {useAuth} from '../../../../auth/core/Auth'
+import {ROLES} from '../../../../../constants/roles'
 
 type Props = {
   user: User
@@ -11,9 +12,13 @@ type Props = {
 
 const UserInfoCell: FC<Props> = ({user}) => {
   const navigate = useNavigate()
+  const { currentUser } = useAuth()
 
   const handleNameClick = () => {
-    navigate(`/admin/users/edit/${user.user_id}`)
+    // Determine the correct edit path based on user role
+    const isAdmin = currentUser?.role?.role_type === ROLES.ADMIN
+    const editPath = isAdmin ? `/admin/users/edit/${user.user_id}` : `/users/edit/${user.user_id}`
+    navigate(editPath)
   }
 
   return (

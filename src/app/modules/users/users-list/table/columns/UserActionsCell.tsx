@@ -9,6 +9,8 @@ import {deleteUser} from '../../../../../../store/user/userSlice'
 import {ConfirmationDialog} from '../../../../../../_metronic/helpers/ConfirmationDialog'
 import toast from '../../../../../../_metronic/helpers/toast'
 import {useNavigate} from 'react-router-dom'
+import {useAuth} from '../../../../auth/core/Auth'
+import {ROLES} from '../../../../../constants/roles'
 
 type Props = {
   id: ID
@@ -17,6 +19,7 @@ type Props = {
 const UserActionsCell: FC<Props> = ({id}) => {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
+  const { currentUser } = useAuth()
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   useEffect(() => {
@@ -36,6 +39,13 @@ const UserActionsCell: FC<Props> = ({id}) => {
 
   const handleDeleteClick = () => {
     setShowConfirmDialog(true)
+  }
+
+  const handleEditClick = () => {
+    // Determine the correct edit path based on user role
+    const isAdmin = currentUser?.role?.role_type === ROLES.ADMIN
+    const editPath = isAdmin ? `/admin/users/edit/${id}` : `/users/edit/${id}`
+    navigate(editPath)
   }
 
   return (
@@ -58,7 +68,7 @@ const UserActionsCell: FC<Props> = ({id}) => {
         <div className='menu-item px-3'>
           <a
             className='menu-link px-3'
-            onClick={() => navigate(`/admin/users/edit/${id}`)}
+            onClick={handleEditClick}
           >
             Edit
           </a>

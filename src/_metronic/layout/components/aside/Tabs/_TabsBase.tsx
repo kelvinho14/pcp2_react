@@ -6,6 +6,7 @@ import {AdminUserManagementTab} from './AdminUserManagementTab.tsx'
 import {AdminSchoolManagementTab} from './AdminSchoolManagementTab.tsx'
 import {AdminSubjectManagementTab} from './AdminSubjectManagementTab.tsx'
 import {AdminTokenManagementTab} from './AdminTokenManagementTab.tsx'
+import {TeacherUserManagementTab} from './TeacherUserManagementTab.tsx'
 import {NotificationsTab} from './NotificationsTab'
 import {ProjectsTab} from './ProjectsTab'
 import {VideoTab} from './VideoTab'
@@ -46,6 +47,8 @@ console.log(currentUser);
     }
   } else {
     switch (link) {
+      case 'user':
+        return <TeacherUserManagementTab />
       case 'exercise':
         return <TeacherExerciseTab />
       case 'video':

@@ -114,6 +114,15 @@ const PrivateRoutes = () => {
             </SuspensedView>
           }
         />
+        {/* Users Routes - must come before admin routes */}
+        <Route
+          path='users/*'
+          element={
+            <SuspensedView>
+              <UsersPage />
+            </SuspensedView>
+          }
+        />
         {/* Admin Routes */}
         <Route
           path='admin/*'

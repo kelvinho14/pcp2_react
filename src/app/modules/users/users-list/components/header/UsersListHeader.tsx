@@ -1,13 +1,17 @@
+import React from 'react'
 import { useListView } from '../../core/ListViewProvider'
+import { UsersListSearchComponent } from './UsersListSearchComponent'
 import { UsersListToolbar } from './UserListToolbar'
 import { UsersListGrouping } from './UsersListGrouping'
-import { UsersListSearchComponent } from './UsersListSearchComponent' // ✅ Keep this!
 
 type Props = {
-  setSearch: (value: string) => void
+  setSearch: (search: string) => void
+  setRoleFilter: (role: string) => void
+  setSchoolFilter?: (school: string) => void
+  setSubjectFilter?: (subject: string) => void
 }
 
-const UsersListHeader: React.FC<Props> = ({ setSearch }) => {
+const UsersListHeader: React.FC<Props> = ({ setSearch, setRoleFilter, setSchoolFilter, setSubjectFilter }) => {
   const { selected } = useListView()
 
   return (
@@ -15,7 +19,7 @@ const UsersListHeader: React.FC<Props> = ({ setSearch }) => {
       {/* ✅ This is YOUR custom Search Component */}
       <UsersListSearchComponent setSearch={setSearch} />
       <div className='card-toolbar'>
-        {selected.length > 0 ? <UsersListGrouping /> : <UsersListToolbar />}
+        {selected.length > 0 ? <UsersListGrouping /> : <UsersListToolbar setRoleFilter={setRoleFilter} setSchoolFilter={setSchoolFilter} setSubjectFilter={setSubjectFilter} />}
       </div>
     </div>
   )

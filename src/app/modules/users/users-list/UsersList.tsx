@@ -7,11 +7,24 @@ import { KTCard } from '../../../../_metronic/helpers'
 const UsersList = () => {
   console.log('📋 UsersList component rendered')
   const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState<string>('')
+  const [schoolFilter, setSchoolFilter] = useState<string>('')
+  const [subjectFilter, setSubjectFilter] = useState<string>('')
 
   return (
     <KTCard>
-      <UsersListHeader setSearch={setSearch} />
-      <UsersTable search={search} />
+      <UsersListHeader 
+        setSearch={setSearch} 
+        setRoleFilter={setRoleFilter}
+        setSchoolFilter={setSchoolFilter}
+        setSubjectFilter={setSubjectFilter}
+      />
+      <UsersTable 
+        search={search} 
+        roleFilter={roleFilter}
+        schoolFilter={schoolFilter}
+        subjectFilter={subjectFilter}
+      />
     </KTCard>
   )
 }

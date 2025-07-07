@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import axios from 'axios'
+import { getHeadersWithSchoolSubject } from '../../_metronic/helpers/axios'
 const API_URL = import.meta.env.VITE_APP_API_URL;
 
 type FetchUsersParams = {
@@ -8,21 +9,45 @@ type FetchUsersParams = {
   sort?: string
   order?: string
   search?: string
+  role?: string
+  school?: string
+  subject?: string
 }
 
 export const fetchUsers = createAsyncThunk(
   'users/fetchUsers',
-  async ({ page, items_per_page, sort, order, search }: FetchUsersParams) => {
+  async ({ page, items_per_page, sort, order, search, role, school, subject }: FetchUsersParams) => {
     const params: any = { page, items_per_page }
     if (sort) params.sort = sort
     if (order) params.order = order
     if (search) params.search = search
+    if (role) params.role = role
+    if (school) params.school_id = school
+    if (subject) params.subject_id = subject
 
     try {
-      const response = await axios.get(API_URL+'/users', { params, withCredentials: true })
+      // For admin users, don't send school subject header
+      const headers: Record<string, string> = {}
+      const schoolSubjectId = sessionStorage.getItem('school_subject_id')
+      const currentUserRole = sessionStorage.getItem('user_role')
+      
+      // Only add school subject header for non-admin users
+      if (schoolSubjectId && currentUserRole !== '1') {
+        headers['X-School-Subject-ID'] = schoolSubjectId
+      }
+      
+      const response = await axios.get(API_URL+'/users', { 
+        params, 
+        headers,
+        withCredentials: true 
+      })
+      
+      console.log('🔍 fetchUsers response:', response.data)
+      
       return {
         items: response.data.data,
         total: response.data.payload.pagination.total,
+        roles: response.data.payload.roles || [],
       }
     } catch (error) {
       throw error
@@ -101,6 +126,7 @@ const userSlice = createSlice({
     loading: false,
     error: null as string | null,
     selectedUser: null as any,
+    roles: [] as any[],
   },
   reducers: {
     clearSelectedUser: (state) => {
@@ -116,6 +142,8 @@ const userSlice = createSlice({
         state.loading = false
         state.users = action.payload.items
         state.total = action.payload.total
+        state.roles = action.payload.roles
+        console.log('🔍 UserSlice - fetchUsers fulfilled, roles:', action.payload.roles)
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false
