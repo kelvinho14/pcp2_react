@@ -4,6 +4,7 @@ import * as Yup from 'yup'
 import {useDispatch, useSelector} from 'react-redux'
 import {AppDispatch, RootState} from '../../../store'
 import {fetchSchools} from '../../../store/admin/adminSlice'
+import {fetchSubjects} from '../../../store/user/userSlice'
 import {KTCard, KTCardBody} from '../../../_metronic/helpers'
 import {useNavigate, useParams, useLocation} from 'react-router-dom'
 import toast from '../../../_metronic/helpers/toast'
@@ -182,7 +183,7 @@ const UserEditPage: FC = () => {
 
 
   // Fetch subjects when school changes
-  const fetchSubjects = async (schoolId: string) => {
+  const fetchSubjectsForSchool = async (schoolId: string) => {
     if (!schoolId) {
       setSubjects([])
       return
@@ -190,37 +191,12 @@ const UserEditPage: FC = () => {
     
     setSubjectsLoading(true)
     try {
-      const headers: Record<string, string> = {}
-      
-      // For non-admin users, we need to send the X-School-Subject-ID header
-      // even though this is a subjects endpoint
-      if (isNonAdmin) {
-        const schoolSubjectId = sessionStorage.getItem('school_subject_id')
-        if (schoolSubjectId) {
-          headers['X-School-Subject-ID'] = schoolSubjectId
-        }
-      }
-      
-      console.log('🔍 === SUBJECTS API CALL DEBUG (fetchSubjects) ===')
-      console.log('🔍 URL:', `${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/?school_id=${schoolId}&all=1`)
-      console.log('🔍 Headers being sent:', headers)
-      console.log('🔍 Headers JSON:', JSON.stringify(headers, null, 2))
-      console.log('🔍 Header keys:', Object.keys(headers))
-      console.log('🔍 X-School-Subject-ID value:', headers['X-School-Subject-ID'])
-      console.log('🔍 isNonAdmin:', isNonAdmin)
-      console.log('🔍 ================================================')
-      
-      const response = await axios.get(`${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/?school_id=${schoolId}&all=1`, {
-        headers,
-        withCredentials: true
-      })
-      if (response.data.status === 'success' && response.data.data) {
-        const subjectsData = response.data.data.map((subject: any) => ({
-          value: subject.id, // Use the 'id' field from the response
-          label: subject.custom_name || subject.name // Use custom_name if available, otherwise use name
-        }))
-        setSubjects(subjectsData)
-      }
+      const result = await dispatch(fetchSubjects(schoolId)).unwrap()
+      const subjectsData = result.map((subject: any) => ({
+        value: subject.id, // Use the 'id' field from the response
+        label: subject.custom_name || subject.name // Use custom_name if available, otherwise use name
+      }))
+      setSubjects(subjectsData)
     } catch (error) {
       console.error('Error fetching subjects:', error)
       toast.error('Failed to load subjects for this school', 'Error')
@@ -235,40 +211,14 @@ const UserEditPage: FC = () => {
     if (!schoolId) return
     
     try {
-      const headers: Record<string, string> = {}
+      const result = await dispatch(fetchSubjects(schoolId)).unwrap()
+      const subjectsData = result.map((subject: any) => ({
+        value: subject.id,
+        label: subject.custom_name || subject.name
+      }))
       
-      // For non-admin users, we need to send the X-School-Subject-ID header
-      // even though this is a subjects endpoint
-      if (isNonAdmin) {
-        const schoolSubjectId = sessionStorage.getItem('school_subject_id')
-        if (schoolSubjectId) {
-          headers['X-School-Subject-ID'] = schoolSubjectId
-        }
-      }
-      
-      console.log('🔍 === SUBJECTS API CALL DEBUG (fetchSubjectsForCard) ===')
-      console.log('🔍 URL:', `${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/?school_id=${schoolId}&all=1`)
-      console.log('🔍 Headers being sent:', headers)
-      console.log('🔍 Headers JSON:', JSON.stringify(headers, null, 2))
-      console.log('🔍 Header keys:', Object.keys(headers))
-      console.log('🔍 X-School-Subject-ID value:', headers['X-School-Subject-ID'])
-      console.log('🔍 isNonAdmin:', isNonAdmin)
-      console.log('🔍 Card Index:', cardIndex)
-      console.log('🔍 ================================================')
-      
-      const response = await axios.get(`${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/?school_id=${schoolId}&all=1`, {
-        headers,
-        withCredentials: true
-      })
-      if (response.data.status === 'success' && response.data.data) {
-        const subjectsData = response.data.data.map((subject: any) => ({
-          value: subject.id,
-          label: subject.custom_name || subject.name
-        }))
-        
-        // Store subjects by school ID
-        setSubjectsBySchool(prev => new Map(prev.set(schoolId, subjectsData)))
-      }
+      // Store subjects by school ID
+      setSubjectsBySchool(prev => new Map(prev.set(schoolId, subjectsData)))
     } catch (error) {
       console.error('Error fetching subjects for card:', error)
       toast.error('Failed to load subjects for this school', 'Error')

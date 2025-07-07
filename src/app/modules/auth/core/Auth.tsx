@@ -30,7 +30,6 @@ const AuthProvider: FC<WithChildren> = ({children}) => {
   const [currentUser, setCurrentUser] = useState<UserModel | undefined>()
 
   const logout = async () => {
-    console.log('Logging out')
     try {
       // Call backend to clear the HttpOnly cookie
       await axios.post(`${import.meta.env.VITE_APP_API_URL}/users/logout`, {}, {
@@ -74,30 +73,17 @@ const AuthInit: FC<WithChildren> = ({children}) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        console.log('🔐 Checking authentication...')
+        
         const {data} = await getCurrentUser()
         if (data.status === 'success' && data.data) {
           const user = data.data
-          console.log('✅ User authenticated:', user)
-          console.log('📋 Session verification data:')
-          console.log('  - user.id:', user.user_id)
-          console.log('  - user.email:', user.email)
-          console.log('  - user.name:', user.name)
-          console.log('  - user.school_id:', user.school_id)
-          console.log('  - user.role.role_id:', user.role?.role_id)
-          console.log('  - user.role.name:', user.role?.name)
-          console.log('  - user.role.role_type:', user.role?.role_type)
-          
           // Store school_subject_ids in sessionStorage
           if (user.school_subject_ids && Array.isArray(user.school_subject_ids) && user.school_subject_ids.length > 0 && user.school_subject_ids[0]) {
             sessionStorage.setItem('school_subject_id', user.school_subject_ids[0])
-            console.log('Stored first school_subject_id in sessionStorage:', user.school_subject_ids[0])
           }
-          
           setCurrentUser(user)
           // webSocketService.connect(true)
         } else {
-          console.log('❌ Authentication failed - no user data in response')
           setCurrentUser(undefined)
           webSocketService.disconnect()
         }

@@ -1,13 +1,12 @@
 import {useEffect, useState, useMemo} from 'react'
 import {MenuComponent} from '../../../../../../_metronic/assets/ts/components'
 import {KTIcon} from '../../../../../../_metronic/helpers'
-import {useSelector} from 'react-redux'
-import {RootState} from '../../../../../../store'
+import {useSelector, useDispatch} from 'react-redux'
+import {RootState, AppDispatch} from '../../../../../../store'
 import {useAuth} from '../../../../auth/core/Auth'
 import {ROLES} from '../../../../../constants/roles'
-import axios from 'axios'
 import Select from 'react-select'
-import {getSchoolSubjectId} from '../../../../../../_metronic/helpers/axios'
+import {fetchSchools, fetchSubjects} from '../../../../../../store/user/userSlice'
 
 type Props = {
   setRoleFilter: (role: string) => void
@@ -16,16 +15,17 @@ type Props = {
 }
 
 const UsersListFilter = ({ setRoleFilter, setSchoolFilter, setSubjectFilter }: Props) => {
+  const dispatch = useDispatch<AppDispatch>()
   const { currentUser } = useAuth()
   const isLoading = useSelector((state: RootState) => state.users.loading)
   const roles = useSelector((state: RootState) => state.users.roles)
+  const schools = useSelector((state: RootState) => state.users.schools)
+  const subjects = useSelector((state: RootState) => state.users.subjects)
+  const schoolsLoading = useSelector((state: RootState) => state.users.schoolsLoading)
+  const subjectsLoading = useSelector((state: RootState) => state.users.subjectsLoading)
   const [selectedRole, setSelectedRole] = useState<string>('')
   const [selectedSchools, setSelectedSchools] = useState<Array<{value: string, label: string}>>([])
   const [selectedSubject, setSelectedSubject] = useState<string>('')
-  const [schools, setSchools] = useState<Array<{school_id: string, name: string, code: string}>>([])
-  const [subjects, setSubjects] = useState<Array<{id: string, subject_id: string, name: string, custom_name: string | null}>>([])
-  const [schoolsLoading, setSchoolsLoading] = useState(false)
-  const [subjectsLoading, setSubjectsLoading] = useState(false)
   const isAdmin = currentUser?.role?.role_type === ROLES.ADMIN
 
   useEffect(() => {
@@ -35,81 +35,24 @@ const UsersListFilter = ({ setRoleFilter, setSchoolFilter, setSubjectFilter }: P
   // Fetch schools for admin users
   useEffect(() => {
     if (isAdmin) {
-      const fetchSchools = async () => {
-        setSchoolsLoading(true)
-        try {
-          const response = await axios.get(`${import.meta.env.VITE_APP_API_URL}/schools`, {
-            withCredentials: true
-          })
-          if (response.data.status === 'success' && response.data.data) {
-            setSchools(response.data.data)
-          }
-        } catch (error) {
-          console.error('Error fetching schools:', error)
-        } finally {
-          setSchoolsLoading(false)
-        }
-      }
-      fetchSchools()
+      dispatch(fetchSchools())
     }
-  }, [isAdmin])
+  }, [isAdmin, dispatch])
 
   // Fetch subjects for non-admin users
   useEffect(() => {
     if (!isAdmin && currentUser?.school_id) {
-      const fetchSubjects = async () => {
-        setSubjectsLoading(true)
-        try {
-          const schoolSubjectId = getSchoolSubjectId()
-          console.log('🔍 school_subject_id from sessionStorage:', schoolSubjectId)
-          console.log('🔍 currentUser.school_id:', currentUser.school_id)
-          
-          if (!schoolSubjectId) {
-            console.error('No school_subject_id found in sessionStorage')
-            return
-          }
-          
-          const headers = {
-            'X-School-Subject-ID': schoolSubjectId
-          }
-          
-          console.log('🔍 === SUBJECTS API CALL DEBUG ===')
-          console.log('🔍 URL:', `${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/?school_id=${currentUser.school_id}&all=1`)
-          console.log('🔍 Headers being sent:', headers)
-          console.log('🔍 Headers JSON:', JSON.stringify(headers, null, 2))
-          console.log('🔍 Header keys:', Object.keys(headers))
-          console.log('🔍 X-School-Subject-ID value:', headers['X-School-Subject-ID'])
-          console.log('🔍 ================================')
-          
-          const response = await axios.get(`${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/?school_id=${currentUser.school_id}&all=1`, {
-            headers,
-            withCredentials: true
-          })
-          if (response.data.status === 'success' && response.data.data) {
-            setSubjects(response.data.data)
-          }
-        } catch (error: any) {
-          console.error('Error fetching subjects:', error)
-          console.error('Error response:', error.response?.data)
-          console.error('Error status:', error.response?.status)
-        } finally {
-          setSubjectsLoading(false)
-        }
-      }
-      fetchSubjects()
+      dispatch(fetchSubjects(currentUser.school_id))
     }
-  }, [isAdmin, currentUser?.school_id])
+  }, [isAdmin, currentUser?.school_id, dispatch])
 
   // Use roles from API response
   const availableRoles = useMemo(() => {
-    console.log('🔍 UsersListFilter - roles from store:', roles)
     if (!roles || !Array.isArray(roles)) {
-      console.log('🔍 UsersListFilter - no roles available')
       return []
     }
     
     const mappedRoles = roles.map(role => [role.role_type, role.name]).sort((a, b) => a[0] - b[0])
-    console.log('🔍 UsersListFilter - mapped roles:', mappedRoles)
     return mappedRoles
   }, [roles])
 

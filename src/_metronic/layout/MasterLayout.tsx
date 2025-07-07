@@ -24,7 +24,6 @@ const MasterLayout = () => {
   const handleWrapperClick = () => {
     // Only handle this on desktop to avoid interfering with mobile touch events
     if (isDesktop) {
-      console.log('handleWrapperClick - desktop only')
       // Close the aside secondary panel if it's currently open
       // The aside secondary panel is controlled by data-kt-aside-minimize attribute
       // When data-kt-aside-minimize is "on", the secondary panel is hidden

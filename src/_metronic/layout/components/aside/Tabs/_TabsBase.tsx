@@ -23,7 +23,7 @@ type Props = {
 const SelectedTab: FC<Props> = ({link}) => {
   const { currentUser } = useAuth()
   const roleType = currentUser?.role?.role_type
-console.log(currentUser);
+
   if (roleType === ROLES.STUDENT) {
     switch (link) {
       case 'exercise':

@@ -14,6 +14,19 @@ type FetchUsersParams = {
   subject?: string
 }
 
+type School = {
+  school_id: string
+  name: string
+  code: string
+}
+
+type Subject = {
+  id: string
+  subject_id: string
+  name: string
+  custom_name: string | null
+}
+
 export const fetchUsers = createAsyncThunk(
   'users/fetchUsers',
   async ({ page, items_per_page, sort, order, search, role, school, subject }: FetchUsersParams) => {
@@ -26,23 +39,13 @@ export const fetchUsers = createAsyncThunk(
     if (subject) params.subject_id = subject
 
     try {
-      // For admin users, don't send school subject header
-      const headers: Record<string, string> = {}
-      const schoolSubjectId = sessionStorage.getItem('school_subject_id')
-      const currentUserRole = sessionStorage.getItem('user_role')
-      
-      // Only add school subject header for non-admin users
-      if (schoolSubjectId && currentUserRole !== '1') {
-        headers['X-School-Subject-ID'] = schoolSubjectId
-      }
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/users`)
       
       const response = await axios.get(API_URL+'/users', { 
         params, 
         headers,
         withCredentials: true 
       })
-      
-      console.log('🔍 fetchUsers response:', response.data)
       
       return {
         items: response.data.data,
@@ -59,7 +62,11 @@ export const createUser = createAsyncThunk(
   'users/createUser',
   async (user: any) => {
     try {
-      const response = await axios.put(`${API_URL}/user`, user, { withCredentials: true })
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/user`)
+      const response = await axios.put(`${API_URL}/user`, user, { 
+        headers,
+        withCredentials: true 
+      })
       return response.data.data
     } catch (error) {
       throw error
@@ -71,7 +78,11 @@ export const updateUser = createAsyncThunk(
   'users/updateUser',
   async (user: any) => {
     try {
-      const response = await axios.post(`${API_URL}/user/${user.user_id}`, user, { withCredentials: true })
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/user/${user.user_id}`)
+      const response = await axios.post(`${API_URL}/user/${user.user_id}`, user, { 
+        headers,
+        withCredentials: true 
+      })
       return response.data.data
     } catch (error) {
       throw error
@@ -83,7 +94,11 @@ export const deleteUser = createAsyncThunk(
   'users/deleteUser',
   async (userId: string | number) => {
     try {
-      await axios.delete(`${API_URL}/user/${userId}`, { withCredentials: true })
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/user/${userId}`)
+      await axios.delete(`${API_URL}/user/${userId}`, { 
+        headers,
+        withCredentials: true 
+      })
       return userId
     } catch (error) {
       throw error
@@ -95,8 +110,10 @@ export const deleteSelectedUsers = createAsyncThunk(
   'users/deleteSelectedUsers',
   async (userIds: Array<string | number>) => {
     try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/users`)
       await axios.delete(`${API_URL}/users`, {
         data: { user_ids: userIds },
+        headers,
         withCredentials: true
       })
       return userIds
@@ -110,7 +127,41 @@ export const getUserById = createAsyncThunk(
   'users/getUserById',
   async (id: string | number) => {
     try {
-      const response = await axios.get(`${API_URL}/user/${id}`, { withCredentials: true })
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/user/${id}`)
+      const response = await axios.get(`${API_URL}/user/${id}`, { 
+        headers,
+        withCredentials: true 
+      })
+      return response.data.data
+    } catch (error) {
+      throw error
+    }
+  }
+)
+
+export const fetchSchools = createAsyncThunk(
+  'users/fetchSchools',
+  async () => {
+    try {
+      const response = await axios.get(`${API_URL}/schools`, { 
+        withCredentials: true 
+      })
+      return response.data.data
+    } catch (error) {
+      throw error
+    }
+  }
+)
+
+export const fetchSubjects = createAsyncThunk(
+  'users/fetchSubjects',
+  async (schoolId: string) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/subjects/school-subjects/`)
+      const response = await axios.get(`${API_URL}/subjects/school-subjects/?school_id=${schoolId}&all=1`, { 
+        headers,
+        withCredentials: true 
+      })
       return response.data.data
     } catch (error) {
       throw error
@@ -127,6 +178,10 @@ const userSlice = createSlice({
     error: null as string | null,
     selectedUser: null as any,
     roles: [] as any[],
+    schools: [] as School[],
+    subjects: [] as Subject[],
+    schoolsLoading: false,
+    subjectsLoading: false,
   },
   reducers: {
     clearSelectedUser: (state) => {
@@ -143,7 +198,6 @@ const userSlice = createSlice({
         state.users = action.payload.items
         state.total = action.payload.total
         state.roles = action.payload.roles
-        console.log('🔍 UserSlice - fetchUsers fulfilled, roles:', action.payload.roles)
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false
@@ -166,6 +220,26 @@ const userSlice = createSlice({
       })
       .addCase(deleteSelectedUsers.fulfilled, (state, action) => {
         state.users = state.users.filter(user => !action.payload.includes(user.user_id))
+      })
+      .addCase(fetchSchools.pending, (state) => {
+        state.schoolsLoading = true
+      })
+      .addCase(fetchSchools.fulfilled, (state, action) => {
+        state.schoolsLoading = false
+        state.schools = action.payload
+      })
+      .addCase(fetchSchools.rejected, (state) => {
+        state.schoolsLoading = false
+      })
+      .addCase(fetchSubjects.pending, (state) => {
+        state.subjectsLoading = true
+      })
+      .addCase(fetchSubjects.fulfilled, (state, action) => {
+        state.subjectsLoading = false
+        state.subjects = action.payload
+      })
+      .addCase(fetchSubjects.rejected, (state) => {
+        state.subjectsLoading = false
       })
   }
 })

@@ -8,17 +8,37 @@ export const getSchoolSubjectId = (): string | null => {
 // Function to check if the current request is from admin slice
 export const isAdminRequest = (url: string): boolean => {
   // Check if the URL contains admin-related endpoints
-  const adminEndpoints = ['/subjects', '/schools', '/school-subjects']
+  const adminEndpoints = ['/schools']
   return adminEndpoints.some(endpoint => url.includes(endpoint))
+}
+
+// Function to check if current user is admin
+export const isCurrentUserAdmin = (): boolean => {
+  const currentUserRole = sessionStorage.getItem('user_role')
+  return currentUserRole === '1'
 }
 
 // Function to get headers with X-School-Subject-ID if needed
 export const getHeadersWithSchoolSubject = (url: string): Record<string, string> => {
   const headers: Record<string, string> = {}
   
-  // Don't add header for admin requests
+  // Don't add header for admin requests (schools, etc.)
   if (isAdminRequest(url)) {
     return headers
+  }
+  
+  // For user endpoints, only add header for non-admin users
+  if (url.includes('/user') || url.includes('/users')) {
+    if (isCurrentUserAdmin()) {
+      return headers
+    }
+  }
+  
+  // For subjects endpoints, only add header for non-admin users
+  if (url.includes('/subjects')) {
+    if (isCurrentUserAdmin()) {
+      return headers
+    }
   }
   
   const schoolSubjectId = getSchoolSubjectId()

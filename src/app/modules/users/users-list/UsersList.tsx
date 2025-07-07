@@ -5,7 +5,6 @@ import { UsersTable } from './table/UsersTable'
 import { KTCard } from '../../../../_metronic/helpers'
 
 const UsersList = () => {
-  console.log('📋 UsersList component rendered')
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('')
   const [schoolFilter, setSchoolFilter] = useState<string>('')
@@ -30,7 +29,6 @@ const UsersList = () => {
 }
 
 const UsersListWrapper = () => {
-  console.log('🔄 UsersListWrapper component rendered')
   return (
     <ListViewProvider>
       <UsersList />

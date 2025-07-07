@@ -33,17 +33,6 @@ const UsersTable = ({ search, roleFilter, schoolFilter, subjectFilter }: Props) 
 
   // Memoize the fetch function to prevent unnecessary re-renders
   const fetchUsersData = useCallback(() => {
-    console.log('🔄 Fetching users data with params:', {
-      page,
-      items_per_page: itemsPerPage,
-      sort: sort?.id,
-      order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
-      search: search || undefined,
-      role: roleFilter || undefined,
-      school: schoolFilter || undefined,
-      subject: subjectFilter || undefined,
-    })
-    
     dispatchRef.current(
       fetchUsers({
         page,
