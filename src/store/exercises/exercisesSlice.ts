@@ -125,8 +125,9 @@ export const deleteExercise = createAsyncThunk(
   'exercises/deleteExercise',
   async (exerciseId: string) => {
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/${exerciseId}`)
-      await axios.delete(`${API_URL}/exercises/${exerciseId}`, { 
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/`)
+      await axios.delete(`${API_URL}/exercises/`, { 
+        data: { exercise_ids: [exerciseId] },
         headers,
         withCredentials: true 
       })

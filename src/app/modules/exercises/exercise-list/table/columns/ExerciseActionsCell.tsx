@@ -5,7 +5,7 @@ import {useNavigate} from 'react-router-dom'
 import {ConfirmationDialog} from '../../../../../../_metronic/helpers/ConfirmationDialog'
 import {useDispatch} from 'react-redux'
 import {AppDispatch} from '../../../../../../store'
-import {fetchExercises} from '../../../../../../store/exercises/exercisesSlice'
+import {fetchExercises, deleteExercise} from '../../../../../../store/exercises/exercisesSlice'
 import {toast} from '../../../../../../_metronic/helpers/toast'
 
 type Props = {
@@ -30,9 +30,7 @@ const ExerciseActionsCell: FC<Props> = ({id}) => {
     if (!id) return
     setIsDeleting(true)
     try {
-      // TODO: Implement delete exercise functionality
-      console.log('Delete exercise:', id)
-      toast.success('Exercise deleted successfully!', 'Success')
+      await dispatch(deleteExercise(id.toString())).unwrap()
       setShowConfirmDialog(false)
       // Refresh the exercises list
       dispatch(fetchExercises({ page: 1, items_per_page: 10 }))
