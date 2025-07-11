@@ -32,6 +32,7 @@ const mcValidationSchema = Yup.object().shape({
   options: Yup.array().of(
     Yup.object().shape({
       option_letter: Yup.string().required('Option letter is required'),
+      content: Yup.string().required('Option content is required'),
       is_correct: Yup.boolean()
     })
   ).min(2, 'At least 2 options are required'),
@@ -46,6 +47,7 @@ const mcValidationSchema = Yup.object().shape({
 
 interface MCOptionData {
   option_letter: string
+  content: string
   is_correct: boolean
 }
 
@@ -146,10 +148,10 @@ const MCFormPage: FC = () => {
       question: '',
       answer: '',
       options: [
-        { option_letter: 'A', is_correct: false },
-        { option_letter: 'B', is_correct: false },
-        { option_letter: 'C', is_correct: false },
-        { option_letter: 'D', is_correct: false },
+        { option_letter: 'A', content: '', is_correct: false },
+        { option_letter: 'B', content: '', is_correct: false },
+        { option_letter: 'C', content: '', is_correct: false },
+        { option_letter: 'D', content: '', is_correct: false },
       ],
       selectedTags: [],
     },
@@ -166,7 +168,11 @@ const MCFormPage: FC = () => {
           question_content: values.question,
           teacher_remark: values.teacherRemark,
           mc_question: {
-            options: values.options,
+            options: values.options.map(option => ({
+              option_letter: option.option_letter,
+              option_text: option.content,
+              is_correct: option.is_correct
+            })),
             correct_option: values.options.find(opt => opt.is_correct)?.option_letter || '',
             answer_content: values.answer
           },
@@ -210,12 +216,14 @@ const MCFormPage: FC = () => {
           // API returns options as strings
           return {
             option_letter: option,
+            content: option, // Use the string as content
             is_correct: option === correctOptionLetter
           }
         } else {
           // API returns options as objects (fallback)
           return {
             option_letter: option.option_letter || option,
+            content: option.content || option.option_letter || option || '',
             is_correct: (option.option_letter || option) === correctOptionLetter
           }
         }
@@ -252,7 +260,7 @@ const MCFormPage: FC = () => {
   const addOption = () => {
     const newOptions = [...formik.values.options]
     const nextLetter = String.fromCharCode(65 + newOptions.length) // A, B, C, D, E, F, etc.
-    newOptions.push({ option_letter: nextLetter, is_correct: false })
+    newOptions.push({ option_letter: nextLetter, content: '', is_correct: false })
     formik.setFieldValue('options', newOptions)
   }
 
@@ -393,29 +401,46 @@ const MCFormPage: FC = () => {
                 <div className='d-flex flex-column gap-4'>
                   {formik.values.options.map((option, index) => (
                     <div key={index} className='border rounded p-4'>
-                      <div className='row g-3'>
+                      <div className='row align-items-start'>
                         <div className='col-md-2'>
-                          <label className='form-label fw-bold fs-5'>{option.option_letter}</label>
-                        </div>
-                        <div className='col-md-10'>
-                          <div className='form-check'>
-                            <input
-                              className='form-check-input'
-                              type='radio'
-                              name='correctOption'
-                              id={`correct-${index}`}
-                              checked={option.is_correct}
-                              onChange={() => handleOptionChange(index, 'is_correct', true)}
-                            />
-                            <label className='form-check-label' htmlFor={`correct-${index}`}>
-                              Correct Answer
-                            </label>
+                          <div className='d-flex flex-column align-items-center'>
+                            <label className='form-label fw-bold fs-5 mb-2'>{option.option_letter}</label>
+                            <div className='form-check'>
+                              <input
+                                className='form-check-input'
+                                type='radio'
+                                name='correctOption'
+                                id={`correct-${index}`}
+                                checked={option.is_correct}
+                                onChange={() => handleOptionChange(index, 'is_correct', true)}
+                              />
+                              <label className='form-check-label' htmlFor={`correct-${index}`}>
+                                Correct Answer
+                              </label>
+                            </div>
                           </div>
                         </div>
+                        <div className='col-md-10'>
+                          <TinyMCEEditor
+                            value={option.content}
+                            onBlur={(content) => {
+                              const newOptions = [...formik.values.options]
+                              newOptions[index] = { ...newOptions[index], content }
+                              formik.setFieldValue('options', newOptions)
+                              formik.setFieldTouched('options', true)
+                            }}
+                            height={200}
+                            placeholder={`Enter content for option ${option.option_letter}...`}
+                          />
+                        </div>
                       </div>
+                      
+
                     </div>
                   ))}
                 </div>
+                
+
                 
                 {formik.touched.options && formik.errors.options && (
                   <div className='fv-plugins-message-container invalid-feedback d-block mt-2'>
@@ -489,7 +514,11 @@ const MCFormPage: FC = () => {
                                 question_content: formik.values.question,
                                 teacher_remark: formik.values.teacherRemark,
                                 mc_question: {
-                                  options: formik.values.options,
+                                  options: formik.values.options.map(option => ({
+                                    option_letter: option.option_letter,
+                                    option_text: option.content,
+                                    is_correct: option.is_correct
+                                  })),
                                   correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
                                   answer_content: formik.values.answer
                                 },
@@ -535,7 +564,11 @@ const MCFormPage: FC = () => {
                                 question_content: formik.values.question,
                                 teacher_remark: formik.values.teacherRemark,
                                 mc_question: {
-                                  options: formik.values.options,
+                                  options: formik.values.options.map(option => ({
+                                    option_letter: option.option_letter,
+                                    option_text: option.content,
+                                    is_correct: option.is_correct
+                                  })),
                                   correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
                                   answer_content: formik.values.answer
                                 },
@@ -582,7 +615,11 @@ const MCFormPage: FC = () => {
                                 question_content: formik.values.question,
                                 teacher_remark: formik.values.teacherRemark,
                                 mc_question: {
-                                  options: formik.values.options,
+                                  options: formik.values.options.map(option => ({
+                                    option_letter: option.option_letter,
+                                    option_text: option.content,
+                                    is_correct: option.is_correct
+                                  })),
                                   correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
                                   answer_content: formik.values.answer
                                 },
@@ -626,7 +663,11 @@ const MCFormPage: FC = () => {
                                 question_content: formik.values.question,
                                 teacher_remark: formik.values.teacherRemark,
                                 mc_question: {
-                                  options: formik.values.options,
+                                  options: formik.values.options.map(option => ({
+                                    option_letter: option.option_letter,
+                                    option_text: option.content,
+                                    is_correct: option.is_correct
+                                  })),
                                   correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
                                   answer_content: formik.values.answer
                                 },
