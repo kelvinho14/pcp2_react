@@ -3,7 +3,7 @@ import {useDispatch, useSelector} from 'react-redux'
 import {DatePicker} from '../../../../../_metronic/helpers/components/DatePicker'
 import Select from 'react-select'
 import {AppDispatch, RootState} from '../../../../../store'
-import {setFilters, clearFilters, type AssignedExercisesFilters, toggleFiltersCollapsed, setLoadingFilters} from '../../../../../store/exercises/assignedExercisesSlice'
+import {setFilters, clearFilters, type AssignedExercisesFilters, setLoadingFilters} from '../../../../../store/exercises/assignedExercisesSlice'
 import {getHeadersWithSchoolSubject} from '../../../../../_metronic/helpers/axios'
 import {ROLES} from '../../../../../app/constants/roles'
 import axios from 'axios'
@@ -33,7 +33,6 @@ const AssignedExercisesFilters: FC = memo(() => {
   
   // Only select the filters, not the entire state to prevent unnecessary re-renders
   const filters = useSelector((state: RootState) => state.assignedExercises.filters)
-  const isCollapsed = useSelector((state: RootState) => state.assignedExercises.filtersCollapsed)
 
   // Custom styles for react-select
   const selectStyles = useMemo(() => ({
@@ -203,24 +202,8 @@ const AssignedExercisesFilters: FC = memo(() => {
 
   return (
     <div className='card mb-8'>
-      <div className='card-header'>
-        <div className='d-flex align-items-center justify-content-between w-100'>
-          <h3 className='card-title'>Filters</h3>
-          <div className='card-toolbar'>
-            <button 
-              className='btn btn-sm btn-light-primary'
-              onClick={() => dispatchRef.current(toggleFiltersCollapsed())}
-            >
-              <i className={`fas fa-chevron-${isCollapsed ? 'down' : 'up'} me-1`}></i>
-              {isCollapsed ? 'Show Filters' : 'Hide Filters'}
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {!isCollapsed && (
-        <div className='card-body'>
-          <div className='row g-6'>
+      <div className='card-body'>
+        <div className='row g-6'>
           {/* Search */}
           <div className='col-md-6'>
             <label className='form-label fw-bold'>Search</label>
@@ -354,7 +337,6 @@ const AssignedExercisesFilters: FC = memo(() => {
           </button>
         </div>
       </div>
-      )}
     </div>
   )
 })

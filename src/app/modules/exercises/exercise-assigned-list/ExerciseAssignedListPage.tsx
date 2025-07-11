@@ -5,7 +5,9 @@ import {useIntl} from 'react-intl'
 import {AppDispatch, RootState} from '../../../../store'
 import {fetchAssignedExercises, setPage, setFilters, setLoadingFilters, clearCache} from '../../../../store/exercises/assignedExercisesSlice'
 import AssignedExercisesFilters from './components/AssignedExercisesFilters'
-import {ASSIGNMENT_STATUS, getStatusLabel} from '../../../constants/assignmentStatus'
+import {ASSIGNMENT_STATUS, getStatusLabel, getStatusColor, AssignmentStatus} from '../../../constants/assignmentStatus'
+import {useNavigate} from 'react-router-dom'
+import './ExerciseAssignedListPage.scss'
 
 // Completely isolated filters component that doesn't re-render with parent
 const IsolatedFilters = memo(() => {
@@ -57,6 +59,7 @@ const Tooltip: FC<{message: string, children: React.ReactNode}> = ({message, chi
 const ExerciseAssignedListPage: FC = () => {
   const intl = useIntl()
   const dispatch = useDispatch<AppDispatch>()
+  const navigate = useNavigate()
   const { 
     exercises, 
     summary, 
@@ -69,6 +72,8 @@ const ExerciseAssignedListPage: FC = () => {
   } = useSelector((state: RootState) => state.assignedExercises)
   
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set(exercises.map(exercise => exercise.id)))
+  const [showFilters, setShowFilters] = useState(false)
+  const [selectedView, setSelectedView] = useState<'grid' | 'list'>('grid')
   const apiTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const filtersRef = useRef(filters)
@@ -78,7 +83,8 @@ const ExerciseAssignedListPage: FC = () => {
     filtersRef.current = filters
   }, [filters])
 
-  const getStatusColor = (status: string) => {
+  // Rename local status helpers for exercises
+  const getExerciseStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'success'
       case 'in_progress': return 'primary'
@@ -88,7 +94,7 @@ const ExerciseAssignedListPage: FC = () => {
     }
   }
 
-  const getStatusIcon = (status: string) => {
+  const getExerciseStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return 'fas fa-check-circle'
       case 'in_progress': return 'fas fa-clock'
@@ -109,6 +115,10 @@ const ExerciseAssignedListPage: FC = () => {
       return newSet
     })
   }, [])
+
+  const handleExerciseClick = useCallback((exerciseId: string) => {
+    navigate(`/exercises/edit/${exerciseId}`)
+  }, [navigate])
 
   const handleStatusFilter = useCallback((status: string) => {
     // Map status to API values using constants
@@ -189,11 +199,18 @@ const ExerciseAssignedListPage: FC = () => {
     return exercises.map((exercise) => {
       // Group assignments by due date
       const assignmentsByDueDate = exercise.assignments.reduce((groups, assignment) => {
-        const dueDate = new Date(assignment.due_date).toLocaleDateString()
-        if (!groups[dueDate]) {
-          groups[dueDate] = []
+        let dueDateKey = 'No Due Date'
+        if (assignment.due_date) {
+          const dueDate = new Date(assignment.due_date)
+          if (!isNaN(dueDate.getTime())) {
+            dueDateKey = dueDate.toLocaleDateString()
+          }
         }
-        groups[dueDate].push(assignment)
+        
+        if (!groups[dueDateKey]) {
+          groups[dueDateKey] = []
+        }
+        groups[dueDateKey].push(assignment)
         return groups
       }, {} as Record<string, typeof exercise.assignments>)
 
@@ -204,12 +221,18 @@ const ExerciseAssignedListPage: FC = () => {
               <div className='card-title'>
                 <div className='d-flex align-items-center'>
                   <div className='symbol symbol-40px me-3'>
-                    <div className={`symbol-label bg-light-${getStatusColor(exercise.status)}`}>
-                      <i className={`${getStatusIcon(exercise.status)} text-${getStatusColor(exercise.status)}`}></i>
+                    <div className={`symbol-label bg-light-${getExerciseStatusColor(exercise.status)}`}>
+                      <i className={`${getExerciseStatusIcon(exercise.status)} text-${getExerciseStatusColor(exercise.status)}`}></i>
                     </div>
                   </div>
                   <div>
-                    <h5 className='mb-1'>{exercise.title}</h5>
+                    <h5 
+                      className='mb-1 cursor-pointer text-hover-primary'
+                      onClick={() => handleExerciseClick(exercise.id)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {exercise.title}
+                    </h5>
                     <span className='badge badge-light-primary fs-7'>Question #{exercise.question_no}</span>
                   </div>
                 </div>
@@ -224,7 +247,7 @@ const ExerciseAssignedListPage: FC = () => {
                 </div>
                 <div className='progress h-8px'>
                   <div 
-                    className={`progress-bar bg-${getStatusColor(exercise.status)}`}
+                    className={`progress-bar bg-${getExerciseStatusColor(exercise.status)}`}
                     style={{width: `${exercise.progress}%`}}
                   ></div>
                 </div>
@@ -265,16 +288,13 @@ const ExerciseAssignedListPage: FC = () => {
                 {!collapsedCards.has(exercise.id) && (
                   <div className='mt-3'>
                     {Object.entries(assignmentsByDueDate).map(([dueDate, assignments]) => {
-                      // Skip if dueDate is invalid (null, undefined, or invalid date)
-                      if (!dueDate || dueDate === 'Invalid Date' || dueDate === '12/31/1969') {
-                        return null
-                      }
-                      
                       return (
                         <div key={dueDate} className='mb-3'>
                           <div className='d-flex align-items-center mb-2'>
                             <i className='fas fa-calendar text-primary me-2'></i>
-                            <span className='fw-bold fs-7 text-primary'>Due: {dueDate}</span>
+                            <span className='fw-bold fs-7 text-primary'>
+                              {dueDate === 'No Due Date' ? 'No Due Date' : `Due: ${dueDate}`}
+                            </span>
                           </div>
                           <div className='ms-4'>
                             {assignments.map((assignment) => (
@@ -284,8 +304,8 @@ const ExerciseAssignedListPage: FC = () => {
                                   <span className='fs-7'>{assignment.student.name}</span>
                                 </div>
                                 <div className='d-flex align-items-center'>
-                                  <span className={`badge badge-sm badge-light-${assignment.status === '1' ? 'success' : 'warning'} me-2`}>
-                                    {assignment.status === '1' ? getStatusLabel(ASSIGNMENT_STATUS.SUBMITTED) : getStatusLabel(ASSIGNMENT_STATUS.ASSIGNED)}
+                                  <span className={`badge badge-sm badge-light-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)} me-2`}>
+                                    {getStatusLabel(parseInt(assignment.status, 10) as AssignmentStatus)}
                                   </span>
                                   {assignment.message_for_student && (
                                     <Tooltip message={assignment.message_for_student}>
@@ -314,7 +334,141 @@ const ExerciseAssignedListPage: FC = () => {
         </div>
       )
     })
-  }, [exercises, collapsedCards, toggleCardCollapse])
+  }, [exercises, collapsedCards, toggleCardCollapse, handleExerciseClick])
+
+  // Memoized exercise list rows for list view
+  const exerciseListRows = useMemo(() => {
+    return (
+      <div className='exercise-list'>
+        {exercises.map((exercise) => {
+          // Group assignments by due date (same logic as card view)
+          const assignmentsByDueDate = exercise.assignments.reduce((groups, assignment) => {
+            let dueDateKey = 'No Due Date'
+            if (assignment.due_date) {
+              const dueDate = new Date(assignment.due_date)
+              if (!isNaN(dueDate.getTime())) {
+                dueDateKey = dueDate.toLocaleDateString()
+              }
+            }
+            
+            if (!groups[dueDateKey]) {
+              groups[dueDateKey] = []
+            }
+            groups[dueDateKey].push(assignment)
+            return groups
+          }, {} as Record<string, typeof exercise.assignments>)
+
+          return (
+            <div key={exercise.id} className={`exercise-list-item status-${exercise.status}`}>
+              <div className='list-item-header'>
+                <div className='item-content'>
+                  <div className='item-title'>
+                    <div className='d-flex align-items-center'>
+                      <div className='symbol symbol-40px me-3'>
+                        <div className={`symbol-label bg-light-${getExerciseStatusColor(exercise.status)}`}>
+                          <i className={`${getExerciseStatusIcon(exercise.status)} text-${getExerciseStatusColor(exercise.status)}`}></i>
+                        </div>
+                      </div>
+                      <div>
+                        <h6 
+                          className='mb-1 cursor-pointer text-hover-primary'
+                          onClick={() => handleExerciseClick(exercise.id)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {exercise.title}
+                        </h6>
+                        <span className='text-muted fs-7'>Question #{exercise.question_no}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className='item-progress'>
+                    <div className='progress-info'>
+                      <span className='progress-text'>{exercise.progress}% Complete</span>
+                      <div className='mini-progress'>
+                        <div 
+                          className={`progress-fill bg-${getExerciseStatusColor(exercise.status)}`}
+                          style={{width: `${exercise.progress}%`}}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className='item-stats'>
+                  <div className='stat-item'>
+                    <div className='stat-number'>{exercise.student_stats.total}</div>
+                    <div className='stat-label'>Students</div>
+                  </div>
+                  <div className='stat-item'>
+                    <div className='stat-number text-success'>{exercise.student_stats.completed}</div>
+                    <div className='stat-label'>Completed</div>
+                  </div>
+                  <div className='stat-item'>
+                    <div className='stat-number text-warning'>{exercise.student_stats.in_progress}</div>
+                    <div className='stat-label'>In Progress</div>
+                  </div>
+                </div>
+                
+                <div className='item-actions'>
+                  <button 
+                    className='btn btn-sm btn-light-primary'
+                    onClick={() => toggleCardCollapse(exercise.id)}
+                  >
+                    <i className={`fas fa-chevron-${collapsedCards.has(exercise.id) ? 'down' : 'up'}`}></i>
+                    {collapsedCards.has(exercise.id) ? 'Show' : 'Hide'} Assignments
+                  </button>
+                </div>
+              </div>
+              
+              {/* Assignments Section */}
+              {!collapsedCards.has(exercise.id) && (
+                <div className='list-item-assignments'>
+                  <div className='assignments-header'>
+                    <h6 className='mb-0'>Assignments by Due Date</h6>
+                  </div>
+                  <div className='assignments-content'>
+                    {Object.entries(assignmentsByDueDate).map(([dueDate, assignments]) => (
+                      <div key={dueDate} className='assignment-group'>
+                        <div className='due-date-header'>
+                          <i className='fas fa-calendar text-primary me-2'></i>
+                          <span className='fw-bold fs-7 text-primary'>
+                            {dueDate === 'No Due Date' ? 'No Due Date' : `Due: ${dueDate}`}
+                          </span>
+                        </div>
+                        <div className='assignments-list'>
+                          {assignments.map((assignment) => (
+                            <div key={assignment.assignment_id} className='assignment-item'>
+                              <div className='assignment-info'>
+                                <div className='student-info'>
+                                  <i className='fas fa-user text-muted me-2'></i>
+                                  <span className='fw-medium'>{assignment.student.name}</span>
+                                  <span className='text-muted ms-2'>({assignment.student.email})</span>
+                                </div>
+                                <div className='assignment-status'>
+                                  <span className={`badge badge-light-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)}`}>
+                                    {getStatusLabel(parseInt(assignment.status, 10) as AssignmentStatus)}
+                                  </span>
+                                  {assignment.message_for_student && (
+                                    <Tooltip message={assignment.message_for_student}>
+                                      <i className='fas fa-comment text-muted ms-2'></i>
+                                    </Tooltip>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }, [exercises, collapsedCards, toggleCardCollapse, handleExerciseClick])
 
   // Show full-page loading only for initial load or errors
   if (isInitialLoad && loading) {
@@ -365,8 +519,41 @@ const ExerciseAssignedListPage: FC = () => {
         {intl.formatMessage({id: 'MENU.EXERCISES.ASSIGNED_LIST'})}
       </PageTitle>
       
+      {/* Welcome Section */}
+      <div className='welcome-section'>
+        <div className='welcome-content'>
+          <div className='welcome-text'>
+            <h2 className='welcome-title'>Welcome to Your Assigned Exercises Hub! 📚</h2>
+            <p className='welcome-subtitle'>Track student progress, manage assignments, and monitor completion rates</p>
+          </div>
+          <div className='welcome-actions'>
+            <button 
+              className='btn btn-light-primary me-3'
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <i className='fas fa-filter me-1'></i>
+              {showFilters ? 'Hide Filters' : 'Filter Assignments'}
+            </button>
+            <div className='view-toggle'>
+              <button 
+                className={`btn btn-sm ${selectedView === 'grid' ? 'btn-primary' : 'btn-light'}`}
+                onClick={() => setSelectedView('grid')}
+              >
+                <i className='fas fa-th-large'></i>
+              </button>
+              <button 
+                className={`btn btn-sm ${selectedView === 'list' ? 'btn-primary' : 'btn-light'}`}
+                onClick={() => setSelectedView('list')}
+              >
+                <i className='fas fa-list'></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Filters */}
-      <IsolatedFilters />
+      {showFilters && <IsolatedFilters />}
 
       {/* Loading overlay for filter changes */}
       {loadingFilters && !isInitialLoad && (
@@ -520,10 +707,16 @@ const ExerciseAssignedListPage: FC = () => {
         </div>
       </div>
 
-      {/* Exercise Cards */}
-      <div className='row g-6'>
-        {exerciseCards}
-      </div>
+      {/* Exercise Cards or List */}
+      {selectedView === 'grid' ? (
+        <div className='row g-6'>
+          {exerciseCards}
+        </div>
+      ) : (
+        <div className='mt-6'>
+          {exerciseListRows}
+        </div>
+      )}
 
       {/* Pagination */}
       {pagination.total_pages > 1 && (
