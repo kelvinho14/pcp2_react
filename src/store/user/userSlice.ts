@@ -10,6 +10,7 @@ type FetchUsersParams = {
   order?: string
   search?: string
   role?: string
+  role_type?: string
   school?: string
   subject?: string
 }
@@ -29,12 +30,13 @@ type Subject = {
 
 export const fetchUsers = createAsyncThunk(
   'users/fetchUsers',
-  async ({ page, items_per_page, sort, order, search, role, school, subject }: FetchUsersParams) => {
+  async ({ page, items_per_page, sort, order, search, role, role_type, school, subject }: FetchUsersParams) => {
     const params: any = { page, items_per_page }
     if (sort) params.sort = sort
     if (order) params.order = order
     if (search) params.search = search
     if (role) params.role = role
+    if (role_type) params.role_type = role_type
     if (school) params.school_id = school
     if (subject) params.subject_id = subject
 

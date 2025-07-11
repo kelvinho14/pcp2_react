@@ -1,16 +1,21 @@
 import {KTIcon} from '../../../../../../_metronic/helpers'
 import {useListView} from '../../core/ListViewProvider'
-import {useDispatch} from 'react-redux'
-import {AppDispatch} from '../../../../../../store'
+import {useDispatch, useSelector} from 'react-redux'
+import {AppDispatch, RootState} from '../../../../../../store'
 import {ConfirmationDialog} from '../../../../../../_metronic/helpers/ConfirmationDialog'
 import {useState} from 'react'
-import {fetchExercises} from '../../../../../../store/exercises/exercisesSlice'
+import {fetchExercises, Exercise} from '../../../../../../store/exercises/exercisesSlice'
 import {toast} from '../../../../../../_metronic/helpers/toast'
+import {AssignToStudentsModal} from './AssignToStudentsModal'
 
 const ExercisesListGrouping = () => {
   const {selected, clearSelected} = useListView()
   const dispatch = useDispatch<AppDispatch>()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showAssignModal, setShowAssignModal] = useState(false)
+  
+  // Get exercises data to check question count
+  const exercises = useSelector((state: RootState) => state.exercises.exercises)
 
   const handleBulkDelete = async () => {
     try {
@@ -28,12 +33,48 @@ const ExercisesListGrouping = () => {
     }
   }
 
+  const handleAssignToStudents = () => {
+    const exerciseIds = selected.filter(id => id !== undefined && id !== null).map(id => String(id))
+    
+    // Check if any selected exercises have no questions or are inactive
+    const selectedExercises = exercises.filter((exercise: Exercise) => exerciseIds.includes(exercise.exercise_id))
+    const exercisesWithoutQuestions = selectedExercises.filter((exercise: Exercise) => exercise.question_count === 0)
+    const inactiveExercises = selectedExercises.filter((exercise: Exercise) => exercise.status === 0)
+    
+    // Collect all invalid exercises
+    const invalidExercises = []
+    
+    if (exercisesWithoutQuestions.length > 0) {
+      const exerciseNames = exercisesWithoutQuestions.map(ex => ex.title).join(', ')
+      invalidExercises.push(`Cannot assign exercise with question to student`)
+    }
+    
+    if (inactiveExercises.length > 0) {
+      const exerciseNames = inactiveExercises.map(ex => ex.title).join(', ')
+      invalidExercises.push(`Cannot assign inactive exercise to student`)
+    }
+    
+    if (invalidExercises.length > 0) {
+      const errorMessage = `${invalidExercises.join('<br/> ')}`
+      toast.error(errorMessage, 'Error')
+      return
+    }
+    
+    // If all exercises are valid, open the modal
+    setShowAssignModal(true)
+  }
+
   return (
     <>
       <div className='d-flex justify-content-end align-items-center' data-kt-exercise-table-toolbar='selected'>
         <div className='fw-bolder me-5'>
           <span className='me-2'>{selected.length}</span> selected
         </div>
+
+        <button type='button' className='btn btn-primary me-2' onClick={handleAssignToStudents}>
+          <KTIcon iconName='user' className='fs-2' />
+          Assign to Students
+        </button>
 
         <button type='button' className='btn btn-danger' onClick={() => setShowDeleteDialog(true)}>
           <KTIcon iconName='trash' className='fs-2' />
@@ -50,6 +91,12 @@ const ExercisesListGrouping = () => {
         variant="danger"
         confirmText="Delete"
         cancelText="Cancel"
+      />
+
+      <AssignToStudentsModal 
+        show={showAssignModal}
+        onHide={() => setShowAssignModal(false)}
+        exerciseIds={selected.map(id => String(id))}
       />
     </>
   )
