@@ -34,6 +34,7 @@ export type User = {
     label: string
     state: string
   }
+  is_assigned?: boolean
 }
 
 export type UsersQueryResponse = Response<Array<User>>

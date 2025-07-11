@@ -125,8 +125,9 @@ export const deleteExercise = createAsyncThunk(
   'exercises/deleteExercise',
   async (exerciseId: string) => {
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/${exerciseId}`)
-      await axios.delete(`${API_URL}/exercises/${exerciseId}`, { 
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/`)
+      await axios.delete(`${API_URL}/exercises/`, { 
+        data: { exercise_ids: [exerciseId] },
         headers,
         withCredentials: true 
       })
@@ -256,6 +257,121 @@ export const unlinkQuestions = createAsyncThunk(
   }
 )
 
+export const fetchExerciseStudents = createAsyncThunk(
+  'exercises/fetchExerciseStudents',
+  async ({ exerciseIds, params }: { 
+    exerciseIds: string[]
+    params: {
+      page: number
+      items_per_page: number
+      sort?: string
+      order?: string
+      search?: string
+    }
+  }) => {
+    try {
+      // Call API for each exercise and merge results
+      const allStudents = new Map()
+      
+      for (const exerciseId of exerciseIds) {
+        const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/${exerciseId}/students`)
+        const queryParams = new URLSearchParams({
+          page: params.page.toString(),
+          items_per_page: params.items_per_page.toString(),
+          ...(params.sort && { sort: params.sort }),
+          ...(params.order && { order: params.order }),
+          ...(params.search && { search: params.search }),
+        })
+        
+        const response = await axios.get(`${API_URL}/exercises/${exerciseId}/students?${queryParams}`, { 
+          headers,
+          withCredentials: true 
+        })
+        
+        const students = response.data.data || response.data.items || response.data || []
+        
+        // Merge students with assignment status per exercise
+        students.forEach((student: any) => {
+          const userId = student.user_id
+          if (!allStudents.has(userId)) {
+            allStudents.set(userId, {
+              ...student,
+              assignments: new Map()
+            })
+          }
+          
+          const studentData = allStudents.get(userId)
+          studentData.assignments.set(exerciseId, {
+            exercise_id: exerciseId,
+            is_assigned: student.is_assigned
+          })
+        })
+      }
+      
+      // Convert Map to array and calculate overall assignment status
+      const mergedStudents = Array.from(allStudents.values()).map((student: any) => {
+        const assignments = Array.from(student.assignments.values())
+        const assignedExercises = assignments.filter((a: any) => a.is_assigned)
+        const unassignedExercises = assignments.filter((a: any) => !a.is_assigned)
+        
+        return {
+          ...student,
+          assignments: assignments,
+          assigned_count: assignedExercises.length,
+          unassigned_count: unassignedExercises.length,
+          total_exercises: exerciseIds.length,
+          // Student is selectable if they are unassigned to ANY exercise
+          is_selectable: unassignedExercises.length > 0
+        }
+      })
+      
+      return {
+        data: mergedStudents,
+        total: mergedStudents.length
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to fetch exercise students'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
+export const assignExercisesToStudents = createAsyncThunk(
+  'exercises/assignExercisesToStudents',
+  async ({ studentIds, exercises }: { 
+    studentIds: string[]
+    exercises: Array<{
+      exercise_id: string
+      due_date?: string
+      feedback?: string
+    }>
+  }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/student-exercises/assignments`)
+      const response = await axios.post(`${API_URL}/student-exercises/assignments`, {
+        student_ids: studentIds,
+        exercises: exercises
+      }, { 
+        headers,
+        withCredentials: true 
+      })
+      
+      if (response.data.status === 'success') {
+        toast.success('Exercises assigned to students successfully!', 'Success')
+      } else {
+        toast.error('Failed to assign exercises to students. Please try again.', 'Error')
+      }
+      
+      return response.data
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to assign exercises to students'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 // Initial state
 interface ExercisesState {
   exercises: Exercise[]
@@ -266,9 +382,13 @@ interface ExercisesState {
   linking: boolean
   updatingPositions: boolean
   unlinking: boolean
+  assigning: boolean
   currentExercise: Exercise | null
   linkedQuestions: LinkedQuestion[]
   fetchingExercise: boolean
+  exerciseStudents: any[]
+  fetchingExerciseStudents: boolean
+  exerciseStudentsTotal: number
 }
 
 const initialState: ExercisesState = {
@@ -280,9 +400,13 @@ const initialState: ExercisesState = {
   linking: false,
   updatingPositions: false,
   unlinking: false,
+  assigning: false,
   currentExercise: null,
   linkedQuestions: [],
   fetchingExercise: false,
+  exerciseStudents: [],
+  fetchingExerciseStudents: false,
+  exerciseStudentsTotal: 0,
 }
 
 // Slice
@@ -388,6 +512,32 @@ const exercisesSlice = createSlice({
       .addCase(unlinkQuestions.rejected, (state, action) => {
         state.unlinking = false
         state.error = action.error.message || 'Failed to unlink questions'
+      })
+      // Fetch exercise students
+      .addCase(fetchExerciseStudents.pending, (state) => {
+        state.fetchingExerciseStudents = true
+        state.error = null
+      })
+      .addCase(fetchExerciseStudents.fulfilled, (state, action) => {
+        state.fetchingExerciseStudents = false
+        state.exerciseStudents = action.payload.data || []
+        state.exerciseStudentsTotal = action.payload.total || 0
+      })
+      .addCase(fetchExerciseStudents.rejected, (state, action) => {
+        state.fetchingExerciseStudents = false
+        state.error = action.error.message || 'Failed to fetch exercise students'
+      })
+      // Assign exercises to students
+      .addCase(assignExercisesToStudents.pending, (state) => {
+        state.assigning = true
+        state.error = null
+      })
+      .addCase(assignExercisesToStudents.fulfilled, (state) => {
+        state.assigning = false
+      })
+      .addCase(assignExercisesToStudents.rejected, (state, action) => {
+        state.assigning = false
+        state.error = action.error.message || 'Failed to assign exercises to students'
       })
   },
 })
