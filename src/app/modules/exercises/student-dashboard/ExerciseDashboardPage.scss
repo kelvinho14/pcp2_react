@@ -1,0 +1,849 @@
+// Student Exercise Dashboard Custom Styles
+.exercise-dashboard {
+  // Welcome Section
+  .welcome-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    color: white;
+    
+    .welcome-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      
+      .welcome-text {
+        .welcome-title {
+          font-size: 2rem;
+          font-weight: 700;
+          margin-bottom: 0.5rem;
+        }
+        
+        .welcome-subtitle {
+          font-size: 1.1rem;
+          opacity: 0.9;
+          margin: 0;
+        }
+      }
+      
+      .welcome-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        
+        .view-toggle {
+          display: flex;
+          gap: 0.25rem;
+          
+          .btn {
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+          }
+        }
+      }
+    }
+  }
+
+  // Filters Section
+  .filters-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 2rem;
+    
+    .filters-content {
+      padding: 1.5rem;
+      
+      .filters-footer {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #dee2e6;
+        text-align: right;
+      }
+    }
+  }
+
+  // Progress Overview Cards
+  .progress-overview {
+    margin-bottom: 2rem;
+    
+    .progress-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      position: relative;
+      
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+      
+      &.active {
+        border-width: 3px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        
+        .active-indicator {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      
+      .active-indicator {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        width: 24px;
+        height: 24px;
+        background: #28a745;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.75rem;
+        opacity: 0;
+        transform: scale(0);
+        transition: all 0.3s ease;
+      }
+      
+      .card-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+        color: white;
+      }
+      
+      .card-content {
+        .card-number {
+          font-size: 2rem;
+          font-weight: 700;
+          margin-bottom: 0.5rem;
+        }
+        
+        .card-label {
+          font-size: 0.9rem;
+          color: #6c7293;
+          font-weight: 500;
+        }
+      }
+      
+      &.total {
+        border-color: #3699ff;
+        .card-icon { background: linear-gradient(135deg, #3699ff 0%, #5db3ff 100%); }
+        .card-number { color: #3699ff; }
+      }
+      
+      &.completed {
+        border-color: #28a745;
+        .card-icon { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); }
+        .card-number { color: #28a745; }
+      }
+      
+      &.in-progress {
+        border-color: #ffc107;
+        .card-icon { background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); }
+        .card-number { color: #ffc107; }
+      }
+      
+      &.overdue {
+        border-color: #dc3545;
+        .card-icon { background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%); }
+        .card-number { color: #dc3545; }
+      }
+    }
+  }
+
+  // Student Exercise Cards (Grid View)
+  .student-exercise-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    
+    &:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+    
+    // Status-based styling (takes precedence)
+    &.status-completed {
+      border-color: #28a745 !important;
+      .progress-fill { background: #28a745 !important; }
+    }
+    
+    &.status-in_progress {
+      border-color: #ffc107 !important;
+      .progress-fill { background: #ffc107 !important; }
+    }
+    
+    &.status-not_started {
+      border-color: #adb5bd !important;
+      .progress-fill { background: #adb5bd !important; }
+    }
+    
+    &.status-overdue {
+      border-color: #dc3545 !important;
+      .progress-fill { background: #dc3545 !important; }
+    }
+    
+    // Days remaining color based on actual due date, not status
+    .days-value {
+      &.overdue {
+        color: #dc3545 !important;
+        font-weight: 600;
+      }
+      
+      &.due-today {
+        color: #fd7e14 !important;
+        font-weight: 600;
+      }
+      
+      &.due-tomorrow {
+        color: #ffc107 !important;
+        font-weight: 600;
+      }
+      
+      &.normal {
+        color: #6c757d !important;
+        font-weight: 600;
+      }
+    }
+    
+    // Priority-based styling (fallback when no status class is present)
+    &:not([class*="status-"]) {
+      &.priority-critical {
+        border-color: #dc3545;
+        .days-value { color: #dc3545; font-weight: 600; }
+      }
+      
+      &.priority-high {
+        border-color: #fd7e14;
+        .days-value { color: #fd7e14; font-weight: 600; }
+      }
+      
+      &.priority-medium {
+        border-color: #ffc107;
+        .days-value { color: #ffc107; font-weight: 600; }
+      }
+      
+      &.priority-low {
+        border-color: #28a745;
+        .days-value { color: #28a745; font-weight: 600; }
+      }
+    }
+    
+    .card-header {
+      padding: 1.5rem;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      
+      .exercise-info {
+        flex: 1;
+        
+        .exercise-title {
+          font-size: 1.1rem;
+          font-weight: 600;
+          margin-bottom: 0.25rem;
+          color: #181c32;
+        }
+        
+        .exercise-number {
+          font-size: 0.8rem;
+          color: #6c7293;
+          background: rgba(54, 153, 255, 0.1);
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+        }
+      }
+      
+      .status-badge {
+        .badge {
+          font-size: 0.75rem;
+          padding: 0.5rem 0.75rem;
+          border-radius: 20px;
+          font-weight: 500;
+        }
+      }
+    }
+    
+    .card-body {
+      padding: 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      
+      .progress-section {
+        margin-bottom: 1.5rem;
+        
+        .progress-info {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.75rem;
+          
+          .progress-label {
+            font-size: 0.9rem;
+            color: #6c7293;
+            font-weight: 500;
+          }
+          
+          .progress-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #181c32;
+          }
+        }
+        
+        .progress-bar-container {
+          .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            
+            .progress-fill {
+              height: 100%;
+              border-radius: 4px;
+              transition: width 0.3s ease;
+            }
+          }
+        }
+      }
+      
+      .due-date-section {
+        background: rgba(54, 153, 255, 0.05);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        
+        .due-date-info {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          
+          i {
+            font-size: 1.1rem;
+            margin-right: 0.75rem;
+          }
+          
+          .due-details {
+            flex: 1;
+            
+            .due-label {
+              font-size: 0.8rem;
+              color: #6c7293;
+              margin-bottom: 0.25rem;
+            }
+            
+            .due-value {
+              font-size: 0.9rem;
+              font-weight: 600;
+              color: #181c32;
+            }
+          }
+          
+          .time-left-info {
+            text-align: right;
+            
+            .days-label {
+              font-size: 0.8rem;
+              color: #6c7293;
+              margin-bottom: 0.25rem;
+            }
+            
+            .days-value {
+              font-size: 0.9rem;
+              font-weight: 600;
+            }
+          }
+        }
+      }
+      
+      .action-buttons {
+        display: flex;
+        justify-content: center;
+        margin-top: auto;
+        
+        .btn {
+          border-radius: 8px;
+          font-weight: 500;
+          transition: all 0.3s ease;
+          min-width: 120px;
+          
+          &:hover {
+            transform: translateY(-1px);
+          }
+        }
+      }
+      
+      .teacher-message-section {
+        background: rgba(54, 153, 255, 0.05);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-left: 3px solid #17a2b8;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        
+        &.clickable {
+          cursor: pointer;
+          transition: all 0.3s ease;
+          
+          &:hover {
+            background: rgba(54, 153, 255, 0.1);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(54, 153, 255, 0.2);
+          }
+        }
+        
+        .message-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: 0.5rem;
+          flex-shrink: 0;
+          
+          i {
+            font-size: 1rem;
+            margin-right: 0.5rem;
+          }
+          
+          .message-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #17a2b8;
+          }
+        }
+        
+        .message-content {
+          font-size: 0.9rem;
+          color: #495057;
+          line-height: 1.4;
+          font-style: italic;
+          overflow-y: auto;
+          max-height: 80px;
+          padding-right: 0.5rem;
+          
+          &::-webkit-scrollbar {
+            width: 4px;
+          }
+          
+          &::-webkit-scrollbar-track {
+            background: rgba(54, 153, 255, 0.1);
+            border-radius: 2px;
+          }
+          
+          &::-webkit-scrollbar-thumb {
+            background: rgba(54, 153, 255, 0.3);
+            border-radius: 2px;
+            
+            &:hover {
+              background: rgba(54, 153, 255, 0.5);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Exercise List View
+  .exercise-list {
+    .exercise-list-item {
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      border-left: 4px solid transparent;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
+      
+      // Status-based styling for list items (takes precedence)
+      &.status-completed {
+        border-left-color: #28a745 !important;
+        .progress-fill { background: #28a745 !important; }
+      }
+      
+      &.status-in_progress {
+        border-left-color: #ffc107 !important;
+        .progress-fill { background: #ffc107 !important; }
+      }
+      
+      &.status-not_started {
+        border-left-color: #adb5bd !important;
+        .progress-fill { background: #adb5bd !important; }
+      }
+      
+      &.status-overdue {
+        border-left-color: #dc3545 !important;
+        .progress-fill { background: #dc3545 !important; }
+      }
+      
+              .list-item-header {
+          padding: 1.5rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          
+          .item-content {
+          flex: 1;
+          
+          .item-title {
+            margin-bottom: 0.5rem;
+            
+            h6 {
+              font-weight: 600;
+              margin-bottom: 0.25rem;
+            }
+          }
+          
+          .item-progress {
+            .progress-info {
+              display: flex;
+              align-items: center;
+              gap: 1rem;
+              
+              .progress-text {
+                font-size: 0.8rem;
+                color: #6c7293;
+                min-width: 80px;
+              }
+              
+              .mini-progress {
+                flex: 1;
+                height: 6px;
+                background: #e9ecef;
+                border-radius: 3px;
+                overflow: hidden;
+                
+                .progress-fill {
+                  height: 100%;
+                  border-radius: 3px;
+                  transition: width 0.3s ease;
+                }
+              }
+            }
+          }
+        }
+        
+        .item-due-date {
+          text-align: center;
+          min-width: 120px;
+          
+          .due-info {
+            .due-date {
+              font-size: 0.8rem;
+              color: #6c7293;
+              margin-bottom: 0.25rem;
+            }
+            
+            .days-left {
+              font-size: 0.8rem;
+              font-weight: 600;
+              
+              &.overdue {
+                color: #dc3545 !important;
+              }
+              
+              &.due-today {
+                color: #fd7e14 !important;
+              }
+              
+              &.due-tomorrow {
+                color: #ffc107 !important;
+              }
+              
+              &.normal {
+                color: #6c757d !important;
+              }
+            }
+          }
+        }
+        
+        .item-status {
+          .badge {
+            font-size: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 500;
+          }
+        }
+        
+        .item-actions {
+          display: flex;
+          gap: 0.5rem;
+          
+          .btn {
+            border-radius: 6px;
+            padding: 0.5rem;
+            min-width: 40px;
+          }
+        }
+      }
+      
+      .list-item-message {
+        padding: 1rem 1.5rem;
+        background: rgba(54, 153, 255, 0.05);
+        border-top: 1px solid #e9ecef;
+        
+        &.clickable {
+          cursor: pointer;
+          transition: all 0.3s ease;
+          
+          &:hover {
+            background: rgba(54, 153, 255, 0.1);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(54, 153, 255, 0.2);
+          }
+        }
+        
+        .message-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: 0.5rem;
+          
+          i {
+            font-size: 0.9rem;
+            margin-right: 0.5rem;
+          }
+          
+          .message-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #17a2b8;
+          }
+        }
+        
+        .message-content {
+          font-size: 0.85rem;
+          color: #495057;
+          line-height: 1.4;
+          font-style: italic;
+        }
+      }
+    }
+  }
+
+  // Pagination Section
+  .pagination-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    
+    .pagination {
+      margin: 0;
+      
+      .page-link {
+        border-radius: 6px;
+        margin: 0 2px;
+        border: none;
+        color: #6c7293;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          background: #3699ff;
+          color: white;
+          transform: translateY(-1px);
+        }
+        
+        &.active {
+          background: #3699ff;
+          color: white;
+        }
+      }
+    }
+  }
+
+  // Empty State
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    
+    .empty-content {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+  }
+
+  // Loading Overlay
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(5px);
+    z-index: 9999;
+    
+    .loading-content {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+  }
+
+  // Responsive Design
+  @media (max-width: 768px) {
+    .welcome-section {
+      .welcome-content {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+        
+        .welcome-actions {
+          flex-direction: column;
+          width: 100%;
+          
+          .view-toggle {
+            justify-content: center;
+          }
+        }
+      }
+    }
+    
+    .student-exercise-card {
+      .card-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+        
+        .exercise-info {
+          margin-left: 0;
+        }
+      }
+    }
+    
+    .exercise-list {
+      .list-item-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+        
+        .item-due-date {
+          min-width: auto;
+        }
+      }
+    }
+    
+    .pagination-section {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+  }
+
+  // Animation for cards appearing
+  .exercise-card {
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  // Stagger animation for multiple cards
+  .exercise-card:nth-child(1) { animation-delay: 0.1s; }
+  .exercise-card:nth-child(2) { animation-delay: 0.2s; }
+  .exercise-card:nth-child(3) { animation-delay: 0.3s; }
+  .exercise-card:nth-child(4) { animation-delay: 0.4s; }
+  .exercise-card:nth-child(5) { animation-delay: 0.5s; }
+  .exercise-card:nth-child(6) { animation-delay: 0.6s; }
+
+  // Modern scrollbar
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+    
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
+
+  // React Select Styling
+  .react-select-container {
+    .react-select__control {
+      border-radius: 8px;
+      border-color: #e9ecef;
+      min-height: 38px;
+      
+      &:hover {
+        border-color: #3699ff;
+      }
+      
+      &.react-select__control--is-focused {
+        border-color: #3699ff;
+        box-shadow: 0 0 0 0.2rem rgba(54, 153, 255, 0.25);
+      }
+    }
+    
+    .react-select__menu {
+      border-radius: 8px;
+      border: 1px solid #e9ecef;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .react-select__option {
+      padding: 8px 12px;
+      
+      &:hover {
+        background-color: rgba(54, 153, 255, 0.1);
+      }
+      
+      &.react-select__option--is-selected {
+        background-color: #3699ff;
+      }
+    }
+  }
+} 

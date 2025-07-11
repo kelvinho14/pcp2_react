@@ -7,6 +7,7 @@ import {WithChildren} from '../../../_metronic/helpers'
 const ExerciseFormPage = lazy(() => import('./ExerciseFormPage'))
 const ExerciseListPage = lazy(() => import('./exercise-list/ExerciseListPage'))
 const ExerciseAssignedListPage = lazy(() => import('./exercise-assigned-list/ExerciseAssignedListPage'))
+const ExerciseDashboardPage = lazy(() => import('./student-dashboard/ExerciseDashboardPage'))
 
 const ExercisePage: FC = () => {
   return (
@@ -29,6 +30,11 @@ const ExercisePage: FC = () => {
       <Route path='assignedlist' element={
         <SuspensedView>
           <ExerciseAssignedListPage />
+        </SuspensedView>
+      } />
+      <Route path='dashboard' element={
+        <SuspensedView>
+          <ExerciseDashboardPage />
         </SuspensedView>
       } />
       <Route path='*' element={<Navigate to='list' />} />

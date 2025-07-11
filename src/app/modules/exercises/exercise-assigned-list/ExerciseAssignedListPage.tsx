@@ -3,8 +3,9 @@ import {useDispatch, useSelector} from 'react-redux'
 import {PageTitle} from '../../../../_metronic/layout/core'
 import {useIntl} from 'react-intl'
 import {AppDispatch, RootState} from '../../../../store'
-import {fetchAssignedExercises, setPage, setFilters, setLoadingFilters} from '../../../../store/exercises/assignedExercisesSlice'
+import {fetchAssignedExercises, setPage, setFilters, setLoadingFilters, clearCache} from '../../../../store/exercises/assignedExercisesSlice'
 import AssignedExercisesFilters from './components/AssignedExercisesFilters'
+import {ASSIGNMENT_STATUS, getStatusLabel} from '../../../constants/assignmentStatus'
 
 // Completely isolated filters component that doesn't re-render with parent
 const IsolatedFilters = memo(() => {
@@ -110,21 +111,27 @@ const ExerciseAssignedListPage: FC = () => {
   }, [])
 
   const handleStatusFilter = useCallback((status: string) => {
-    // Map status to API values
+    // Map status to API values using constants
     let statusValue = ''
     switch (status) {
       case 'completed':
-        statusValue = '2'
+        statusValue = ASSIGNMENT_STATUS.SUBMITTED.toString()
         break
       case 'in_progress':
-        statusValue = '1'
+        statusValue = ASSIGNMENT_STATUS.IN_PROGRESS.toString()
         break
       case 'overdue':
-        statusValue = '4'
+        statusValue = ASSIGNMENT_STATUS.OVERDUE.toString()
         break
       default:
         statusValue = ''
     }
+    
+    // Set loading state for filters
+    dispatch(setLoadingFilters(true))
+    
+    // Clear cache to force fresh API call
+    dispatch(clearCache())
     
     // Update filters with status
     dispatch(setFilters({ ...filtersRef.current, status: statusValue }))
@@ -278,7 +285,7 @@ const ExerciseAssignedListPage: FC = () => {
                                 </div>
                                 <div className='d-flex align-items-center'>
                                   <span className={`badge badge-sm badge-light-${assignment.status === '1' ? 'success' : 'warning'} me-2`}>
-                                    {assignment.status === '1' ? 'Completed' : 'Pending'}
+                                    {assignment.status === '1' ? getStatusLabel(ASSIGNMENT_STATUS.SUBMITTED) : getStatusLabel(ASSIGNMENT_STATUS.ASSIGNED)}
                                   </span>
                                   {assignment.message_for_student && (
                                     <Tooltip message={assignment.message_for_student}>
@@ -411,11 +418,11 @@ const ExerciseAssignedListPage: FC = () => {
         </div>
         
         <div className='col-xl-3'>
-          <div 
-            className={`card border-0 cursor-pointer ${filters.status === '2' ? 'bg-light-success border-success' : 'bg-light-success'}`}
-            onClick={() => handleStatusFilter('completed')}
-            style={{ cursor: 'pointer' }}
-          >
+                      <div 
+              className={`card border-0 cursor-pointer ${filters.status === ASSIGNMENT_STATUS.SUBMITTED.toString() ? 'bg-light-success border-success' : 'bg-light-success'}`}
+              onClick={() => handleStatusFilter('completed')}
+              style={{ cursor: 'pointer' }}
+            >
             <div className='card-body'>
               <div className='d-flex align-items-center'>
                 <div className='symbol symbol-50px me-4'>
@@ -424,7 +431,7 @@ const ExerciseAssignedListPage: FC = () => {
                   </div>
                 </div>
                 <div>
-                  <div className='fs-6 text-muted fw-semibold'>Completed</div>
+                  <div className='fs-6 text-muted fw-semibold'>{getStatusLabel(ASSIGNMENT_STATUS.SUBMITTED)}</div>
                   <div className='fs-2 fw-bold text-gray-800 d-flex align-items-center'>
                     {summary.completed}
                     {loadingFilters && !isInitialLoad && (
@@ -435,7 +442,7 @@ const ExerciseAssignedListPage: FC = () => {
                   </div>
                 </div>
               </div>
-              {filters.status === '2' && (
+              {filters.status === ASSIGNMENT_STATUS.SUBMITTED.toString() && (
                 <div className='position-absolute top-0 end-0 mt-2 me-2'>
                   <i className='fas fa-check-circle text-success fs-5'></i>
                 </div>
@@ -446,7 +453,7 @@ const ExerciseAssignedListPage: FC = () => {
         
         <div className='col-xl-3'>
           <div 
-            className={`card border-0 cursor-pointer ${filters.status === '1' ? 'bg-light-warning border-warning' : 'bg-light-warning'}`}
+            className={`card border-0 cursor-pointer ${filters.status === ASSIGNMENT_STATUS.IN_PROGRESS.toString() ? 'bg-light-warning border-warning' : 'bg-light-warning'}`}
             onClick={() => handleStatusFilter('in_progress')}
             style={{ cursor: 'pointer' }}
           >
@@ -458,7 +465,7 @@ const ExerciseAssignedListPage: FC = () => {
                   </div>
                 </div>
                 <div>
-                  <div className='fs-6 text-muted fw-semibold'>In Progress</div>
+                  <div className='fs-6 text-muted fw-semibold'>{getStatusLabel(ASSIGNMENT_STATUS.IN_PROGRESS)}</div>
                   <div className='fs-2 fw-bold text-gray-800 d-flex align-items-center'>
                     {summary.in_progress}
                     {loadingFilters && !isInitialLoad && (
@@ -469,7 +476,7 @@ const ExerciseAssignedListPage: FC = () => {
                   </div>
                 </div>
               </div>
-              {filters.status === '1' && (
+              {filters.status === ASSIGNMENT_STATUS.IN_PROGRESS.toString() && (
                 <div className='position-absolute top-0 end-0 mt-2 me-2'>
                   <i className='fas fa-check-circle text-warning fs-5'></i>
                 </div>
@@ -480,7 +487,7 @@ const ExerciseAssignedListPage: FC = () => {
         
         <div className='col-xl-3'>
           <div 
-            className={`card border-0 cursor-pointer ${filters.status === '4' ? 'bg-light-danger border-danger' : 'bg-light-danger'}`}
+            className={`card border-0 cursor-pointer ${filters.status === ASSIGNMENT_STATUS.OVERDUE.toString() ? 'bg-light-danger border-danger' : 'bg-light-danger'}`}
             onClick={() => handleStatusFilter('overdue')}
             style={{ cursor: 'pointer' }}
           >
@@ -492,7 +499,7 @@ const ExerciseAssignedListPage: FC = () => {
                   </div>
                 </div>
                 <div>
-                  <div className='fs-6 text-muted fw-semibold'>Overdue</div>
+                  <div className='fs-6 text-muted fw-semibold'>{getStatusLabel(ASSIGNMENT_STATUS.OVERDUE)}</div>
                   <div className='fs-2 fw-bold text-gray-800 d-flex align-items-center'>
                     {summary.overdue}
                     {loadingFilters && !isInitialLoad && (
@@ -503,7 +510,7 @@ const ExerciseAssignedListPage: FC = () => {
                   </div>
                 </div>
               </div>
-              {filters.status === '4' && (
+              {filters.status === ASSIGNMENT_STATUS.OVERDUE.toString() && (
                 <div className='position-absolute top-0 end-0 mt-2 me-2'>
                   <i className='fas fa-check-circle text-danger fs-5'></i>
                 </div>
