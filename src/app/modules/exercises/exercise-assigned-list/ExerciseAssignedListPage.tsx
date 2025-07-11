@@ -3,7 +3,7 @@ import {useDispatch, useSelector} from 'react-redux'
 import {PageTitle} from '../../../../_metronic/layout/core'
 import {useIntl} from 'react-intl'
 import {AppDispatch, RootState} from '../../../../store'
-import {fetchAssignedExercises, setPage, setFilters, setLoadingFilters} from '../../../../store/exercises/assignedExercisesSlice'
+import {fetchAssignedExercises, setPage, setFilters, setLoadingFilters, clearCache} from '../../../../store/exercises/assignedExercisesSlice'
 import AssignedExercisesFilters from './components/AssignedExercisesFilters'
 import {ASSIGNMENT_STATUS, getStatusLabel} from '../../../constants/assignmentStatus'
 
@@ -126,6 +126,12 @@ const ExerciseAssignedListPage: FC = () => {
       default:
         statusValue = ''
     }
+    
+    // Set loading state for filters
+    dispatch(setLoadingFilters(true))
+    
+    // Clear cache to force fresh API call
+    dispatch(clearCache())
     
     // Update filters with status
     dispatch(setFilters({ ...filtersRef.current, status: statusValue }))

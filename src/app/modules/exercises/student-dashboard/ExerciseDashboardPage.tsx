@@ -85,14 +85,8 @@ const ExerciseDashboardPage: FC = () => {
     }
     
     const assignmentStatus = exercise.assignments[0].status
-    const daysRemaining = getDaysRemaining(exercise.assignments[0].due_date)
     
-    // Check if exercise is overdue based on due date
-    if (daysRemaining !== null && daysRemaining < 0) {
-      return 'overdue'
-    }
-    
-    // Map assignment status to student status
+    // Map assignment status to student status (prioritize status over due date)
     switch (assignmentStatus) {
       case '0': return 'not_started'
       case '1': return 'in_progress'
