@@ -1,5 +1,6 @@
 import {FC, useState, useEffect, useMemo, useCallback, useRef} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
+import {useNavigate} from 'react-router-dom'
 import {PageTitle} from '../../../../_metronic/layout/core'
 import {useIntl} from 'react-intl'
 import {AppDispatch, RootState} from '../../../../store'
@@ -54,6 +55,7 @@ const Tooltip: FC<{message: string, children: React.ReactNode}> = ({message, chi
 const ExerciseDashboardPage: FC = () => {
   const intl = useIntl()
   const dispatch = useDispatch<AppDispatch>()
+  const navigate = useNavigate()
   const { 
     exercises, 
     summary, 
@@ -71,6 +73,8 @@ const ExerciseDashboardPage: FC = () => {
   const [selectedView, setSelectedView] = useState<'grid' | 'list'>('grid')
   const [showMessageModal, setShowMessageModal] = useState(false)
   const [selectedMessage, setSelectedMessage] = useState<{title: string, message: string} | null>(null)
+  const [showStartConfirm, setShowStartConfirm] = useState(false)
+  const [selectedExercise, setSelectedExercise] = useState<{title: string, assignmentId: string, teacherMessage?: string} | null>(null)
   const hasInitialized = useRef(false)
   const apiTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const filtersRef = useRef(filters)
@@ -112,9 +116,9 @@ const ExerciseDashboardPage: FC = () => {
     switch (status) {
       case 'completed': return 'success'
       case 'in_progress': return 'warning'
-      case 'not_started': return 'secondary'
+      case 'not_started': return 'dark'
       case 'overdue': return 'danger'
-      default: return 'secondary'
+      default: return 'dark'
     }
   }
 
@@ -247,6 +251,33 @@ const ExerciseDashboardPage: FC = () => {
     setSelectedMessage(null)
   }, [])
 
+  const handleStartExercise = useCallback((exercise: any) => {
+    const assignmentId = exercise.assignments.length > 0 ? exercise.assignments[0].assignment_id : null
+    if (assignmentId) {
+      setSelectedExercise({
+        title: exercise.title,
+        assignmentId: assignmentId,
+        teacherMessage: exercise.assignments[0].message_for_student
+      })
+      setShowStartConfirm(true)
+    } else {
+      console.error('No assignment ID found for exercise:', exercise.id)
+    }
+  }, [])
+
+  const handleConfirmStart = useCallback(() => {
+    if (selectedExercise) {
+      navigate(`/exercises/attempt/${selectedExercise.assignmentId}`)
+      setShowStartConfirm(false)
+      setSelectedExercise(null)
+    }
+  }, [selectedExercise, navigate])
+
+  const handleCancelStart = useCallback(() => {
+    setShowStartConfirm(false)
+    setSelectedExercise(null)
+  }, [])
+
   const handleSortChange = useCallback((field: string, value: string) => {
     dispatch(setFilters({ [field]: value }))
   }, [dispatch])
@@ -297,17 +328,15 @@ const ExerciseDashboardPage: FC = () => {
       const studentStatus = getStudentStatus(exercise)
 
       return (
-        <div key={exercise.id} className='col-xl-6 col-xxl-4 exercise-card'>
+        <div key={exercise.id} className='col-lg-4 col-md-6 col-sm-12 exercise-card'>
           <div className={`student-exercise-card priority-${priorityLevel} status-${studentStatus}`}>
             <div className='card-header'>
               <div className='exercise-info'>
-                <h5 className='exercise-title'>{exercise.title}</h5>
-                <span className='exercise-number'>Question #{exercise.question_no}</span>
+                <h5 className='exercise-title two-line-ellipsis'>{exercise.title}</h5>
+                <span className='exercise-number'>{exercise.question_no} Question{exercise.question_no !== 1 ? 's' : ''}</span>
               </div>
               <div className='status-badge'>
-                <span className={`badge ${getStatusBadgeColor(studentStatus)}`}>
-                  {getStatusLabel(getStatusFromApi(studentStatus) as AssignmentStatus)}
-                </span>
+                <i className={`${getStatusIcon(studentStatus)} text-${getStatusColor(studentStatus)}`}></i>
               </div>
             </div>
             
@@ -365,7 +394,7 @@ const ExerciseDashboardPage: FC = () => {
                 >
                   <div className='message-header'>
                     <i className='fas fa-comment-dots text-info'></i>
-                    <span className='message-label'>Teacher's Note</span>
+                    <span className='message-label'>Teacher's Message</span>
                     <i className='fas fa-external-link-alt text-info ms-auto'></i>
                   </div>
                   <div className='message-content'>
@@ -376,9 +405,18 @@ const ExerciseDashboardPage: FC = () => {
               
               {/* Action Buttons */}
               <div className='action-buttons'>
-                <button className='btn btn-primary btn-sm'>
+                <button 
+                  className='btn btn-primary btn-sm'
+                  onClick={() => {
+                    if (exercise.assignments[0]?.message_for_student) {
+                      handleStartExercise(exercise)
+                    } else {
+                      navigate(`/exercises/attempt/${exercise.assignments[0]?.assignment_id}`)
+                    }
+                  }}
+                >
                   <i className='fas fa-play me-1'></i>
-                  Start Now
+                  Start
                 </button>
               </div>
             </div>
@@ -386,7 +424,7 @@ const ExerciseDashboardPage: FC = () => {
         </div>
       )
     })
-  }, [exercises])
+  }, [exercises, handleStartExercise, handleOpenMessageModal, navigate])
 
   // Memoized exercise list view
   const exerciseListView = useMemo(() => {
@@ -445,8 +483,18 @@ const ExerciseDashboardPage: FC = () => {
               </span>
             </div>
             <div className='item-actions'>
-              <button className='btn btn-sm btn-primary'>
+              <button 
+                className='btn btn-sm btn-primary'
+                onClick={() => {
+                  if (exercise.assignments[0]?.message_for_student) {
+                    handleStartExercise(exercise)
+                  } else {
+                    navigate(`/exercises/attempt/${exercise.assignments[0]?.assignment_id}`)
+                  }
+                }}
+              >
                 <i className='fas fa-play'></i>
+                Start
               </button>
             </div>
           </div>
@@ -459,7 +507,7 @@ const ExerciseDashboardPage: FC = () => {
             >
               <div className='message-header'>
                 <i className='fas fa-comment-dots text-info'></i>
-                <span className='message-label'>Teacher's Note</span>
+                <span className='message-label'>Teacher's Message</span>
                 <i className='fas fa-external-link-alt text-info ms-auto'></i>
               </div>
               <div className='message-content'>
@@ -470,7 +518,7 @@ const ExerciseDashboardPage: FC = () => {
         </div>
       )
     })
-  }, [exercises])
+  }, [exercises, handleStartExercise, handleOpenMessageModal, navigate])
 
   // Show loading state
   if (isInitialLoad && loading) {
@@ -535,7 +583,7 @@ const ExerciseDashboardPage: FC = () => {
               onClick={() => setShowFilters(!showFilters)}
             >
               <i className='fas fa-filter me-1'></i>
-              {showFilters ? 'Hide Filters' : 'Filter My Work'}
+              {showFilters ? 'Hide Filters' : 'Filters'}
             </button>
             <div className='view-toggle'>
               <button 
@@ -663,86 +711,113 @@ const ExerciseDashboardPage: FC = () => {
 
             {/* My Progress Overview */}
       <div className='progress-overview'>
-        <div className='row g-4'>
-          <div className='col-xl-3'>
+        <div className='status-cards-grid'>
+          <div>
             <div 
               className={`progress-card total ${!filters.status ? 'active' : ''}`}
               onClick={() => handleStatusFilter('')}
               style={{ cursor: 'pointer' }}
             >
-              <div className='card-icon'>
-                <i className='fas fa-book-open text-white fs-2'></i>
-              </div>
-              <div className='card-content'>
-                <div className='card-number'>{summary.total}</div>
-                <div className='card-label'>Total Assignments</div>
+              <div className='d-flex align-items-center'>
+                <div className='card-icon me-3'>
+                  <i className='fas fa-book-open text-white fs-2'></i>
+                </div>
+                <div className='card-content'>
+                  <div className='card-number'>{summary.total}</div>
+                  <div className='card-label'>Total</div>
+                </div>
               </div>
               {!filters.status && (
                 <div className='active-indicator'>
-                  <i className='fas fa-check-circle'></i>
+                  <i className='fas fa-check-circle text-white'></i>
                 </div>
               )}
             </div>
           </div>
-          
-          <div className='col-xl-3'>
+          <div>
             <div 
               className={`progress-card completed ${filters.status === ASSIGNMENT_STATUS.SUBMITTED.toString() ? 'active' : ''}`}
               onClick={() => handleStatusFilter(ASSIGNMENT_STATUS.SUBMITTED.toString())}
               style={{ cursor: 'pointer' }}
             >
-              <div className='card-icon'>
-                <i className='fas fa-check-circle text-white fs-2'></i>
-              </div>
-                              <div className='card-content'>
+              <div className='d-flex align-items-center'>
+                <div className='card-icon me-3'>
+                  <i className='fas fa-check-circle text-white fs-2'></i>
+                </div>
+                <div className='card-content'>
                   <div className='card-number'>{summary.completed}</div>
                   <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.SUBMITTED)}</div>
                 </div>
+              </div>
               {filters.status === ASSIGNMENT_STATUS.SUBMITTED.toString() && (
                 <div className='active-indicator'>
-                  <i className='fas fa-check-circle'></i>
+                  <i className='fas fa-check-circle text-white'></i>
                 </div>
               )}
             </div>
           </div>
-          
-          <div className='col-xl-3'>
+          <div>
             <div 
               className={`progress-card in-progress ${filters.status === ASSIGNMENT_STATUS.IN_PROGRESS.toString() ? 'active' : ''}`}
               onClick={() => handleStatusFilter(ASSIGNMENT_STATUS.IN_PROGRESS.toString())}
               style={{ cursor: 'pointer' }}
             >
-              <div className='card-icon'>
-                <i className='fas fa-clock text-white fs-2'></i>
-              </div>
-                              <div className='card-content'>
+              <div className='d-flex align-items-center'>
+                <div className='card-icon me-3'>
+                  <i className='fas fa-clock text-white fs-2'></i>
+                </div>
+                <div className='card-content'>
                   <div className='card-number'>{summary.in_progress}</div>
                   <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.IN_PROGRESS)}</div>
                 </div>
+              </div>
               {filters.status === ASSIGNMENT_STATUS.IN_PROGRESS.toString() && (
                 <div className='active-indicator'>
-                  <i className='fas fa-check-circle'></i>
+                  <i className='fas fa-check-circle text-white'></i>
                 </div>
               )}
             </div>
           </div>
-          
-          <div className='col-xl-3'>
+          <div>
             <div 
               className={`progress-card overdue ${filters.status === ASSIGNMENT_STATUS.OVERDUE.toString() ? 'active' : ''}`}
               onClick={() => handleStatusFilter(ASSIGNMENT_STATUS.OVERDUE.toString())}
               style={{ cursor: 'pointer' }}
             >
-              <div className='card-icon'>
-                <i className='fas fa-exclamation-triangle text-white fs-2'></i>
-              </div>
-                              <div className='card-content'>
+              <div className='d-flex align-items-center'>
+                <div className='card-icon me-3'>
+                  <i className='fas fa-exclamation-triangle text-white fs-2'></i>
+                </div>
+                <div className='card-content'>
                   <div className='card-number'>{summary.overdue}</div>
                   <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.OVERDUE)}</div>
                 </div>
+              </div>
               {filters.status === ASSIGNMENT_STATUS.OVERDUE.toString() && (
                 <div className='active-indicator'>
-                  <i className='fas fa-check-circle'></i>
+                  <i className='fas fa-check-circle text-white'></i>
+                </div>
+              )}
+            </div>
+          </div>
+          <div>
+            <div 
+              className={`progress-card not-started ${filters.status === ASSIGNMENT_STATUS.ASSIGNED.toString() ? 'active' : ''}`}
+              onClick={() => handleStatusFilter(ASSIGNMENT_STATUS.ASSIGNED.toString())}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className='d-flex align-items-center'>
+                <div className='card-icon me-3'>
+                  <i className='fas fa-hourglass-start text-white fs-2'></i>
+                </div>
+                <div className='card-content'>
+                  <div className='card-number'>{typeof summary.not_started !== 'undefined' ? summary.not_started : summary.total - summary.completed - summary.in_progress - summary.overdue}</div>
+                  <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.ASSIGNED)}</div>
+                </div>
+              </div>
+              {filters.status === ASSIGNMENT_STATUS.ASSIGNED.toString() && (
+                <div className='active-indicator'>
+                  <i className='fas fa-check-circle text-white'></i>
                 </div>
               )}
             </div>
@@ -750,27 +825,51 @@ const ExerciseDashboardPage: FC = () => {
         </div>
       </div>
 
-      {/* Loading overlay for filter changes */}
-      {loadingFilters && !isInitialLoad && (
-        <div className='loading-overlay'>
-          <div className='loading-content'>
-            <div className='spinner-border text-primary me-3' role='status'>
-              <span className='visually-hidden'>Loading...</span>
-            </div>
-            <span className='text-muted'>Updating your exercises...</span>
-          </div>
-        </div>
-      )}
-
       {/* Exercise Content */}
       {selectedView === 'grid' ? (
-        <div className='exercise-grid'>
+        <div className='exercise-grid position-relative'>
+          {loadingFilters && !isInitialLoad && (
+            <div className='loading-overlay' style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(255,255,255,0.7)',
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div className='loading-content'>
+                <div className='spinner-border text-primary me-3' role='status'>
+                  <span className='visually-hidden'>Loading...</span>
+                </div>
+                <span className='text-muted'>Updating your exercises...</span>
+              </div>
+            </div>
+          )}
           <div className='row g-4'>
             {exerciseGridCards}
           </div>
         </div>
       ) : (
-        <div className='exercise-list'>
+        <div className='exercise-list position-relative'>
+          {loadingFilters && !isInitialLoad && (
+            <div className='loading-overlay' style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(255,255,255,0.7)',
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div className='loading-content'>
+                <div className='spinner-border text-primary me-3' role='status'>
+                  <span className='visually-hidden'>Loading...</span>
+                </div>
+                <span className='text-muted'>Updating your exercises...</span>
+              </div>
+            </div>
+          )}
           {exerciseListView}
         </div>
       )}
@@ -878,6 +977,57 @@ const ExerciseDashboardPage: FC = () => {
                   onClick={handleCloseMessageModal}
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Start Exercise Confirmation Modal */}
+      {showStartConfirm && selectedExercise && (
+        <div className='modal fade show d-block' style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+          <div className='modal-dialog modal-dialog-centered modal-lg modal-bounce'>
+            <div className='modal-content' style={{ minHeight: 520 }}>
+              <div className='modal-header'>
+                <h5 className='modal-title'>
+                  {selectedExercise.title}
+                </h5>
+                <button 
+                  type='button' 
+                  className='btn-close' 
+                  onClick={handleCancelStart}
+                ></button>
+              </div>
+              <div className='modal-body'>
+                {/* Yellow Note box and larger modal */}
+                {selectedExercise.teacherMessage && (
+                  <div className='teacher-message-section mb-3'>
+                    <div className='message-header'>
+                      <i className='fas fa-comment-dots text-info'></i>
+                      <span className='message-label'>Teacher's Message</span>
+                    </div>
+                    <div className='message-content' style={{ whiteSpace: 'pre-line', maxHeight: 320, overflowY: 'auto' }}>
+                      {selectedExercise.teacherMessage}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className='modal-footer'>
+                <button 
+                  type='button' 
+                  className='btn btn-secondary' 
+                  onClick={handleCancelStart}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type='button' 
+                  className='btn btn-primary' 
+                  onClick={handleConfirmStart}
+                >
+                  <i className='fas fa-play me-1'></i>
+                  Start
                 </button>
               </div>
             </div>

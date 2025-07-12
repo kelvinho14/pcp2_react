@@ -8,6 +8,7 @@ const ExerciseFormPage = lazy(() => import('./ExerciseFormPage'))
 const ExerciseListPage = lazy(() => import('./exercise-list/ExerciseListPage'))
 const ExerciseAssignedListPage = lazy(() => import('./exercise-assigned-list/ExerciseAssignedListPage'))
 const ExerciseDashboardPage = lazy(() => import('./student-dashboard/ExerciseDashboardPage'))
+const ExerciseAttemptPage = lazy(() => import('./exercise-attempt/ExerciseAttemptPage'))
 
 const ExercisePage: FC = () => {
   return (
@@ -35,6 +36,11 @@ const ExercisePage: FC = () => {
       <Route path='dashboard' element={
         <SuspensedView>
           <ExerciseDashboardPage />
+        </SuspensedView>
+      } />
+      <Route path='attempt/:assignmentId' element={
+        <SuspensedView>
+          <ExerciseAttemptPage />
         </SuspensedView>
       } />
       <Route path='*' element={<Navigate to='list' />} />

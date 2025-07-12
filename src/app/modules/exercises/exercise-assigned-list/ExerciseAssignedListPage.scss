@@ -1,5 +1,218 @@
 // Assigned Exercises List Page Custom Styles
 
+// Progress Overview Cards
+.progress-overview {
+  margin-bottom: 2rem;
+  
+  .progress-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    position: relative;
+    
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    &.active {
+      border-width: 3px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      
+      .active-indicator {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    .active-indicator {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      width: 24px;
+      height: 24px;
+      background: #28a745;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 0.75rem;
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.3s ease;
+    }
+    
+    .card-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      color: white;
+    }
+    
+    .card-content {
+      .card-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+      
+      .card-label {
+        font-size: 0.9rem;
+        color: #6c7293;
+        font-weight: 500;
+      }
+    }
+    
+    &.total {
+      .card-icon { background: linear-gradient(135deg, #3699ff 0%, #5db3ff 100%); }
+      .card-number { color: #3699ff; }
+    }
+    
+    &.completed {
+      .card-icon { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); }
+      .card-number { color: #28a745; }
+    }
+    
+    &.in-progress {
+      .card-icon { background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); }
+      .card-number { color: #ffc107; }
+    }
+    
+    &.overdue {
+      .card-icon { background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%); }
+      .card-number { color: #dc3545; }
+    }
+    
+    &.not-started {
+      .card-icon { background: linear-gradient(135deg, #adb5bd 0%, #dee2e6 100%); }
+      .card-number { color: #adb5bd; }
+    }
+  }
+}
+
+.status-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+// Exercise Cards Hover Effects
+.col-xl-6, .col-xxl-4 {
+  .card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    
+    &:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+      border-color: rgba(54, 153, 255, 0.2);
+      
+      .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      }
+      
+      .card-title h5 {
+        color: #3699ff !important;
+      }
+      
+      .btn-light-primary {
+        background-color: #3699ff !important;
+        border-color: #3699ff !important;
+        color: white !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(54, 153, 255, 0.3);
+      }
+    }
+    
+    .card-header {
+      transition: background 0.3s ease;
+    }
+    
+    .card-title h5 {
+      transition: color 0.3s ease;
+    }
+    
+    .btn-light-primary {
+      transition: all 0.3s ease;
+    }
+  }
+}
+
+// Exercise Card Hover Animation (match dashboard)
+.exercise-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Exercise Title Ellipsis
+.exercise-title-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
+}
+
+// Fix container width constraints for ellipsis to work
+.card-title .d-flex {
+  width: 100%;
+  min-width: 0; // Important for flex items to shrink
+}
+
+.card-title .d-flex > div {
+  min-width: 0; // Allow flex item to shrink
+  flex: 1; // Take available space
+  width: 100%; // Ensure full width
+}
+
+.item-title .d-flex {
+  width: 100%;
+  min-width: 0;
+}
+
+.item-title .d-flex > div {
+  min-width: 0;
+  flex: 1;
+  width: 100%;
+}
+
+// Additional fix for card containers
+.col-xl-6 .card,
+.col-xxl-4 .card {
+  overflow: hidden; // Prevent content from overflowing
+}
+
+.card-header {
+  overflow: hidden; // Prevent header content from overflowing
+}
+
+.card-title {
+  width: 100%;
+  overflow: hidden;
+}
+
 // Welcome Section
 .welcome-section {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -235,6 +448,18 @@
                   
                   .text-muted {
                     font-size: 0.75rem;
+                  }
+                }
+                
+                .assignment-progress {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  min-width: 120px;
+                  
+                  .progress {
+                    background: #e9ecef;
+                    border-radius: 2px;
                   }
                 }
                 

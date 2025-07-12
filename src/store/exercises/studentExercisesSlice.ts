@@ -198,6 +198,42 @@ export const fetchStudentExercises = createAsyncThunk(
   }
 )
 
+export const startExercise = createAsyncThunk(
+  'studentExercises/start',
+  async (assignmentId: string, { rejectWithValue }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/student-exercises/assignments/${assignmentId}/start`)
+      
+      const response = await axios.post(`${API_URL}/student-exercises/assignments/${assignmentId}/start`, {}, {
+        headers,
+        withCredentials: true
+      })
+      
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to start exercise')
+    }
+  }
+)
+
+export const startExerciseAttempt = createAsyncThunk(
+  'studentExercises/startAttempt',
+  async (assignmentId: string, { rejectWithValue }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/student-exercises/assignments/${assignmentId}/start-attempt`)
+      
+      const response = await axios.post(`${API_URL}/student-exercises/assignments/${assignmentId}/start-attempt`, {}, {
+        headers,
+        withCredentials: true
+      })
+      
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to start exercise attempt')
+    }
+  }
+)
+
 const studentExercisesSlice = createSlice({
   name: 'studentExercises',
   initialState,
@@ -262,6 +298,28 @@ const studentExercisesSlice = createSlice({
       .addCase(fetchStudentExercises.rejected, (state, action) => {
         state.loading = false
         state.loadingFilters = false
+        state.error = action.payload as string
+      })
+      .addCase(startExercise.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(startExercise.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(startExercise.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+      .addCase(startExerciseAttempt.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(startExerciseAttempt.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(startExerciseAttempt.rejected, (state, action) => {
+        state.loading = false
         state.error = action.payload as string
       })
   }
