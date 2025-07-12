@@ -32,7 +32,7 @@ const mcValidationSchema = Yup.object().shape({
   options: Yup.array().of(
     Yup.object().shape({
       option_letter: Yup.string().required('Option letter is required'),
-      content: Yup.string().required('Option content is required'),
+      content: Yup.string(), // Make content optional
       is_correct: Yup.boolean()
     })
   ).min(2, 'At least 2 options are required'),
@@ -221,11 +221,12 @@ const MCFormPage: FC = () => {
           }
         } else {
           // API returns options as objects with option_text field
-          return {
+          const transformed = {
             option_letter: option.option_letter || option,
-            content: option.option_text || option.content || option.option_letter || option || '',
+            content: option.option_text || '', // Prioritize option_text for TinyMCE
             is_correct: (option.option_letter || option) === correctOptionLetter
           }
+          return transformed
         }
       })
 
