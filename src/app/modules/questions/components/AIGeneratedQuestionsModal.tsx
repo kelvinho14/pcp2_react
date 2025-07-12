@@ -66,16 +66,7 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
     }
   }, [acceptedQuestions.size, dismissedQuestions.size, editedQuestions.length, onHide])
 
-  // 1. After AI API (in parent, but here log on modal open)
-  useEffect(() => {
-    if (questions && questions.length > 0) {
-      questions.forEach((q, idx) => {
-        if (q.type === 'mc' && q.mc_question) {
-          console.log(`[Modal Open] Question ${idx + 1} initial correct_option:`, q.mc_question.correct_option);
-        }
-      });
-    }
-  }, [questions]);
+
 
   const handleQuestionContentChange = (index: number, content: string) => {
     const updated = [...editedQuestions]
