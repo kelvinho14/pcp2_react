@@ -151,7 +151,7 @@ const ExerciseAttemptPage: FC = () => {
       try {
         setLoading(true)
         // Fetch exercise details using the attempt endpoint
-        const attemptUrl = `http://localhost:8000/student-exercises/assignments/${routeAssignmentId}/attempt`
+        const attemptUrl = `${import.meta.env.VITE_APP_API_URL}/student-exercises/assignments/${routeAssignmentId}/attempt`
         const headers = getHeadersWithSchoolSubject(attemptUrl)
         const response = await axios.get(attemptUrl, { 
           headers,
@@ -250,7 +250,7 @@ const ExerciseAttemptPage: FC = () => {
     if (!assignmentId) return
     
     try {
-      const attemptUrl = `http://localhost:8000/student-exercises/assignments/${assignmentId}/attempt`
+      const attemptUrl = `${import.meta.env.VITE_APP_API_URL}/student-exercises/assignments/${assignmentId}/attempt`
       const headers = getHeadersWithSchoolSubject(attemptUrl)
       const response = await axios.get(attemptUrl, { 
         headers,
@@ -271,7 +271,7 @@ const ExerciseAttemptPage: FC = () => {
     if (!assignmentId) return
     
     try {
-      const url = `http://localhost:8000/student-exercises/assignments/${assignmentId}/attempts`
+      const url = `${import.meta.env.VITE_APP_API_URL}/student-exercises/assignments/${assignmentId}/attempts`
       const headers = getHeadersWithSchoolSubject(url)
       
       const payload = {
