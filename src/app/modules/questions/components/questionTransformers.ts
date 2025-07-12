@@ -24,6 +24,60 @@ interface GeneratedQuestion {
 const isValidLetter = (letter: string, options: any[]) =>
   !!letter && options.some(opt => opt.option_letter === letter)
 
+// Unified transformation function for both regular forms and AI modal
+export const transformMCQuestionForBackend = (
+  type: 'mc',
+  name: string,
+  question_content: string,
+  teacher_remark: string,
+  options: Array<{ option_letter: string; content: string; is_correct: boolean }>,
+  answer_content: string,
+  tags: Array<{ tag_id?: string; name?: string; score?: number }> = []
+): QuestionFormData => {
+  const correctOption = options.find(opt => opt.is_correct)
+  if (!correctOption) {
+    toast.error('Please select a correct answer for the MC question.', 'Error')
+    throw new Error('No correct answer selected')
+  }
+
+  return {
+    type,
+    name,
+    question_content,
+    teacher_remark,
+    mc_question: {
+      options: options.map(option => ({
+        option_letter: option.option_letter,
+        option_text: option.content,
+        is_correct: option.is_correct
+      })),
+      correct_option: correctOption.option_letter,
+      answer_content
+    },
+    tags
+  }
+}
+
+export const transformLQQuestionForBackend = (
+  type: 'lq',
+  name: string,
+  question_content: string,
+  teacher_remark: string,
+  answer_content: string,
+  tags: Array<{ tag_id?: string; name?: string; score?: number }> = []
+): QuestionFormData => {
+  return {
+    type,
+    name,
+    question_content,
+    teacher_remark,
+    lq_question: {
+      answer_content
+    },
+    tags
+  }
+}
+
 export const transformQuestionsForBackend = (questions: GeneratedQuestion[]): QuestionFormData[] => {
   const questionData = questions.map(q => {
     if (q.type === 'mc' && q.mc_question) {
@@ -32,7 +86,7 @@ export const transformQuestionsForBackend = (questions: GeneratedQuestion[]): Qu
         toast.error('Please select a valid correct answer for the MC question.', 'Error')
         throw new Error('No valid correct answer selected')
       }
-      console.log('MC correct_option to send:', correctLetter)
+
     }
     
     return {
@@ -49,6 +103,7 @@ export const transformQuestionsForBackend = (questions: GeneratedQuestion[]): Qu
         mc_question: {
           options: q.mc_question.options.map((opt: any): StoreMCOption => ({
             option_letter: opt.option_letter,
+            option_text: opt.option_text,
             is_correct: opt.option_letter === q.mc_question!.correct_option
           })),
           correct_option: q.mc_question!.correct_option,
@@ -58,8 +113,7 @@ export const transformQuestionsForBackend = (questions: GeneratedQuestion[]): Qu
     }
   })
 
-  // BEFORE SEND: Log the full payload
-  console.log('[Before Send] Payload to backend:', questionData)
+
   
   return questionData
 }
@@ -84,11 +138,12 @@ export const transformSingleQuestionForBackend = (question: GeneratedQuestion): 
       toast.error('Please select a valid correct answer for the MC question.', 'Error')
       throw new Error('No valid correct answer selected')
     }
-    console.log('MC correct_option to send:', correctLetter)
+
     
     questionData.mc_question = {
       options: question.mc_question.options.map((opt: any): StoreMCOption => ({
         option_letter: opt.option_letter,
+        option_text: opt.option_text,
         is_correct: opt.option_letter === correctLetter
       })),
       correct_option: correctLetter,
@@ -96,8 +151,7 @@ export const transformSingleQuestionForBackend = (question: GeneratedQuestion): 
     }
   }
 
-  // BEFORE SEND: Log the full payload
-  console.log('[Before Send] Single question payload to backend:', questionData)
+
   
   return questionData
 } 

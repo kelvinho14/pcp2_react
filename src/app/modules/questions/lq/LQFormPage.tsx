@@ -18,6 +18,7 @@ import TagWithScore, {TagWithScoreData} from '../components/TagWithScore'
 import AIEditorWithButton from '../../../../components/AI/AIEditorWithButton'
 import AIProcessedContentModal from '../../../../components/AI/AIProcessedContentModal'
 import {useAIImageToText} from '../../../../hooks/useAIImageToText'
+import {transformLQQuestionForBackend} from '../components/questionTransformers'
 
 const lqValidationSchema = Yup.object().shape({
   questionName: Yup.string()
@@ -135,16 +136,14 @@ const LQFormPage: FC = () => {
       try {
         const transformedTags = transformTags(values.selectedTags)
 
-        const questionData = {
-          type: 'lq' as const,
-          name: values.questionName,
-          question_content: values.question,
-          teacher_remark: values.teacherRemark,
-          lq_question: {
-            answer_content: values.answer
-          },
-          tags: transformedTags
-        }
+        const questionData = transformLQQuestionForBackend(
+          'lq',
+          values.questionName,
+          values.question,
+          values.teacherRemark,
+          values.answer,
+          transformedTags
+        )
         
         if (isEditMode) {
           await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -365,16 +364,14 @@ const LQFormPage: FC = () => {
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
 
-                              const questionData = {
-                                type: 'lq' as const,
-                                name: formik.values.questionName,
-                                question_content: formik.values.question,
-                                teacher_remark: formik.values.teacherRemark,
-                                lq_question: {
-                                  answer_content: formik.values.answer
-                                },
-                                tags: transformedTags
-                              }
+                              const questionData = transformLQQuestionForBackend(
+                                'lq',
+                                formik.values.questionName,
+                                formik.values.question,
+                                formik.values.teacherRemark,
+                                formik.values.answer,
+                                transformedTags
+                              )
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
                               toast.success('Long Question updated successfully!', 'Success')
@@ -408,16 +405,14 @@ const LQFormPage: FC = () => {
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
 
-                              const questionData = {
-                                type: 'lq' as const,
-                                name: formik.values.questionName,
-                                question_content: formik.values.question,
-                                teacher_remark: formik.values.teacherRemark,
-                                lq_question: {
-                                  answer_content: formik.values.answer
-                                },
-                                tags: transformedTags
-                              }
+                              const questionData = transformLQQuestionForBackend(
+                                'lq',
+                                formik.values.questionName,
+                                formik.values.question,
+                                formik.values.teacherRemark,
+                                formik.values.answer,
+                                transformedTags
+                              )
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
                               toast.success('Long Question updated successfully!', 'Success')
@@ -452,16 +447,14 @@ const LQFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
-                              const questionData = {
-                                type: 'lq' as const,
-                                name: formik.values.questionName,
-                                question_content: formik.values.question,
-                                teacher_remark: formik.values.teacherRemark,
-                                lq_question: {
-                                  answer_content: formik.values.answer
-                                },
-                                tags: transformedTags
-                              }
+                              const questionData = transformLQQuestionForBackend(
+                                'lq',
+                                formik.values.questionName,
+                                formik.values.question,
+                                formik.values.teacherRemark,
+                                formik.values.answer,
+                                transformedTags
+                              )
                               const createdQuestion = await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Long Question created successfully!', 'Success')
                               navigate(`/questions/lq/edit/${createdQuestion.q_id}`)
@@ -492,16 +485,14 @@ const LQFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
-                              const questionData = {
-                                type: 'lq' as const,
-                                name: formik.values.questionName,
-                                question_content: formik.values.question,
-                                teacher_remark: formik.values.teacherRemark,
-                                lq_question: {
-                                  answer_content: formik.values.answer
-                                },
-                                tags: transformedTags
-                              }
+                              const questionData = transformLQQuestionForBackend(
+                                'lq',
+                                formik.values.questionName,
+                                formik.values.question,
+                                formik.values.teacherRemark,
+                                formik.values.answer,
+                                transformedTags
+                              )
                               await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Long Question created successfully!', 'Success')
                               navigate('/questions/lq/list')

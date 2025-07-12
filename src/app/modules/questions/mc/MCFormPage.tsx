@@ -17,6 +17,7 @@ import TagWithScore, {TagWithScoreData} from '../components/TagWithScore'
 import AIEditorWithButton from '../../../../components/AI/AIEditorWithButton'
 import AIProcessedContentModal from '../../../../components/AI/AIProcessedContentModal'
 import {useAIImageToText} from '../../../../hooks/useAIImageToText'
+import {transformMCQuestionForBackend} from '../components/questionTransformers'
 
 const mcValidationSchema = Yup.object().shape({
   questionName: Yup.string()
@@ -507,24 +508,15 @@ const MCFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
-                              const correctOption = formik.values.options.find(opt => opt.is_correct)
-
-                              const questionData = {
-                                type: 'mc' as const,
-                                name: formik.values.questionName,
-                                question_content: formik.values.question,
-                                teacher_remark: formik.values.teacherRemark,
-                                mc_question: {
-                                  options: formik.values.options.map(option => ({
-                                    option_letter: option.option_letter,
-                                    option_text: option.content,
-                                    is_correct: option.is_correct
-                                  })),
-                                  correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
-                                  answer_content: formik.values.answer
-                                },
-                                tags: transformedTags
-                              }
+                              const questionData = transformMCQuestionForBackend(
+                                'mc',
+                                formik.values.questionName,
+                                formik.values.question,
+                                formik.values.teacherRemark,
+                                formik.values.options,
+                                formik.values.answer,
+                                transformedTags
+                              )
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
                               toast.success('Multiple Choice Question updated successfully!', 'Success')
@@ -557,24 +549,15 @@ const MCFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
-                              const correctOption = formik.values.options.find(opt => opt.is_correct)
-
-                              const questionData = {
-                                type: 'mc' as const,
-                                name: formik.values.questionName,
-                                question_content: formik.values.question,
-                                teacher_remark: formik.values.teacherRemark,
-                                mc_question: {
-                                  options: formik.values.options.map(option => ({
-                                    option_letter: option.option_letter,
-                                    option_text: option.content,
-                                    is_correct: option.is_correct
-                                  })),
-                                  correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
-                                  answer_content: formik.values.answer
-                                },
-                                tags: transformedTags
-                              }
+                              const questionData = transformMCQuestionForBackend(
+                                'mc',
+                                formik.values.questionName,
+                                formik.values.question,
+                                formik.values.teacherRemark,
+                                formik.values.options,
+                                formik.values.answer,
+                                transformedTags
+                              )
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
                               toast.success('Multiple Choice Question updated successfully!', 'Success')
@@ -609,23 +592,15 @@ const MCFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
-                              const correctOption = formik.values.options.find(opt => opt.is_correct)
-                              const questionData = {
-                                type: 'mc' as const,
-                                name: formik.values.questionName,
-                                question_content: formik.values.question,
-                                teacher_remark: formik.values.teacherRemark,
-                                mc_question: {
-                                  options: formik.values.options.map(option => ({
-                                    option_letter: option.option_letter,
-                                    option_text: option.content,
-                                    is_correct: option.is_correct
-                                  })),
-                                  correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
-                                  answer_content: formik.values.answer
-                                },
-                                tags: transformedTags
-                              }
+                              const questionData = transformMCQuestionForBackend(
+                                'mc',
+                                formik.values.questionName,
+                                formik.values.question,
+                                formik.values.teacherRemark,
+                                formik.values.options,
+                                formik.values.answer,
+                                transformedTags
+                              )
                               const createdQuestion = await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Multiple Choice Question created successfully!', 'Success')
                               navigate(`/questions/mc/edit/${createdQuestion.q_id}`)
@@ -657,23 +632,15 @@ const MCFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
-                              const correctOption = formik.values.options.find(opt => opt.is_correct)
-                              const questionData = {
-                                type: 'mc' as const,
-                                name: formik.values.questionName,
-                                question_content: formik.values.question,
-                                teacher_remark: formik.values.teacherRemark,
-                                mc_question: {
-                                  options: formik.values.options.map(option => ({
-                                    option_letter: option.option_letter,
-                                    option_text: option.content,
-                                    is_correct: option.is_correct
-                                  })),
-                                  correct_option: formik.values.options.find(opt => opt.is_correct)?.option_letter || '',
-                                  answer_content: formik.values.answer
-                                },
-                                tags: transformedTags
-                              }
+                              const questionData = transformMCQuestionForBackend(
+                                'mc',
+                                formik.values.questionName,
+                                formik.values.question,
+                                formik.values.teacherRemark,
+                                formik.values.options,
+                                formik.values.answer,
+                                transformedTags
+                              )
                               await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Multiple Choice Question created successfully!', 'Success')
                               navigate('/questions/mc/list')

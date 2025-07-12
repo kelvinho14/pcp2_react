@@ -12,6 +12,7 @@ export interface LQQuestion {
 
 export interface MCOption {
   option_letter: string
+  option_text: string
   is_correct: boolean
 }
 
