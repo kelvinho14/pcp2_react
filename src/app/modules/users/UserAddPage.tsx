@@ -137,7 +137,9 @@ const UserAddPage: FC = () => {
         const schoolSubjectId = getSchoolSubjectId()
         if (schoolSubjectId) {
           try {
+            const headers = getHeadersWithSchoolSubject(`${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/`)
             const response = await axios.get(`${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/${schoolSubjectId}`, {
+              headers,
               withCredentials: true
             })
             if (response.data.status === 'success' && response.data.data) {
@@ -205,7 +207,9 @@ const UserAddPage: FC = () => {
     
     setSubjectsLoading(true)
     try {
+      const headers = getHeadersWithSchoolSubject(`${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/`)
       const response = await axios.get(`${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/?school_id=${schoolId}&all=1`, {
+        headers,
         withCredentials: true
       })
       if (response.data.status === 'success' && response.data.data) {
@@ -229,7 +233,9 @@ const UserAddPage: FC = () => {
     if (!schoolId) return
     
     try {
+      const headers = getHeadersWithSchoolSubject(`${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/`)
       const response = await axios.get(`${import.meta.env.VITE_APP_API_URL}/subjects/school-subjects/?school_id=${schoolId}&all=1`, {
+        headers,
         withCredentials: true
       })
       if (response.data.status === 'success' && response.data.data) {
