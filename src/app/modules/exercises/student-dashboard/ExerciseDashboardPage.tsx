@@ -520,13 +520,27 @@ const ExerciseDashboardPage: FC = () => {
     })
   }, [exercises, handleStartExercise, handleOpenMessageModal, navigate])
 
-  // Show loading state
-  if (isInitialLoad && loading) {
-    return (
-      <div className='exercise-dashboard'>
-        <PageTitle breadcrumbs={[]}>
-          My Exercise Hub
-        </PageTitle>
+  return (
+    <div className='exercise-dashboard'>
+      <PageTitle breadcrumbs={[
+        {
+          title: 'Home',
+          path: '/dashboard',
+          isSeparator: false,
+          isActive: false,
+        },
+        {
+          title: 'Dashboard',
+          path: '#',
+          isSeparator: false,
+          isActive: true,
+        }
+      ]}>
+        My Exercise Hub
+      </PageTitle>
+
+      {/* Show loading state */}
+      {isInitialLoad && loading && (
         <div className='card'>
           <div className='card-body text-center py-10'>
             <div className='spinner-border text-primary' role='status'>
@@ -535,17 +549,10 @@ const ExerciseDashboardPage: FC = () => {
             <div className='mt-3'>Loading your exercises...</div>
           </div>
         </div>
-      </div>
-    )
-  }
+      )}
 
-  // Show error state
-  if (error) {
-    return (
-      <div className='exercise-dashboard'>
-        <PageTitle breadcrumbs={[]}>
-          My Exercise Hub
-        </PageTitle>
+      {/* Show error state */}
+      {error && (
         <div className='card'>
           <div className='card-body text-center py-10'>
             <i className='fas fa-exclamation-triangle fs-3x text-danger mb-4'></i>
@@ -560,18 +567,13 @@ const ExerciseDashboardPage: FC = () => {
             </button>
           </div>
         </div>
-      </div>
-    )
-  }
+      )}
 
-  return (
-    <div className='exercise-dashboard'>
-      <PageTitle breadcrumbs={[]}>
-        My Exercise Hub
-      </PageTitle>
-      
-      {/* Welcome Section */}
-      <div className='welcome-section'>
+      {/* Show normal content when not loading and no error */}
+      {!isInitialLoad && !loading && !error && (
+        <>
+          {/* Welcome Section */}
+          <div className='welcome-section'>
         <div className='welcome-content'>
           <div className='welcome-text'>
             <h2 className='welcome-title'>Welcome to Your Exercise Hub! 🎓</h2>
@@ -888,7 +890,7 @@ const ExerciseDashboardPage: FC = () => {
                 <button 
                   className='page-link'
                   onClick={() => {
-                                            dispatch(setPage(pagination.current_page - 1))
+                        dispatch(setPage(pagination.current_page - 1))
                         dispatch(fetchStudentExercises(filters))
                   }}
                   disabled={pagination.current_page === 1}
@@ -1033,6 +1035,8 @@ const ExerciseDashboardPage: FC = () => {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   )

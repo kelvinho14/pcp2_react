@@ -35,21 +35,7 @@ const StudentExerciseTab = () => {
               fontIcon='fa-solid fa-xmark'
               textAlign='end'
             />
-          <div className='menu-item'>
-              <div className='menu-content pt-8 pb-2'>
-              <span className='menu-section text-muted text-uppercase fs-8 ls-1'>MC</span>
-              </div>
-          </div>
-          <AsideMenuItem to='/exercise/mclist' title='Outstanding exercise' hasBullet={true} />
-          <AsideMenuItem to='/exercise/mclist' title='All exercise' hasBullet={true} />
-
-          <div className='menu-item'>
-              <div className='menu-content pt-8 pb-2'>
-              <span className='menu-section text-muted text-uppercase fs-8 ls-1'>LQ</span>
-              </div>
-          </div>
-          <AsideMenuItem to='/exercise/lqlist' title='Outstanding exercise' hasBullet={true} />
-          <AsideMenuItem to='/exercise/lqlist' title='All exercise' hasBullet={true} />
+          <AsideMenuItem to='/exercises/dashboard' title='Exercises Dashboard' hasBullet={true} />
         </div>
       </div>
     </div>

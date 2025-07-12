@@ -82,6 +82,7 @@ const tabsForStudents: ReadonlyArray<Tab> = [
     link: 'exercise',
     icon: 'fa-solid fa-pen',
     tooltip: 'Exercise',
+    paths: ['/exercises'],
   },
   {
     link: 'video',
