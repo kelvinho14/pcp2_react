@@ -220,10 +220,10 @@ const MCFormPage: FC = () => {
             is_correct: option === correctOptionLetter
           }
         } else {
-          // API returns options as objects (fallback)
+          // API returns options as objects with option_text field
           return {
             option_letter: option.option_letter || option,
-            content: option.content || option.option_letter || option || '',
+            content: option.option_text || option.content || option.option_letter || option || '',
             is_correct: (option.option_letter || option) === correctOptionLetter
           }
         }

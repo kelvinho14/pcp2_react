@@ -20,6 +20,9 @@ export interface Assignment {
     name: string
     email: string
   }
+  progress: number
+  answered_questions: number
+  total_questions: number
 }
 
 export interface AssignedExercise {

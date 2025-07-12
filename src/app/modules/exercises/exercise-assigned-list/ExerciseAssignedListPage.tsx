@@ -121,30 +121,14 @@ const ExerciseAssignedListPage: FC = () => {
   }, [navigate])
 
   const handleStatusFilter = useCallback((status: string) => {
-    // Map status to API values using constants
-    let statusValue = ''
-    switch (status) {
-      case 'completed':
-        statusValue = ASSIGNMENT_STATUS.SUBMITTED.toString()
-        break
-      case 'in_progress':
-        statusValue = ASSIGNMENT_STATUS.IN_PROGRESS.toString()
-        break
-      case 'overdue':
-        statusValue = ASSIGNMENT_STATUS.OVERDUE.toString()
-        break
-      default:
-        statusValue = ''
-    }
-    
     // Set loading state for filters
     dispatch(setLoadingFilters(true))
     
     // Clear cache to force fresh API call
     dispatch(clearCache())
     
-    // Update filters with status
-    dispatch(setFilters({ ...filtersRef.current, status: statusValue }))
+    // Update filters with status (status is already the correct ASSIGNMENT_STATUS value)
+    dispatch(setFilters({ ...filtersRef.current, status }))
   }, [dispatch])
 
   // Optimized debounced fetch function
@@ -215,25 +199,20 @@ const ExerciseAssignedListPage: FC = () => {
       }, {} as Record<string, typeof exercise.assignments>)
 
       return (
-        <div key={exercise.id} className='col-xl-6 col-xxl-4'>
+        <div key={exercise.id} className='col-lg-4 col-md-6 col-sm-12'>
           <div className='card h-100 shadow-sm border-0'>
             <div className='card-header border-0 pt-6'>
               <div className='card-title'>
                 <div className='d-flex align-items-center'>
-                  <div className='symbol symbol-40px me-3'>
-                    <div className={`symbol-label bg-light-${getExerciseStatusColor(exercise.status)}`}>
-                      <i className={`${getExerciseStatusIcon(exercise.status)} text-${getExerciseStatusColor(exercise.status)}`}></i>
-                    </div>
-                  </div>
                   <div>
                     <h5 
-                      className='mb-1 cursor-pointer text-hover-primary'
+                      className='mb-1 cursor-pointer text-hover-primary exercise-title-ellipsis'
                       onClick={() => handleExerciseClick(exercise.id)}
                       style={{ cursor: 'pointer' }}
                     >
                       {exercise.title}
                     </h5>
-                    <span className='badge badge-light-primary fs-7'>Question #{exercise.question_no}</span>
+                    <span className='badge badge-light-primary fs-7'>{exercise.question_no} Question{exercise.question_no !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
               </div>
@@ -265,7 +244,6 @@ const ExerciseAssignedListPage: FC = () => {
                 </div>
                 <div className='col-6'>
                   <div className='d-flex align-items-center'>
-                    <i className='fas fa-check text-success me-2'></i>
                     <div>
                       <div className='text-muted fs-7'>Completed</div>
                       <div className='fw-bold'>{exercise.student_stats.completed}</div>
@@ -275,7 +253,7 @@ const ExerciseAssignedListPage: FC = () => {
               </div>
               
               {/* Assignments grouped by due date */}
-              <div className='mb-4'>
+              <div className='mb-4 border rounded p-3'>
                 <div 
                   className='d-flex align-items-center justify-content-between cursor-pointer'
                   onClick={() => toggleCardCollapse(exercise.id)}
@@ -298,20 +276,38 @@ const ExerciseAssignedListPage: FC = () => {
                           </div>
                           <div className='ms-4'>
                             {assignments.map((assignment) => (
-                              <div key={assignment.assignment_id} className='d-flex align-items-center justify-content-between mb-2 p-2 bg-light rounded'>
-                                <div className='d-flex align-items-center'>
-                                  <i className='fas fa-user text-muted me-2'></i>
-                                  <span className='fs-7'>{assignment.student.name}</span>
+                              <div key={assignment.assignment_id} className='d-flex flex-column mb-2 p-2 bg-light rounded'>
+                                <div className='d-flex align-items-center justify-content-between mb-1'>
+                                  <div className='d-flex align-items-center'>
+                                    <i className='fas fa-user text-muted me-2'></i>
+                                    <span className='fs-7 fw-medium'>{assignment.student.name}</span>
+                                    <span className='text-muted ms-2 fs-7'>({assignment.student.email})</span>
+                                  </div>
+                                  <div className='d-flex align-items-center'>
+                                    <span className={`badge badge-light-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)} fs-7 me-2`}>
+                                      {getStatusLabel(parseInt(assignment.status, 10) as AssignmentStatus)}
+                                    </span>
+                                    {assignment.message_for_student && (
+                                      <i 
+                                        className='fas fa-comment text-muted cursor-pointer' 
+                                        title={assignment.message_for_student}
+                                        style={{ cursor: 'pointer' }}
+                                      ></i>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className='d-flex align-items-center'>
-                                  <span className={`badge badge-sm badge-light-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)} me-2`}>
-                                    {getStatusLabel(parseInt(assignment.status, 10) as AssignmentStatus)}
+                                <div className='d-flex align-items-center justify-content-between'>
+                                  <div className='progress-container flex-grow-1 me-2'>
+                                    <div className='progress' style={{ height: '6px' }}>
+                                      <div 
+                                        className={`progress-bar bg-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)}`}
+                                        style={{ width: `${assignment.progress}%` }}
+                                      ></div>
+                                    </div>
+                                  </div>
+                                  <span className='fs-7 text-muted'>
+                                    {assignment.answered_questions}/{assignment.total_questions} questions
                                   </span>
-                                  {assignment.message_for_student && (
-                                    <Tooltip message={assignment.message_for_student}>
-                                      <i className='fas fa-comment text-muted'></i>
-                                    </Tooltip>
-                                  )}
                                 </div>
                               </div>
                             ))}
@@ -364,14 +360,9 @@ const ExerciseAssignedListPage: FC = () => {
                 <div className='item-content'>
                   <div className='item-title'>
                     <div className='d-flex align-items-center'>
-                      <div className='symbol symbol-40px me-3'>
-                        <div className={`symbol-label bg-light-${getExerciseStatusColor(exercise.status)}`}>
-                          <i className={`${getExerciseStatusIcon(exercise.status)} text-${getExerciseStatusColor(exercise.status)}`}></i>
-                        </div>
-                      </div>
                       <div>
                         <h6 
-                          className='mb-1 cursor-pointer text-hover-primary'
+                          className='mb-1 cursor-pointer text-hover-primary exercise-title-ellipsis'
                           onClick={() => handleExerciseClick(exercise.id)}
                           style={{ cursor: 'pointer' }}
                         >
@@ -405,7 +396,12 @@ const ExerciseAssignedListPage: FC = () => {
                   </div>
                   <div className='stat-item'>
                     <div className='stat-number text-warning'>{exercise.student_stats.in_progress}</div>
-                    <div className='stat-label'>In Progress</div>
+                    <div className='stat-label'>
+                      {exercise.student_stats.total > 0 
+                        ? `${Math.round((exercise.student_stats.in_progress / exercise.student_stats.total) * 100)}%`
+                        : '0%'
+                      }
+                    </div>
                   </div>
                 </div>
                 
@@ -443,6 +439,22 @@ const ExerciseAssignedListPage: FC = () => {
                                   <i className='fas fa-user text-muted me-2'></i>
                                   <span className='fw-medium'>{assignment.student.name}</span>
                                   <span className='text-muted ms-2'>({assignment.student.email})</span>
+                                </div>
+                                <div className='assignment-progress'>
+                                  <div className='d-flex align-items-center mb-1'>
+                                    <span className='text-muted fs-7 me-2'>Progress:</span>
+                                    <span className='fw-bold fs-7'>{assignment.progress}%</span>
+                                  </div>
+                                  <div className='progress h-3px mb-2' style={{width: '80px'}}>
+                                    <div 
+                                      className={`progress-bar bg-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)}`}
+                                      style={{width: `${assignment.progress}%`}}
+                                    ></div>
+                                  </div>
+                                  <div className='text-center'>
+                                    <span className='fw-bold fs-7'>{assignment.answered_questions}/{assignment.total_questions}</span>
+                                    <span className='text-muted fs-7 ms-1'>Questions</span>
+                                  </div>
                                 </div>
                                 <div className='assignment-status'>
                                   <span className={`badge badge-light-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)}`}>
@@ -555,151 +567,115 @@ const ExerciseAssignedListPage: FC = () => {
       {/* Filters */}
       {showFilters && <IsolatedFilters />}
 
-      {/* Loading overlay for filter changes */}
-      {loadingFilters && !isInitialLoad && (
-        <div className='position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center' 
-             style={{backgroundColor: 'rgba(255, 255, 255, 0.8)', zIndex: 9999}}>
-          <div className='bg-white rounded shadow-lg p-4 d-flex align-items-center'>
-            <div className='spinner-border text-primary me-3' role='status'>
-              <span className='visually-hidden'>Loading...</span>
-            </div>
-            <span className='text-muted'>Updating results...</span>
-          </div>
-        </div>
-      )}
-
       {/* Stats Cards */}
-      <div className='row g-5 g-xl-8 mb-8'>
-        <div className='col-xl-3'>
-          <div 
-            className={`card border-0 cursor-pointer ${!filters.status ? 'bg-light-primary border-primary' : 'bg-light-primary'}`}
-            onClick={() => handleStatusFilter('')}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className='card-body'>
+      <div className='progress-overview'>
+        <div className='status-cards-grid'>
+          <div>
+            <div 
+              className={`progress-card total ${!filters.status ? 'active' : ''}`}
+              onClick={() => handleStatusFilter('')}
+              style={{ cursor: 'pointer' }}
+            >
               <div className='d-flex align-items-center'>
-                <div className='symbol symbol-50px me-4'>
-                  <div className='symbol-label bg-primary'>
-                    <i className='fas fa-tasks text-white fs-2'></i>
-                  </div>
+                <div className='card-icon me-3'>
+                  <i className='fas fa-book-open text-white fs-2'></i>
                 </div>
-                <div>
-                  <div className='fs-6 text-muted fw-semibold'>Total Assigned</div>
-                  <div className='fs-2 fw-bold text-gray-800 d-flex align-items-center'>
-                    {summary.total}
-                    {loadingFilters && !isInitialLoad && (
-                      <div className='spinner-border spinner-border-sm text-primary ms-2' role='status'>
-                        <span className='visually-hidden'>Loading...</span>
-                      </div>
-                    )}
-                  </div>
+                <div className='card-content'>
+                  <div className='card-number'>{summary.total}</div>
+                  <div className='card-label'>Total</div>
                 </div>
               </div>
               {!filters.status && (
-                <div className='position-absolute top-0 end-0 mt-2 me-2'>
-                  <i className='fas fa-check-circle text-primary fs-5'></i>
+                <div className='active-indicator'>
+                  <i className='fas fa-check-circle text-white'></i>
                 </div>
               )}
             </div>
           </div>
-        </div>
-        
-        <div className='col-xl-3'>
-                      <div 
-              className={`card border-0 cursor-pointer ${filters.status === ASSIGNMENT_STATUS.SUBMITTED.toString() ? 'bg-light-success border-success' : 'bg-light-success'}`}
-              onClick={() => handleStatusFilter('completed')}
+          <div>
+            <div 
+              className={`progress-card completed ${filters.status === ASSIGNMENT_STATUS.SUBMITTED.toString() ? 'active' : ''}`}
+              onClick={() => handleStatusFilter(ASSIGNMENT_STATUS.SUBMITTED.toString())}
               style={{ cursor: 'pointer' }}
             >
-            <div className='card-body'>
               <div className='d-flex align-items-center'>
-                <div className='symbol symbol-50px me-4'>
-                  <div className='symbol-label bg-success'>
-                    <i className='fas fa-check-circle text-white fs-2'></i>
-                  </div>
+                <div className='card-icon me-3'>
+                  <i className='fas fa-check-circle text-white fs-2'></i>
                 </div>
-                <div>
-                  <div className='fs-6 text-muted fw-semibold'>{getStatusLabel(ASSIGNMENT_STATUS.SUBMITTED)}</div>
-                  <div className='fs-2 fw-bold text-gray-800 d-flex align-items-center'>
-                    {summary.completed}
-                    {loadingFilters && !isInitialLoad && (
-                      <div className='spinner-border spinner-border-sm text-success ms-2' role='status'>
-                        <span className='visually-hidden'>Loading...</span>
-                      </div>
-                    )}
-                  </div>
+                <div className='card-content'>
+                  <div className='card-number'>{summary.completed}</div>
+                  <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.SUBMITTED)}</div>
                 </div>
               </div>
               {filters.status === ASSIGNMENT_STATUS.SUBMITTED.toString() && (
-                <div className='position-absolute top-0 end-0 mt-2 me-2'>
-                  <i className='fas fa-check-circle text-success fs-5'></i>
+                <div className='active-indicator'>
+                  <i className='fas fa-check-circle text-white'></i>
                 </div>
               )}
             </div>
           </div>
-        </div>
-        
-        <div className='col-xl-3'>
-          <div 
-            className={`card border-0 cursor-pointer ${filters.status === ASSIGNMENT_STATUS.IN_PROGRESS.toString() ? 'bg-light-warning border-warning' : 'bg-light-warning'}`}
-            onClick={() => handleStatusFilter('in_progress')}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className='card-body'>
+          <div>
+            <div 
+              className={`progress-card in-progress ${filters.status === ASSIGNMENT_STATUS.IN_PROGRESS.toString() ? 'active' : ''}`}
+              onClick={() => handleStatusFilter(ASSIGNMENT_STATUS.IN_PROGRESS.toString())}
+              style={{ cursor: 'pointer' }}
+            >
               <div className='d-flex align-items-center'>
-                <div className='symbol symbol-50px me-4'>
-                  <div className='symbol-label bg-warning'>
-                    <i className='fas fa-clock text-white fs-2'></i>
-                  </div>
+                <div className='card-icon me-3'>
+                  <i className='fas fa-clock text-white fs-2'></i>
                 </div>
-                <div>
-                  <div className='fs-6 text-muted fw-semibold'>{getStatusLabel(ASSIGNMENT_STATUS.IN_PROGRESS)}</div>
-                  <div className='fs-2 fw-bold text-gray-800 d-flex align-items-center'>
-                    {summary.in_progress}
-                    {loadingFilters && !isInitialLoad && (
-                      <div className='spinner-border spinner-border-sm text-warning ms-2' role='status'>
-                        <span className='visually-hidden'>Loading...</span>
-                      </div>
-                    )}
-                  </div>
+                <div className='card-content'>
+                  <div className='card-number'>{summary.in_progress}</div>
+                  <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.IN_PROGRESS)}</div>
                 </div>
               </div>
               {filters.status === ASSIGNMENT_STATUS.IN_PROGRESS.toString() && (
-                <div className='position-absolute top-0 end-0 mt-2 me-2'>
-                  <i className='fas fa-check-circle text-warning fs-5'></i>
+                <div className='active-indicator'>
+                  <i className='fas fa-check-circle text-white'></i>
                 </div>
               )}
             </div>
           </div>
-        </div>
-        
-        <div className='col-xl-3'>
-          <div 
-            className={`card border-0 cursor-pointer ${filters.status === ASSIGNMENT_STATUS.OVERDUE.toString() ? 'bg-light-danger border-danger' : 'bg-light-danger'}`}
-            onClick={() => handleStatusFilter('overdue')}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className='card-body'>
+          <div>
+            <div 
+              className={`progress-card overdue ${filters.status === ASSIGNMENT_STATUS.OVERDUE.toString() ? 'active' : ''}`}
+              onClick={() => handleStatusFilter(ASSIGNMENT_STATUS.OVERDUE.toString())}
+              style={{ cursor: 'pointer' }}
+            >
               <div className='d-flex align-items-center'>
-                <div className='symbol symbol-50px me-4'>
-                  <div className='symbol-label bg-danger'>
-                    <i className='fas fa-exclamation-triangle text-white fs-2'></i>
-                  </div>
+                <div className='card-icon me-3'>
+                  <i className='fas fa-exclamation-triangle text-white fs-2'></i>
                 </div>
-                <div>
-                  <div className='fs-6 text-muted fw-semibold'>{getStatusLabel(ASSIGNMENT_STATUS.OVERDUE)}</div>
-                  <div className='fs-2 fw-bold text-gray-800 d-flex align-items-center'>
-                    {summary.overdue}
-                    {loadingFilters && !isInitialLoad && (
-                      <div className='spinner-border spinner-border-sm text-danger ms-2' role='status'>
-                        <span className='visually-hidden'>Loading...</span>
-                      </div>
-                    )}
-                  </div>
+                <div className='card-content'>
+                  <div className='card-number'>{summary.overdue}</div>
+                  <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.OVERDUE)}</div>
                 </div>
               </div>
               {filters.status === ASSIGNMENT_STATUS.OVERDUE.toString() && (
-                <div className='position-absolute top-0 end-0 mt-2 me-2'>
-                  <i className='fas fa-check-circle text-danger fs-5'></i>
+                <div className='active-indicator'>
+                  <i className='fas fa-check-circle text-white'></i>
+                </div>
+              )}
+            </div>
+          </div>
+          <div>
+            <div 
+              className={`progress-card not-started ${filters.status === ASSIGNMENT_STATUS.ASSIGNED.toString() ? 'active' : ''}`}
+              onClick={() => handleStatusFilter(ASSIGNMENT_STATUS.ASSIGNED.toString())}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className='d-flex align-items-center'>
+                <div className='card-icon me-3'>
+                  <i className='fas fa-hourglass-start text-white fs-2'></i>
+                </div>
+                <div className='card-content'>
+                  <div className='card-number'>{typeof summary.not_started !== 'undefined' ? summary.not_started : summary.total - summary.completed - summary.in_progress - summary.overdue}</div>
+                  <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.ASSIGNED)}</div>
+                </div>
+              </div>
+              {filters.status === ASSIGNMENT_STATUS.ASSIGNED.toString() && (
+                <div className='active-indicator'>
+                  <i className='fas fa-check-circle text-white'></i>
                 </div>
               )}
             </div>
@@ -709,11 +685,47 @@ const ExerciseAssignedListPage: FC = () => {
 
       {/* Exercise Cards or List */}
       {selectedView === 'grid' ? (
-        <div className='row g-6'>
+        <div className='row g-6 position-relative'>
+          {loadingFilters && !isInitialLoad && (
+            <div className='loading-overlay' style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(255,255,255,0.7)',
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div className='loading-content'>
+                <div className='spinner-border text-primary me-3' role='status'>
+                  <span className='visually-hidden'>Loading...</span>
+                </div>
+                <span className='text-muted'>Updating results...</span>
+              </div>
+            </div>
+          )}
           {exerciseCards}
         </div>
       ) : (
-        <div className='mt-6'>
+        <div className='mt-6 position-relative'>
+          {loadingFilters && !isInitialLoad && (
+            <div className='loading-overlay' style={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(255,255,255,0.7)',
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div className='loading-content'>
+                <div className='spinner-border text-primary me-3' role='status'>
+                  <span className='visually-hidden'>Loading...</span>
+                </div>
+                <span className='text-muted'>Updating results...</span>
+              </div>
+            </div>
+          )}
           {exerciseListRows}
         </div>
       )}
