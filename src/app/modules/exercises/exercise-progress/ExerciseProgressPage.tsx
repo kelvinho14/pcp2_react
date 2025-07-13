@@ -1,13 +1,14 @@
-import {FC, useState, useEffect, useMemo} from 'react'
+import {FC, useState, useEffect, useRef} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
 import {useParams, useNavigate} from 'react-router-dom'
 import {PageTitle} from '../../../../_metronic/layout/core'
 import {AppDispatch, RootState} from '../../../../store'
-import {fetchExerciseProgress, fetchExerciseWithQuestions} from '../../../../store/exercises/exercisesSlice'
+import {fetchExerciseProgress} from '../../../../store/exercises/exercisesSlice'
 import {ASSIGNMENT_STATUS, getStatusLabel, getStatusColor, getStatusIcon} from '../../../constants/assignmentStatus'
 import {KTCard, KTCardBody} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
 import {hasImages, renderHtmlSafely, getTextPreview} from '../../../../_metronic/helpers/htmlRenderer'
+import {formatApiTimestamp, getUserTimezone} from '../../../../_metronic/helpers/dateUtils'
 import './ExerciseProgressPage.scss'
 import QuestionsView from './QuestionsView';
 import StudentsView from './StudentsView';
@@ -17,28 +18,38 @@ import GridView from './GridView';
 // Question types: 1, 3, 4 are MC (Multiple Choice), 2, 5, 6 are LQ (Long Question)
 
 interface StudentProgress {
-  user_id: string
-  name: string
-  email: string
+  student_id: string
+  student_name: string
+  student_email: string
   assignment_id: string
+  assigned_date: string
+  due_date?: string
   status: number
-  started_at?: string
-  submitted_at?: string
-  graded_at?: string
-  score?: number
-  total_questions: number
-  completed_questions: number
   question_progress: Array<{
     question_id: string
-    question_name: string
-    question_type: 'mc' | 'lq'
     status: number
     score?: number
+    max_score?: number
     answered_at?: string
+    is_correct?: boolean
+    feedback?: string
+    tag_scores: Array<{
+      tag_id: string
+      tag_name: string
+      score: number
+      max_score: number
+      is_correct: boolean
+    }>
     student_answer?: string
     student_option?: string
-    correct_answer?: string
+    tag_total: {
+      score: number
+      maxScore: number
+    }
   }>
+  total_score: number
+  max_total_score: number
+  completion_percentage: number
 }
 
 const ExerciseProgressPage: FC = () => {
@@ -53,308 +64,47 @@ const ExerciseProgressPage: FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'students' | 'questions' | 'grid'>('questions')
+  const isInitialLoad = useRef(true)
 
   const {
-    exerciseProgress: apiExerciseProgress,
+    exerciseProgressData,
+    exerciseProgressQuestions,
+    exerciseProgressStudents,
     fetchingExerciseProgress,
     exerciseProgressTotal: apiExerciseProgressTotal,
-    currentExercise,
-    linkedQuestions,
-    fetchingExercise
   } = useSelector((state: RootState) => state.exercises)
 
-  // Get all questions from the exercise
-  const getAllQuestions = () => {
-    const baseQuestions = [
-      {
-        question_id: 'q1',
-        question_name: 'What is the capital of France?',
-        question_type: 'mc' as const,
-        correct_answer: 'Paris',
-        correct_option: 'A',
-        options: [
-          { letter: 'A', text: 'Paris' },
-          { letter: 'B', text: 'London' },
-          { letter: 'C', text: 'Berlin' },
-          { letter: 'D', text: 'Madrid' }
-        ],
-        tags: [
-          { name: 'Geography', maxScore: 2 },
-          { name: 'Europe', maxScore: 1 }
-        ]
-      },
-      {
-        question_id: 'q2',
-        question_name: 'Explain the process of photosynthesis.',
-        question_type: 'lq' as const,
-        correct_answer: 'Photosynthesis is the process by which plants convert light energy into chemical energy, producing glucose and oxygen from carbon dioxide and water.',
-        tags: [
-          { name: 'Biology', maxScore: 2 },
-          { name: 'Process', maxScore: 1 }
-        ]
-      },
-      {
-        question_id: 'q3',
-        question_name: 'Which planet is closest to the Sun?',
-        question_type: 'mc' as const,
-        correct_answer: 'Mercury',
-        correct_option: 'B',
-        options: [
-          { letter: 'A', text: 'Venus' },
-          { letter: 'B', text: 'Mercury' },
-          { letter: 'C', text: 'Earth' },
-          { letter: 'D', text: 'Mars' }
-        ],
-        tags: [
-          { name: 'Astronomy', maxScore: 2 },
-          { name: 'Planets', maxScore: 1 }
-        ]
-      },
-      {
-        question_id: 'q4',
-        question_name: '<img src="https://app.myplp.io/landclc_chem/spacex/lqquestionimg/96ea64f3a1aa2fd00c72faacf0cb8ac9/7ec3446769907603a5d6e0074eb7d059.png">',
-        question_type: 'mc' as const,
-        correct_answer: 'H2O',
-        correct_option: 'C',
-        options: [
-          { letter: 'A', text: 'CO2' },
-          { letter: 'B', text: 'O2' },
-          { letter: 'C', text: 'H2O' },
-          { letter: 'D', text: 'N2' }
-        ],
-        tags: [
-          { name: 'Chemistry', maxScore: 2 },
-          { name: 'Formula', maxScore: 1 }
-        ]
-      },
-      {
-        question_id: 'q5',
-        question_name: 'Describe the main differences between mitosis and meiosis.',
-        question_type: 'lq' as const,
-        correct_answer: 'Mitosis produces two diploid daughter cells identical to the parent, while meiosis produces four haploid daughter cells with genetic variation through crossing over and independent assortment.',
-        tags: [
-          { name: 'Biology', maxScore: 2 },
-          { name: 'Cell Division', maxScore: 1 }
-        ]
-      },
-      {
-        question_id: 'q6',
-        question_name: 'What are the three branches of government in the United States?',
-        question_type: 'lq' as const,
-        correct_answer: 'The three branches are Executive (President), Legislative (Congress), and Judicial (Supreme Court and federal courts).',
-        tags: [
-          { name: 'Civics', maxScore: 2 },
-          { name: 'Government', maxScore: 1 }
-        ]
-      }
-    ];
-    const questions: any[] = [...baseQuestions];
-    for (let i = 7; i <= 50; ++i) {
-      if (i % 2 === 1) {
-        // MC
-        questions.push({
-          question_id: `q${i}`,
-          question_name: `Auto MC Question ${i}: What is option ${String.fromCharCode(65 + (i % 4))}?`,
-          question_type: 'mc',
-          correct_answer: `Option ${String.fromCharCode(65 + (i % 4))}`,
-          correct_option: String.fromCharCode(65 + (i % 4)),
-          options: [
-            { letter: 'A', text: `Option A` },
-            { letter: 'B', text: `Option B` },
-            { letter: 'C', text: `Option C` },
-            { letter: 'D', text: `Option D` }
-          ],
-          tags: [
-            { name: i % 3 === 0 ? 'Math' : 'Science', maxScore: 2 },
-            { name: i % 5 === 0 ? 'Logic' : 'General', maxScore: 1 }
-          ]
-        });
-      } else {
-        // LQ
-        questions.push({
-          question_id: `q${i}`,
-          question_name: `Auto LQ Question ${i}: Explain concept ${i}.`,
-          question_type: 'lq',
-          correct_answer: `This is the correct answer for LQ ${i}.`,
-          tags: [
-            { name: i % 3 === 0 ? 'Essay' : 'Theory', maxScore: 2 },
-            { name: i % 5 === 0 ? 'Critical Thinking' : 'General', maxScore: 1 }
-          ]
-        });
-      }
-    }
-    return questions;
-  }
-  const allQuestions = getAllQuestions();
-  
-  // Mock data for demonstration
-  const getMockProgressData = (): StudentProgress[] => {
-    const questions = allQuestions;
-    const students = [
-      { id: '1', name: 'John Smith', email: 'john.smith@example.com', status: ASSIGNMENT_STATUS.GRADED },
-      { id: '2', name: 'Sarah Johnson', email: 'sarah.johnson@example.com', status: ASSIGNMENT_STATUS.SUBMITTED },
-      { id: '3', name: 'Michael Brown', email: 'michael.brown@example.com', status: ASSIGNMENT_STATUS.IN_PROGRESS },
-      { id: '4', name: 'Emily Davis', email: 'emily.davis@example.com', status: ASSIGNMENT_STATUS.ASSIGNED },
-      { id: '5', name: 'David Wilson', email: 'david.wilson@example.com', status: ASSIGNMENT_STATUS.OVERDUE }
-    ];
-    return students.map((student: any, sIdx: number) => {
-      const question_progress = questions.map((q: any, qIdx: number) => {
-        // Use original mock for first 6 questions for first 3 students
-        if (qIdx < 6 && sIdx < 3) {
-          if (q.question_type === 'mc') {
-            return {
-              question_id: q.question_id,
-              question_name: q.question_name,
-              question_type: 'mc' as 'mc',
-              status: ASSIGNMENT_STATUS.GRADED,
-              score: 100,
-              answered_at: `2024-01-15T09:3${qIdx}:00Z`,
-              student_answer: q.correct_answer,
-              student_option: q.correct_option,
-              correct_answer: q.correct_answer
-            };
-          } else {
-            return {
-              question_id: q.question_id,
-              question_name: q.question_name,
-              question_type: 'lq' as 'lq',
-              status: ASSIGNMENT_STATUS.GRADED,
-              score: 90,
-              answered_at: `2024-01-15T10:3${qIdx}:00Z`,
-              student_answer: `Sample answer for ${q.question_name}`,
-              correct_answer: q.correct_answer
-            };
-          }
-        }
-        // For the rest, alternate correct/incorrect/unanswered
-        if (q.question_type === 'mc') {
-          if ((sIdx + qIdx) % 3 === 0) {
-            // Correct
-            return {
-              question_id: q.question_id,
-              question_name: q.question_name,
-              question_type: 'mc' as 'mc',
-              status: ASSIGNMENT_STATUS.GRADED,
-              score: 100,
-              answered_at: `2024-01-15T11:${qIdx}:00Z`,
-              student_answer: q.correct_answer,
-              student_option: q.correct_option,
-              correct_answer: q.correct_answer
-            };
-          } else if ((sIdx + qIdx) % 3 === 1) {
-            // Incorrect
-            const wrongOption = ['A', 'B', 'C', 'D'].find(opt => opt !== q.correct_option) || 'A';
-            return {
-              question_id: q.question_id,
-              question_name: q.question_name,
-              question_type: 'mc' as 'mc',
-              status: ASSIGNMENT_STATUS.GRADED,
-              score: 0,
-              answered_at: `2024-01-15T11:${qIdx}:00Z`,
-              student_answer: q.options?.find((o: any) => o.letter === wrongOption)?.text,
-              student_option: wrongOption,
-              correct_answer: q.correct_answer
-            };
-          } else {
-            // Unanswered
-            return {
-              question_id: q.question_id,
-              question_name: q.question_name,
-              question_type: 'mc' as 'mc',
-              status: ASSIGNMENT_STATUS.ASSIGNED
-            };
-          }
-        } else {
-          // LQ
-          if ((sIdx + qIdx) % 3 === 0) {
-            // Graded
-            return {
-              question_id: q.question_id,
-              question_name: q.question_name,
-              question_type: 'lq' as 'lq',
-              status: ASSIGNMENT_STATUS.GRADED,
-              score: 90,
-              answered_at: `2024-01-15T12:${qIdx}:00Z`,
-              student_answer: `Sample answer for ${q.question_name}`,
-              correct_answer: q.correct_answer
-            };
-          } else if ((sIdx + qIdx) % 3 === 1) {
-            // Submitted
-            return {
-              question_id: q.question_id,
-              question_name: q.question_name,
-              question_type: 'lq' as 'lq',
-              status: ASSIGNMENT_STATUS.SUBMITTED,
-              answered_at: `2024-01-15T12:${qIdx}:00Z`,
-              student_answer: `Sample answer for ${q.question_name}`,
-              correct_answer: q.correct_answer
-            };
-          } else {
-            // Not started
-            return {
-              question_id: q.question_id,
-              question_name: q.question_name,
-              question_type: 'lq' as 'lq',
-              status: ASSIGNMENT_STATUS.ASSIGNED
-            };
-          }
-        }
-      });
-      return {
-        user_id: student.id,
-        name: student.name,
-        email: student.email,
-        assignment_id: `assign_${student.id}`,
-        status: student.status,
-        started_at: '2024-01-15T09:30:00Z',
-        submitted_at: '2024-01-15T11:45:00Z',
-        graded_at: '2024-01-15T14:20:00Z',
-        score: 85,
-        total_questions: 50,
-        completed_questions: question_progress.filter((q: any) => q.status !== ASSIGNMENT_STATUS.ASSIGNED).length,
-        question_progress
-      };
-    });
-  };
-  
-  const exerciseProgress = getMockProgressData();
-  const exerciseProgressTotal = exerciseProgress.length;
+  const exerciseProgress = exerciseProgressStudents || []
+  const exerciseProgressTotal = apiExerciseProgressTotal || 0
+  const questions = exerciseProgressQuestions || []
+  const exercise = exerciseProgressData?.exercise
 
-  // Filter students by search term
   const filteredExerciseProgress = exerciseProgress.filter(student =>
-    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.email.toLowerCase().includes(searchTerm.toLowerCase())
+    student.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.student_email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Get student answers for a specific question
   const getStudentAnswersForQuestion = (questionId: string) => {
     return filteredExerciseProgress.map(student => {
-      const questionProgress = student.question_progress.find(q => q.question_id === questionId)
+      const questionProgress = student.question_progress.find((q: any) => q.question_id === questionId)
       return {
-        student_id: student.user_id,
-        student_name: student.name,
-        student_email: student.email,
+        student_id: student.student_id,
+        student_name: student.student_name,
+        student_email: student.student_email,
         status: questionProgress?.status || ASSIGNMENT_STATUS.ASSIGNED,
         score: questionProgress?.score,
         student_answer: questionProgress?.student_answer,
-        student_option: questionProgress?.student_option, // <-- add this line
+        student_option: questionProgress?.student_option,
         answered_at: questionProgress?.answered_at,
-        overall_status: student.status
+        overall_status: student.status,
+        tag_scores: questionProgress?.tag_scores || [],
+        tag_total: questionProgress?.tag_total || { score: 0, maxScore: 0 }
       }
-    }).filter(answer => answer.status !== ASSIGNMENT_STATUS.ASSIGNED) // Only show answered questions
+    }).filter(answer => answer.status !== ASSIGNMENT_STATUS.ASSIGNED)
   }
-
-  // Fetch exercise details and progress data
-  useEffect(() => {
-    if (exerciseId) {
-      dispatch(fetchExerciseWithQuestions(exerciseId))
-      fetchProgressData()
-    }
-  }, [exerciseId, dispatch])
 
   const fetchProgressData = () => {
     if (!exerciseId) return
-
     dispatch(fetchExerciseProgress({
       exerciseId,
       params: {
@@ -367,14 +117,22 @@ const ExerciseProgressPage: FC = () => {
     }))
   }
 
-  // Refetch when pagination or filters change
   useEffect(() => {
-    fetchProgressData()
+    if (exerciseId) {
+      fetchProgressData()
+    }
+  }, [exerciseId])
+
+  useEffect(() => {
+    if (exerciseId && !isInitialLoad.current) {
+      fetchProgressData()
+    }
+    isInitialLoad.current = false
   }, [currentPage, itemsPerPage, searchTerm, sortBy, sortOrder])
 
   const handleSearch = (value: string) => {
     setSearchTerm(value)
-    setCurrentPage(1) // Reset to first page when searching
+    setCurrentPage(1)
   }
 
   const handleSort = (field: string) => {
@@ -387,8 +145,7 @@ const ExerciseProgressPage: FC = () => {
   }
 
   const getProgressPercentage = (student: StudentProgress) => {
-    if (student.total_questions === 0) return 0
-    return Math.round((student.completed_questions / student.total_questions) * 100)
+    return student.completion_percentage || 0
   }
 
   const getOverallStatus = (student: StudentProgress) => {
@@ -399,7 +156,6 @@ const ExerciseProgressPage: FC = () => {
     const label = getStatusLabel(status as any)
     const color = getStatusColor(status as any)
     const icon = getStatusIcon(status as any)
-    
     return (
       <span className={`badge badge-light-${color} fs-7`}>
         <i className={`${icon} me-1`}></i>
@@ -415,19 +171,12 @@ const ExerciseProgressPage: FC = () => {
   }
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    return formatApiTimestamp(dateString, { format: 'custom' })
   }
 
   const totalPages = Math.ceil(exerciseProgressTotal / itemsPerPage)
 
-  if (fetchingExercise) {
+  if (fetchingExerciseProgress) {
     return (
       <>
         <PageTitle breadcrumbs={[
@@ -455,9 +204,9 @@ const ExerciseProgressPage: FC = () => {
       <PageTitle breadcrumbs={[
         {title: 'Home', path: '/dashboard', isSeparator: false, isActive: false},
         {title: 'Exercises', path: '/exercises/assignedlist', isSeparator: false, isActive: false},
-        {title: currentExercise?.title || 'Exercise Progress', path: '', isSeparator: false, isActive: true}
+        {title: exercise?.title || 'Exercise Progress', path: '', isSeparator: false, isActive: true}
       ]}>
-        Exercise Progress: {currentExercise?.title}
+        Exercise Progress: {exercise?.title}
       </PageTitle>
 
       <KTCard>
@@ -476,7 +225,7 @@ const ExerciseProgressPage: FC = () => {
                 </button>
               </div>
               
-              {currentExercise && (
+              {exercise && (
                 <div className='row g-4 mb-6'>
                   <div className='col-lg-3'>
                     <div className='card bg-light-primary'>
@@ -627,16 +376,15 @@ const ExerciseProgressPage: FC = () => {
           {/* Content based on view mode */}
           {viewMode === 'questions' ? (
             <QuestionsView
-              allQuestions={allQuestions}
+              allQuestions={questions}
               getStudentAnswersForQuestion={getStudentAnswersForQuestion}
               getQuestionTypeBadge={getQuestionTypeBadge}
               getQuestionStatusBadge={getQuestionStatusBadge}
               formatDate={formatDate}
-              exerciseProgress={filteredExerciseProgress}
             />
           ) : viewMode === 'grid' ? (
             <GridView
-              allQuestions={allQuestions}
+              allQuestions={questions}
               exerciseProgress={filteredExerciseProgress}
               ASSIGNMENT_STATUS={ASSIGNMENT_STATUS}
             />
@@ -674,7 +422,7 @@ const ExerciseProgressPage: FC = () => {
                   </thead>
                   <tbody>
                                          {exerciseProgress
-                       .find((s: StudentProgress) => s.user_id === selectedStudent)
+                       .find((s: StudentProgress) => s.student_id === selectedStudent)
                        ?.question_progress.map((question: any, index: number) => (
                         <tr key={question.question_id}>
                           <td>

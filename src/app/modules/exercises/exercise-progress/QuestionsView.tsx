@@ -1,5 +1,6 @@
 import React, { FC } from 'react';
 import { renderHtmlSafely } from '../../../../_metronic/helpers/htmlRenderer';
+import { formatApiTimestamp, getUserTimezone } from '../../../../_metronic/helpers/dateUtils';
 
 interface Question {
   question_id: string;
@@ -21,6 +22,17 @@ interface StudentAnswer {
   student_option?: string;
   answered_at?: string;
   overall_status: number;
+  tag_scores?: Array<{
+    tag_id: string;
+    tag_name: string;
+    score: number;
+    max_score: number;
+    is_correct: boolean;
+  }>;
+  tag_total?: {
+    score: number;
+    maxScore: number;
+  };
 }
 
 interface QuestionsViewProps {
@@ -62,34 +74,30 @@ const QuestionsView: FC<QuestionsViewProps> = ({
 
   // Helper to render tag score badges for MC and LQ
   const renderTagScores = (question: any, answer: any, isMC: boolean) => {
-    if (!question.tags) return null;
-    let totalScore = 0;
-    let totalMax = 0;
-    const tagBadges = question.tags.map((tag: any) => {
-      let tagScore = 0;
-      if (isMC) {
-        tagScore = answer.student_option === question.correct_option ? tag.maxScore : 0;
-      } else {
-        tagScore = typeof answer.score === 'number' ? Math.round(answer.score * tag.maxScore / 100) : 0;
-      }
-      totalScore += tagScore;
-      totalMax += tag.maxScore;
-      return (
-        <span
-          key={tag.name}
-          className={`badge ${tagScore > 0 ? 'badge-success' : 'badge-danger'} fs-7`}
-        >
-          {tag.name} {tagScore}/{tag.maxScore}
-        </span>
-      );
-    });
-    let totalColor = 'badge-danger';
-    if (totalScore === totalMax) totalColor = 'badge-success';
-    else if (totalScore > 0) totalColor = 'badge-warning';
+    if (!answer.tag_scores || answer.tag_scores.length === 0) {
+      return <span className='text-muted fs-7'>No tags</span>;
+    }
+
+    const tagBadges = answer.tag_scores.map((tagScore: any) => (
+      <span
+        key={tagScore.tag_id}
+        className={`badge ${tagScore.is_correct ? 'badge-success' : 'badge-danger'} fs-7`}
+      >
+        {tagScore.tag_name} {tagScore.score}/{tagScore.max_score}
+      </span>
+    ));
+
+    const totalScore = answer.tag_total?.score || 0;
+    const totalMax = answer.tag_total?.maxScore || 0;
+    
+    let totalColor = 'text-danger';
+    if (totalScore === totalMax && totalMax > 0) totalColor = 'text-success';
+    else if (totalScore > 0) totalColor = 'text-warning';
+
     return (
       <div className='d-flex flex-wrap gap-2 align-items-center'>
         {tagBadges}
-        <span className={`fw-bold fs-7 ms-4`}>
+        <span className={`fw-bold fs-7 ms-4 ${totalColor}`}>
           <i className='fas fa-calculator me-1'></i>Total: {totalScore}/{totalMax}
         </span>
       </div>
@@ -141,10 +149,18 @@ const QuestionsView: FC<QuestionsViewProps> = ({
                   {question.question_type === 'mc' && question.correct_option ? (
                     <>
                       <span className='badge badge-light-primary me-2'>Option {question.correct_option}</span>
-                      {question.options?.find((opt) => opt.letter === question.correct_option)?.text}
+                      <div 
+                        dangerouslySetInnerHTML={{ 
+                          __html: renderHtmlSafely(question.correct_answer || '', { maxImageWidth: 300, maxImageHeight: 200 }) 
+                        }}
+                      />
                     </>
                   ) : (
-                    question.correct_answer
+                    <div 
+                      dangerouslySetInnerHTML={{ 
+                        __html: renderHtmlSafely(question.correct_answer || '', { maxImageWidth: 300, maxImageHeight: 200 }) 
+                      }}
+                    />
                   )}
                 </div>
               </div>
@@ -178,14 +194,22 @@ const QuestionsView: FC<QuestionsViewProps> = ({
                                 answer.student_option ? (
                                   <div className={`p-2 rounded ${answer.student_option === question.correct_option ? 'bg-light-success' : 'bg-light-danger'}`}>
                                     <span className='badge badge-light-primary me-2'>Option {answer.student_option}</span>
-                                    {answer.student_answer}
+                                    <div 
+                                      dangerouslySetInnerHTML={{ 
+                                        __html: renderHtmlSafely(answer.student_answer || '', { maxImageWidth: 300, maxImageHeight: 200 }) 
+                                      }}
+                                    />
                                   </div>
                                 ) : (
                                   <span className='text-muted fs-7'>No answer</span>
                                 )
                               ) : answer.student_answer ? (
                                 <div className='p-2 bg-light rounded'>
-                                  {answer.student_answer}
+                                  <div 
+                                    dangerouslySetInnerHTML={{ 
+                                      __html: renderHtmlSafely(answer.student_answer, { maxImageWidth: 300, maxImageHeight: 200 }) 
+                                    }}
+                                  />
                                 </div>
                               ) : (
                                 <span className='text-muted fs-7'>No answer</span>

@@ -1,18 +1,17 @@
 import React, { FC } from 'react';
 
 interface StudentProgress {
-  user_id: string;
-  name: string;
-  email: string;
+  student_id: string;
+  student_name: string;
+  student_email: string;
   assignment_id: string;
+  assigned_date: string;
+  due_date?: string;
   status: number;
-  started_at?: string;
-  submitted_at?: string;
-  graded_at?: string;
-  score?: number;
-  total_questions: number;
-  completed_questions: number;
   question_progress: Array<any>;
+  total_score: number;
+  max_total_score: number;
+  completion_percentage: number;
 }
 
 interface StudentsViewProps {
@@ -61,19 +60,19 @@ const StudentsView: FC<StudentsViewProps> = ({
             <th className='w-100px'>Overall Status</th>
             <th className='w-100px'>Progress</th>
             <th className='w-100px'>Score</th>
-            <th className='w-150px'>Started</th>
-            <th className='w-150px'>Submitted</th>
+            <th className='w-150px'>Assigned</th>
+            <th className='w-150px'>Due Date</th>
             <th className='w-100px'>Actions</th>
           </tr>
         </thead>
         <tbody>
           {exerciseProgress.map((student: StudentProgress) => (
-            <tr key={student.user_id}>
+            <tr key={student.student_id}>
               <td>
                 <div className='d-flex align-items-center'>
                   <div className='d-flex justify-content-start flex-column'>
                     <span className='text-dark fw-bold text-hover-primary fs-6'>
-                      {student.name}
+                      {student.student_name}
                     </span>
                   </div>
                 </div>
@@ -92,29 +91,29 @@ const StudentsView: FC<StudentsViewProps> = ({
                   <span className='fw-bold fs-7'>{getProgressPercentage(student)}%</span>
                 </div>
                 <div className='text-muted fs-7'>
-                  {student.completed_questions} of {student.total_questions} questions
+                  {student.question_progress.filter((q: any) => q.status === 2).length} of {student.question_progress.length} questions
                 </div>
               </td>
               <td>
-                {student.score !== undefined ? (
-                  <span className='fw-bold fs-6 text-success'>{student.score}%</span>
+                {student.total_score !== undefined ? (
+                  <span className='fw-bold fs-6 text-success'>{student.total_score}/{student.max_total_score}</span>
                 ) : (
                   <span className='text-muted fs-7'>N/A</span>
                 )}
               </td>
               <td>
-                <span className='text-muted fs-7'>{formatDate(student.started_at)}</span>
+                <span className='text-muted fs-7'>{formatDate(student.assigned_date)}</span>
               </td>
               <td>
-                <span className='text-muted fs-7'>{formatDate(student.submitted_at)}</span>
+                <span className='text-muted fs-7'>{student.due_date ? formatDate(student.due_date) : 'No due date'}</span>
               </td>
               <td>
                 <button
                   className='btn btn-sm btn-light-primary'
-                  onClick={() => setSelectedStudent(selectedStudent === student.user_id ? null : student.user_id)}
+                  onClick={() => setSelectedStudent(selectedStudent === student.student_id ? null : student.student_id)}
                 >
                   <i className='fas fa-eye me-1'></i>
-                  {selectedStudent === student.user_id ? 'Hide' : 'View'} Details
+                  {selectedStudent === student.student_id ? 'Hide' : 'View'} Details
                 </button>
               </td>
             </tr>

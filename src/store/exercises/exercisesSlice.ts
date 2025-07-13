@@ -385,7 +385,7 @@ export const fetchExerciseProgress = createAsyncThunk(
     }
   }) => {
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/${exerciseId}/progress`)
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/${exerciseId}/monitor`)
       const queryParams = new URLSearchParams({
         page: params.page.toString(),
         items_per_page: params.items_per_page.toString(),
@@ -394,14 +394,19 @@ export const fetchExerciseProgress = createAsyncThunk(
         ...(params.search && { search: params.search }),
       })
       
-      const response = await axios.get(`${API_URL}/exercises/${exerciseId}/progress?${queryParams}`, { 
+      const response = await axios.get(`${API_URL}/exercises/${exerciseId}/monitor?${queryParams}`, { 
         headers,
         withCredentials: true 
       })
       
+      // The API now returns { exercise, questions, students }
+      const responseData = response.data.data || response.data
+      
       return {
-        data: response.data.data || response.data.items || response.data || [],
-        total: response.data.payload?.pagination?.total || response.data.total || 0
+        exercise: responseData.exercise,
+        questions: responseData.questions || [],
+        students: responseData.students || [],
+        total: responseData.students?.length || 0
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to fetch exercise progress'
@@ -431,6 +436,14 @@ interface ExercisesState {
   exerciseProgress: any[]
   fetchingExerciseProgress: boolean
   exerciseProgressTotal: number
+  // New fields for monitor API response
+  exerciseProgressData: {
+    exercise: any
+    questions: any[]
+    students: any[]
+  } | null
+  exerciseProgressQuestions: any[]
+  exerciseProgressStudents: any[]
 }
 
 const initialState: ExercisesState = {
@@ -452,6 +465,9 @@ const initialState: ExercisesState = {
   exerciseProgress: [],
   fetchingExerciseProgress: false,
   exerciseProgressTotal: 0,
+  exerciseProgressData: null,
+  exerciseProgressQuestions: [],
+  exerciseProgressStudents: [],
 }
 
 // Slice
@@ -591,8 +607,10 @@ const exercisesSlice = createSlice({
       })
       .addCase(fetchExerciseProgress.fulfilled, (state, action) => {
         state.fetchingExerciseProgress = false
-        state.exerciseProgress = action.payload.data
-        state.exerciseProgressTotal = action.payload.total
+        state.exerciseProgressData = action.payload
+        state.exerciseProgressQuestions = action.payload.questions || []
+        state.exerciseProgressStudents = action.payload.students || []
+        state.exerciseProgressTotal = action.payload.total || 0
       })
       .addCase(fetchExerciseProgress.rejected, (state, action) => {
         state.fetchingExerciseProgress = false
