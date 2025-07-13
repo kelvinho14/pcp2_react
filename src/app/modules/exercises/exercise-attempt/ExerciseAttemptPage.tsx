@@ -1,5 +1,5 @@
 import {FC, useState, useEffect, useCallback, useRef} from 'react'
-import {useNavigate, useParams} from 'react-router-dom'
+import {useNavigate, useParams, useLocation} from 'react-router-dom'
 import {useDispatch} from 'react-redux'
 
 import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
@@ -7,7 +7,7 @@ import {KTCard} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
 import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
 import {renderHtmlSafely, hasImages} from '../../../../_metronic/helpers/htmlRenderer'
-import {startExerciseAttempt} from '../../../../store/exercises/studentExercisesSlice'
+import {startExerciseAttempt, submitExercise} from '../../../../store/exercises/studentExercisesSlice'
 import {AppDispatch} from '../../../../store'
 
 
@@ -380,15 +380,15 @@ const ExerciseAttemptPage: FC = () => {
   }
 
   const handleSubmit = async () => {
-    if (!exercise) return
-    
+    if (!exercise || !assignmentId) return
     setSubmitting(true)
     try {
-      // TODO: Implement submission to API
-      console.log('Submitting answers:', answers)
+      // Call the submit API using Redux action
+      await dispatch(submitExercise(assignmentId)).unwrap()
       toast.success('Exercise submitted successfully!', 'Success')
-      setHasUnsavedChanges(false) // Clear unsaved changes after successful submission
-      navigate('/dashboard')
+      setHasUnsavedChanges(false)
+      // Navigate with refresh parameter to force cache clear
+      navigate('/exercises/dashboard?refresh=true')
     } catch (err) {
       console.error('Error submitting exercise:', err)
       toast.error('Failed to submit exercise. Please try again.', 'Error')
