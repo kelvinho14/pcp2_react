@@ -1,6 +1,6 @@
 import {FC, useState, useEffect, useMemo, useCallback, useRef} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
-import {useNavigate} from 'react-router-dom'
+import {useNavigate, useLocation} from 'react-router-dom'
 import {PageTitle} from '../../../../_metronic/layout/core'
 import {useIntl} from 'react-intl'
 import {AppDispatch, RootState} from '../../../../store'
@@ -56,6 +56,7 @@ const ExerciseDashboardPage: FC = () => {
   const intl = useIntl()
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { 
     exercises, 
     summary, 
@@ -315,6 +316,23 @@ const ExerciseDashboardPage: FC = () => {
       hasInitialized.current = true
     }
   }, [dispatch]) // Only run on mount
+
+  // Check for refresh parameter and clear cache if needed
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const shouldRefresh = searchParams.get('refresh') === 'true'
+    
+    if (shouldRefresh) {
+      // Clear cache and force fresh data fetch
+      dispatch(clearCache())
+      dispatch(fetchStudentExercises(filters))
+      
+      // Remove the refresh parameter from URL
+      searchParams.delete('refresh')
+      const newUrl = location.pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '')
+      navigate(newUrl, { replace: true })
+    }
+  }, [location, dispatch, navigate, filters])
 
   // Memoized exercise cards for grid view
   const exerciseGridCards = useMemo(() => {
