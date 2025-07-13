@@ -26,6 +26,10 @@ const ExerciseActionsCell: FC<Props> = ({id}) => {
     navigate(`/exercises/edit/${id}`)
   }
 
+  const openProgressModal = () => {
+    navigate(`/exercises/progress/${id}`)
+  }
+
   const handleDelete = async () => {
     if (!id) return
     setIsDeleting(true)
@@ -66,6 +70,14 @@ const ExerciseActionsCell: FC<Props> = ({id}) => {
         <div className='menu-item px-3'>
           <a className='menu-link px-3' onClick={openEditModal}>
             Edit
+          </a>
+        </div>
+        {/* end::Menu item */}
+
+        {/* begin::Menu item */}
+        <div className='menu-item px-3'>
+          <a className='menu-link px-3' onClick={openProgressModal}>
+            View Progress
           </a>
         </div>
         {/* end::Menu item */}

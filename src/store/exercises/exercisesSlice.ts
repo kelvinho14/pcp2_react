@@ -372,6 +372,45 @@ export const assignExercisesToStudents = createAsyncThunk(
   }
 )
 
+export const fetchExerciseProgress = createAsyncThunk(
+  'exercises/fetchExerciseProgress',
+  async ({ exerciseId, params }: { 
+    exerciseId: string
+    params: {
+      page: number
+      items_per_page: number
+      sort?: string
+      order?: string
+      search?: string
+    }
+  }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/${exerciseId}/progress`)
+      const queryParams = new URLSearchParams({
+        page: params.page.toString(),
+        items_per_page: params.items_per_page.toString(),
+        ...(params.sort && { sort: params.sort }),
+        ...(params.order && { order: params.order }),
+        ...(params.search && { search: params.search }),
+      })
+      
+      const response = await axios.get(`${API_URL}/exercises/${exerciseId}/progress?${queryParams}`, { 
+        headers,
+        withCredentials: true 
+      })
+      
+      return {
+        data: response.data.data || response.data.items || response.data || [],
+        total: response.data.payload?.pagination?.total || response.data.total || 0
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to fetch exercise progress'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 // Initial state
 interface ExercisesState {
   exercises: Exercise[]
@@ -389,6 +428,9 @@ interface ExercisesState {
   exerciseStudents: any[]
   fetchingExerciseStudents: boolean
   exerciseStudentsTotal: number
+  exerciseProgress: any[]
+  fetchingExerciseProgress: boolean
+  exerciseProgressTotal: number
 }
 
 const initialState: ExercisesState = {
@@ -407,6 +449,9 @@ const initialState: ExercisesState = {
   exerciseStudents: [],
   fetchingExerciseStudents: false,
   exerciseStudentsTotal: 0,
+  exerciseProgress: [],
+  fetchingExerciseProgress: false,
+  exerciseProgressTotal: 0,
 }
 
 // Slice
@@ -538,6 +583,20 @@ const exercisesSlice = createSlice({
       .addCase(assignExercisesToStudents.rejected, (state, action) => {
         state.assigning = false
         state.error = action.error.message || 'Failed to assign exercises to students'
+      })
+      // Fetch exercise progress
+      .addCase(fetchExerciseProgress.pending, (state) => {
+        state.fetchingExerciseProgress = true
+        state.error = null
+      })
+      .addCase(fetchExerciseProgress.fulfilled, (state, action) => {
+        state.fetchingExerciseProgress = false
+        state.exerciseProgress = action.payload.data
+        state.exerciseProgressTotal = action.payload.total
+      })
+      .addCase(fetchExerciseProgress.rejected, (state, action) => {
+        state.fetchingExerciseProgress = false
+        state.error = action.error.message || 'Failed to fetch exercise progress'
       })
   },
 })

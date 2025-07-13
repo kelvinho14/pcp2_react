@@ -320,7 +320,7 @@ const ExerciseAssignedListPage: FC = () => {
               </div>
               
               <div className='d-flex align-items-center justify-content-end'>
-                <button className='btn btn-sm btn-light-primary'>
+                <button className='btn btn-sm btn-light-primary' onClick={() => navigate(`/exercises/progress/${exercise.id}`)}>
                   <i className='fas fa-eye me-1'></i>
                   View Details
                 </button>
