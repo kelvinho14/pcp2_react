@@ -234,6 +234,24 @@ export const startExerciseAttempt = createAsyncThunk(
   }
 )
 
+export const submitExercise = createAsyncThunk(
+  'studentExercises/submit',
+  async (assignmentId: string, { rejectWithValue }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/student-exercises/assignments/${assignmentId}/submit`)
+      
+      const response = await axios.post(`${API_URL}/student-exercises/assignments/${assignmentId}/submit`, {}, {
+        headers,
+        withCredentials: true
+      })
+      
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to submit exercise')
+    }
+  }
+)
+
 const studentExercisesSlice = createSlice({
   name: 'studentExercises',
   initialState,
@@ -319,6 +337,17 @@ const studentExercisesSlice = createSlice({
         state.loading = false
       })
       .addCase(startExerciseAttempt.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string
+      })
+      .addCase(submitExercise.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(submitExercise.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(submitExercise.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload as string
       })
