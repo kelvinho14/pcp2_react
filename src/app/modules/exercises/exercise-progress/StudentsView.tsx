@@ -1,18 +1,7 @@
 import React, { FC } from 'react';
-
-interface StudentProgress {
-  student_id: string;
-  student_name: string;
-  student_email: string;
-  assignment_id: string;
-  assigned_date: string;
-  due_date?: string;
-  status: number;
-  question_progress: Array<any>;
-  total_score: number;
-  max_total_score: number;
-  completion_percentage: number;
-}
+import { roundNumber } from '../../../../_metronic/helpers/mathUtils';
+import { getCompletedQuestionsCount, getTotalQuestionsCount } from './utils';
+import { StudentProgress } from './types';
 
 interface StudentsViewProps {
   exerciseProgress: StudentProgress[];
@@ -26,6 +15,7 @@ interface StudentsViewProps {
   formatDate: (dateString?: string) => string;
   selectedStudent: string | null;
   setSelectedStudent: (id: string | null) => void;
+  hasStudentChange?: (studentId: string) => boolean;
 }
 
 const StudentsView: FC<StudentsViewProps> = ({
@@ -40,6 +30,7 @@ const StudentsView: FC<StudentsViewProps> = ({
   formatDate,
   selectedStudent,
   setSelectedStudent,
+  hasStudentChange,
 }) => {
   return (
     <div className='table-responsive'>
@@ -66,8 +57,13 @@ const StudentsView: FC<StudentsViewProps> = ({
           </tr>
         </thead>
         <tbody>
-          {exerciseProgress.map((student: StudentProgress) => (
-            <tr key={student.student_id}>
+          {exerciseProgress.map((student: StudentProgress) => {
+            const studentHasChanges = hasStudentChange ? hasStudentChange(student.student_id) : false;
+            return (
+              <tr 
+                key={student.student_id}
+                className={`student-row ${studentHasChanges ? 'has-changes' : ''}`}
+              >
               <td>
                 <div className='d-flex align-items-center'>
                   <div className='d-flex justify-content-start flex-column'>
@@ -88,10 +84,10 @@ const StudentsView: FC<StudentsViewProps> = ({
                       style={{width: `${getProgressPercentage(student)}%`}}
                     ></div>
                   </div>
-                  <span className='fw-bold fs-7'>{getProgressPercentage(student)}%</span>
+                  <span className='fw-bold fs-7'>{roundNumber(getProgressPercentage(student))}%</span>
                 </div>
                 <div className='text-muted fs-7'>
-                  {student.question_progress.filter((q: any) => q.status === 2).length} of {student.question_progress.length} questions
+                  {getCompletedQuestionsCount(student.question_progress)} of {getTotalQuestionsCount(student.question_progress)} questions
                 </div>
               </td>
               <td>
@@ -117,7 +113,8 @@ const StudentsView: FC<StudentsViewProps> = ({
                 </button>
               </td>
             </tr>
-          ))}
+          );
+        })}
         </tbody>
       </table>
     </div>

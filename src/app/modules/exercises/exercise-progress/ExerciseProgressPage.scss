@@ -1,13 +1,70 @@
 .exercise-progress-page {
+  // Progress Overview Cards (matching assigned exercises list style)
   .progress-overview {
-    .card {
+    margin-bottom: 2rem;
+    
+    .progress-card {
+      background: white;
+      border-radius: 12px;
+      padding: 0.5rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       transition: all 0.3s ease;
+      border: 2px solid transparent;
+      position: relative;
       
       &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+      
+      .card-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+        color: white;
+      }
+      
+      .card-content {
+        .card-number {
+          font-size: 2rem;
+          font-weight: 700;
+          margin-bottom: 0.5rem;
+        }
+        
+        .card-label {
+          font-size: 0.9rem;
+          color: #6c7293;
+          font-weight: 500;
+        }
+      }
+      
+      &.total {
+        .card-icon { background: linear-gradient(135deg, #3699ff 0%, #5db3ff 100%); }
+        .card-number { color: #3699ff; }
+      }
+      
+      &.completed {
+        .card-icon { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); }
+        .card-number { color: #28a745; }
+      }
+      
+      &.not-started {
+        .card-icon { background: linear-gradient(135deg, #adb5bd 0%, #dee2e6 100%); }
+        .card-number { color: #adb5bd; }
       }
     }
+  }
+
+  .status-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
   }
 
   .progress-table {
@@ -177,5 +234,175 @@
       border-radius: 50%;
       font-weight: 600;
     }
+  }
+} 
+
+/* Animation classes for data changes */
+.fade-in-added {
+  animation: fadeInAdded 1.2s ease-in-out;
+}
+
+.fade-out-removed {
+  animation: fadeOutRemoved 1.2s ease-in-out;
+}
+
+.fade-in-modified {
+  animation: fadeInModified 1.2s ease-in-out;
+}
+
+@keyframes fadeInAdded {
+  0% {
+    opacity: 0;
+    transform: translateY(-15px);
+    background-color: rgba(40, 167, 69, 0.1);
+  }
+  30% {
+    background-color: rgba(40, 167, 69, 0.3);
+  }
+  70% {
+    background-color: rgba(40, 167, 69, 0.15);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    background-color: transparent;
+  }
+}
+
+@keyframes fadeOutRemoved {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+    background-color: transparent;
+  }
+  30% {
+    background-color: rgba(220, 53, 69, 0.3);
+  }
+  70% {
+    background-color: rgba(220, 53, 69, 0.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-15px);
+    background-color: rgba(220, 53, 69, 0.1);
+  }
+}
+
+@keyframes fadeInModified {
+  0% {
+    opacity: 0.6;
+    background-color: rgba(255, 193, 7, 0.1);
+  }
+  30% {
+    background-color: rgba(255, 193, 7, 0.3);
+  }
+  70% {
+    background-color: rgba(255, 193, 7, 0.15);
+  }
+  100% {
+    opacity: 1;
+    background-color: transparent;
+  }
+}
+
+/* Specific animations for different components */
+.student-row {
+  transition: all 0.3s ease-in-out;
+  
+  &.has-changes {
+    animation: fadeInModified 1.2s ease-in-out;
+  }
+}
+
+.question-row {
+  transition: all 0.3s ease-in-out;
+  
+  &.has-changes {
+    animation: fadeInModified 1.2s ease-in-out;
+  }
+}
+
+.grid-cell {
+  transition: all 0.3s ease-in-out;
+  
+  &.has-changes {
+    animation: fadeInModified 1.2s ease-in-out;
+  }
+}
+
+/* Highlight changed values */
+.changed-value {
+  animation: highlightChange 1.5s ease-in-out;
+}
+
+@keyframes highlightChange {
+  0% {
+    background-color: rgba(255, 193, 7, 0.3);
+    transform: scale(1.05);
+  }
+  50% {
+    background-color: rgba(255, 193, 7, 0.4);
+    transform: scale(1.08);
+  }
+  100% {
+    background-color: transparent;
+    transform: scale(1);
+  }
+}
+
+/* Prevent page flicker - keep content visible during updates */
+.exercise-progress-page {
+  /* Ensure smooth transitions for all elements */
+  * {
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  }
+  
+  /* Prevent any visual changes during data updates */
+  &.loading {
+    pointer-events: none;
+    
+    /* Keep all content visible but slightly dimmed */
+    .card,
+    .table-responsive,
+    .questions-view,
+    .grid-view,
+    .btn,
+    .form-control {
+      opacity: 0.8;
+    }
+  }
+}
+
+/* Hide the top-level spinner and show inline spinners instead */
+.exercise-progress-page .spinner-border {
+  display: none;
+}
+
+/* Inline loading states */
+.inline-loading {
+  position: relative;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+  
+  &::before {
+    content: '⏳';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 11;
+    font-size: 1.5rem;
   }
 } 

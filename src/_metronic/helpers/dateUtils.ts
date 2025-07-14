@@ -1,6 +1,7 @@
 /**
  * Utility functions for date and time handling
  */
+import { config } from './config'
 
 // Date formatting configuration
 export interface DateFormatConfig {
@@ -21,7 +22,7 @@ export const defaultDateFormatConfig: DateFormatConfig = {
   hour12: true,
   showTimezone: false,
   relativeThreshold: 7, // Show relative dates for dates within 7 days
-  customFormat: import.meta.env.VITE_DATE_CUSTOM_FORMAT || undefined
+  customFormat: config.dateFormat
 }
 
 // Global configuration that can be modified
