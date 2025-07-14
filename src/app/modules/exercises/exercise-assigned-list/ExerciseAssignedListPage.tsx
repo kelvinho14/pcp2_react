@@ -83,6 +83,14 @@ const ExerciseAssignedListPage: FC = () => {
     filtersRef.current = filters
   }, [filters])
 
+  // Get progress bar color based on percentage
+  const getProgressBarColor = (progress: number) => {
+    if (progress === 0) return 'secondary'
+    if (progress >= 50) return 'success'
+    if (progress >= 30) return 'warning'
+    return 'secondary'
+  }
+
   // Rename local status helpers for exercises
   const getExerciseStatusColor = (status: string) => {
     switch (status) {
@@ -207,7 +215,7 @@ const ExerciseAssignedListPage: FC = () => {
                   <div>
                     <h5 
                       className='mb-1 cursor-pointer text-hover-primary exercise-title-ellipsis'
-                      onClick={() => handleExerciseClick(exercise.id)}
+                      onClick={() => navigate(`/exercises/progress/${exercise.id}`)}
                       style={{ cursor: 'pointer' }}
                     >
                       {exercise.title}
@@ -226,7 +234,7 @@ const ExerciseAssignedListPage: FC = () => {
                 </div>
                 <div className='progress h-8px'>
                   <div 
-                    className={`progress-bar bg-${getExerciseStatusColor(exercise.status)}`}
+                    className={`progress-bar bg-${getProgressBarColor(exercise.progress)}`}
                     style={{width: `${exercise.progress}%`}}
                   ></div>
                 </div>
@@ -356,19 +364,19 @@ const ExerciseAssignedListPage: FC = () => {
 
           return (
             <div key={exercise.id} className={`exercise-list-item status-${exercise.status}`}>
-              <div className='list-item-header'>
+              <div className='list-item-header' onClick={() => toggleCardCollapse(exercise.id)} style={{cursor: 'pointer', flex: 1}}>
                 <div className='item-content'>
                   <div className='item-title'>
                     <div className='d-flex align-items-center'>
                       <div>
                         <h6 
                           className='mb-1 cursor-pointer text-hover-primary exercise-title-ellipsis'
-                          onClick={() => handleExerciseClick(exercise.id)}
+                          onClick={e => { e.stopPropagation(); navigate(`/exercises/progress/${exercise.id}`); }}
                           style={{ cursor: 'pointer' }}
                         >
                           {exercise.title}
                         </h6>
-                        <span className='text-muted fs-7'>Question #{exercise.question_no}</span>
+                        <span className='badge badge-light-primary fs-7'>{exercise.question_no} Question{exercise.question_no !== 1 ? 's' : ''}</span>
                       </div>
                     </div>
                   </div>
@@ -377,7 +385,7 @@ const ExerciseAssignedListPage: FC = () => {
                       <span className='progress-text'>{exercise.progress}% Complete</span>
                       <div className='mini-progress'>
                         <div 
-                          className={`progress-fill bg-${getExerciseStatusColor(exercise.status)}`}
+                          className={`progress-fill bg-${getProgressBarColor(exercise.progress)}`}
                           style={{width: `${exercise.progress}%`}}
                         ></div>
                       </div>
@@ -397,10 +405,13 @@ const ExerciseAssignedListPage: FC = () => {
                   <div className='stat-item'>
                     <div className='stat-number text-warning'>{exercise.student_stats.in_progress}</div>
                     <div className='stat-label'>
-                      {exercise.student_stats.total > 0 
-                        ? `${Math.round((exercise.student_stats.in_progress / exercise.student_stats.total) * 100)}%`
-                        : '0%'
-                      }
+                      {exercise.student_stats.total > 0 && exercise.student_stats.in_progress > 0
+                        ? 'In Progress'
+                        : exercise.student_stats.total > 0 && exercise.student_stats.completed === 0 && exercise.student_stats.in_progress === 0
+                          ? 'In Progress'
+                          : exercise.student_stats.total > 0 && exercise.student_stats.completed > 0
+                            ? `${Math.round((exercise.student_stats.in_progress / exercise.student_stats.total) * 100)}%`
+                            : '0%'}
                     </div>
                   </div>
                 </div>
@@ -408,10 +419,10 @@ const ExerciseAssignedListPage: FC = () => {
                 <div className='item-actions'>
                   <button 
                     className='btn btn-sm btn-light-primary'
-                    onClick={() => toggleCardCollapse(exercise.id)}
+                    onClick={e => { e.stopPropagation(); navigate(`/exercises/progress/${exercise.id}`); }}
                   >
-                    <i className={`fas fa-chevron-${collapsedCards.has(exercise.id) ? 'down' : 'up'}`}></i>
-                    {collapsedCards.has(exercise.id) ? 'Show' : 'Hide'} Assignments
+                    <i className='fas fa-eye me-1'></i>
+                    View Details
                   </button>
                 </div>
               </div>
@@ -434,29 +445,27 @@ const ExerciseAssignedListPage: FC = () => {
                         <div className='assignments-list'>
                           {assignments.map((assignment) => (
                             <div key={assignment.assignment_id} className='assignment-item'>
-                              <div className='assignment-info'>
-                                <div className='student-info'>
+                              <div className='d-flex align-items-center' style={{gap: 16, minHeight: 40}}>
+                                {/* Student Name */}
+                                <div style={{minWidth: 180, flex: '0 0 180px'}} className='d-flex align-items-center'>
                                   <i className='fas fa-user text-muted me-2'></i>
                                   <span className='fw-medium'>{assignment.student.name}</span>
-                                  <span className='text-muted ms-2'>({assignment.student.email})</span>
                                 </div>
-                                <div className='assignment-progress'>
+                                {/* Progress */}
+                                <div style={{minWidth: 160, flex: '1 1 160px'}} className='d-flex flex-column align-items-start'>
                                   <div className='d-flex align-items-center mb-1'>
-                                    <span className='text-muted fs-7 me-2'>Progress:</span>
-                                    <span className='fw-bold fs-7'>{assignment.progress}%</span>
+                                    <span className='fw-bold fs-7 me-2'>{assignment.progress}%</span>
+                                    <div className='progress h-3px' style={{width: 80}}>
+                                      <div 
+                                        className={`progress-bar bg-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)}`}
+                                        style={{width: `${assignment.progress}%`}}
+                                      ></div>
+                                    </div>
                                   </div>
-                                  <div className='progress h-3px mb-2' style={{width: '80px'}}>
-                                    <div 
-                                      className={`progress-bar bg-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)}`}
-                                      style={{width: `${assignment.progress}%`}}
-                                    ></div>
-                                  </div>
-                                  <div className='text-center'>
-                                    <span className='fw-bold fs-7'>{assignment.answered_questions}/{assignment.total_questions}</span>
-                                    <span className='text-muted fs-7 ms-1'>Questions</span>
-                                  </div>
+                                  <span className='fw-bold fs-7'>{assignment.answered_questions}/{assignment.total_questions} Questions</span>
                                 </div>
-                                <div className='assignment-status'>
+                                {/* Status Label */}
+                                <div style={{minWidth: 100, flex: '0 0 100px'}} className='d-flex align-items-center'>
                                   <span className={`badge badge-light-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)}`}>
                                     {getStatusLabel(parseInt(assignment.status, 10) as AssignmentStatus)}
                                   </span>

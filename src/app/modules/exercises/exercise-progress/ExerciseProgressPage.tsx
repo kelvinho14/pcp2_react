@@ -106,8 +106,18 @@ const ExerciseProgressPage: FC = () => {
         {title: 'Assigned Exercises', path: '/exercises/assignedlist', isSeparator: false, isActive: false},
         {title: exercise?.title || 'Exercise Progress', path: '', isSeparator: false, isActive: true}
       ]}>
-        Student Progress Overview
+        Exercise Progress Overview
       </PageTitle>
+
+      {/* Welcome Section */}
+      <div className='welcome-section mb-6'>
+        <div className='welcome-content'>
+          <div className='welcome-text'>
+            <h2 className='welcome-title'>{exercise?.title}</h2>
+            <p className='welcome-subtitle'>This page shows real-time progress for this exercise. Data refreshes automatically.</p>
+          </div>
+        </div>
+      </div>
 
       <KTCard>
         <KTCardBody>

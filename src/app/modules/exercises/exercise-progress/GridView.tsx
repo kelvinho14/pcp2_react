@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import React, { FC, useState } from 'react';
 import { Question, StudentProgress } from './types';
 
 interface GridViewProps {
@@ -16,9 +16,58 @@ const GridView: FC<GridViewProps> = ({
   hasStudentChange,
   hasQuestionChange
 }) => {
+  const [mcFilter, setMcFilter] = useState<'all' | 'correct' | 'incorrect'>('all');
+
+  // Check if there are any MC questions in the exercise
+  const hasMCQuestions = allQuestions.some(question => question.question_type === 'mc');
+
+  // Helper to check if student has started (has any answer)
+  const hasStudentStarted = (student: StudentProgress): boolean => {
+    return student.question_progress.some(q => q.status && q.status !== ASSIGNMENT_STATUS.ASSIGNED);
+  };
+
+  // Helper to filter students based on MC answers
+  const filterStudents = (students: StudentProgress[]) => {
+    if (!hasMCQuestions || mcFilter === 'all') return students;
+    
+    return students.filter(student => {
+      const mcQuestions = allQuestions.filter(q => q.question_type === 'mc');
+      
+      for (const question of mcQuestions) {
+        const progress = student.question_progress.find(q => q.question_id === question.question_id);
+        if (!progress?.student_option) continue; // Skip if no answer
+        
+        const isCorrect = progress.student_option === question.correct_option;
+        
+        if (mcFilter === 'correct' && isCorrect) return true;
+        if (mcFilter === 'incorrect' && !isCorrect) return true;
+      }
+      
+      return false;
+    });
+  };
+
+  const filteredStudents = filterStudents(exerciseProgress);
+
   return (
     <div className='grid-view'>
       <div className='d-flex justify-content-between align-items-center mb-4'>
+        {/* Global MC Filter - only show if there are MC questions */}
+        {hasMCQuestions && (
+          <div className='d-flex align-items-center gap-2'>
+            <span className='text-muted fs-7'>MC Filter:</span>
+            <select 
+              className='form-select form-select-sm w-auto'
+              value={mcFilter}
+              onChange={(e) => setMcFilter(e.target.value as 'all' | 'correct' | 'incorrect')}
+            >
+              <option value='all'>All Students</option>
+              <option value='correct'>Correct Only</option>
+              <option value='incorrect'>Incorrect Only</option>
+            </select>
+          </div>
+        )}
+
         <div>
           <h6 className='mb-2'>Grid Legend:</h6>
           <div className='d-flex gap-3 fs-7'>
@@ -28,10 +77,9 @@ const GridView: FC<GridViewProps> = ({
             <span className='badge bg-secondary text-white'>- Not Started</span>
           </div>
         </div>
-
       </div>
       <div className='row g-3'>
-        {exerciseProgress.map(student => {
+        {filteredStudents.map(student => {
           const studentHasChanges = hasStudentChange ? hasStudentChange(student.student_id) : false;
           return (
             <div 

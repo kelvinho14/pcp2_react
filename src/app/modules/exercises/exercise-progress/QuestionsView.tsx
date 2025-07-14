@@ -28,6 +28,10 @@ const QuestionsView: FC<QuestionsViewProps> = ({
   hasStudentChange,
 }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [mcFilter, setMcFilter] = useState<'all' | 'correct' | 'incorrect'>('all');
+
+  // Check if there are any MC questions in the exercise
+  const hasMCQuestions = allQuestions.some(question => question.question_type === 'mc');
   // Helper to extract image src from HTML or URL
   const getImageSrc = (question_content: string): string | null => {
     if (!question_content) return null;
@@ -61,6 +65,22 @@ const QuestionsView: FC<QuestionsViewProps> = ({
   // Helper to check if student has started (has any answer)
   const hasStudentStarted = (answer: any): boolean => {
     return !!(answer.student_answer || answer.student_option || answer.answered_at);
+  };
+
+  // Helper to filter MC answers based on correctness
+  const filterMCAnswers = (answers: any[], question: any) => {
+    if (mcFilter === 'all') return answers;
+    
+    return answers.filter(answer => {
+      if (!hasStudentStarted(answer)) return false;
+      
+      if (mcFilter === 'correct') {
+        return answer.student_option === question.correct_option;
+      } else if (mcFilter === 'incorrect') {
+        return answer.student_option && answer.student_option !== question.correct_option;
+      }
+      return true;
+    });
   };
 
   // Helper to render tag score badges for MC and LQ
@@ -109,9 +129,28 @@ const QuestionsView: FC<QuestionsViewProps> = ({
 
   return (
     <div className='questions-view'>
+      {/* Global MC Filter - only show if there are MC questions */}
+      {hasMCQuestions && (
+        <div className='mb-4'>
+          <div className='d-flex align-items-center gap-2'>
+            <span className='text-muted fs-7'>MC Filter:</span>
+            <select 
+              className='form-select form-select-sm w-auto'
+              value={mcFilter}
+              onChange={(e) => setMcFilter(e.target.value as 'all' | 'correct' | 'incorrect')}
+            >
+              <option value='all'>All Answers</option>
+              <option value='correct'>Correct Only</option>
+              <option value='incorrect'>Incorrect Only</option>
+            </select>
+          </div>
+        </div>
+      )}
+
       {allQuestions.map((question, questionIndex) => {
-        const studentAnswers = getStudentAnswersForQuestion(question.question_id);
+        const allStudentAnswers = getStudentAnswersForQuestion(question.question_id);
         const isMC = question.question_type === 'mc';
+        const studentAnswers = isMC ? filterMCAnswers(allStudentAnswers, question) : allStudentAnswers;
         const imageSrc = getImageSrc(question.question_content);
         const questionText = getQuestionText(question.question_content);
         const hasChanges = hasQuestionChange ? hasQuestionChange(question.question_id) : false;
