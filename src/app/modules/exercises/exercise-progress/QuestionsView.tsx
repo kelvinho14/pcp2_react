@@ -202,18 +202,61 @@ const QuestionsView: FC<QuestionsViewProps> = ({
                   {question.question_type === 'mc' && question.correct_option ? (
                     <>
                       <span className='badge badge-light-primary me-2'>Option {question.correct_option}</span>
-                      <div 
-                        dangerouslySetInnerHTML={{ 
-                          __html: renderHtmlSafely(question.correct_answer || '', { maxImageWidth: 300, maxImageHeight: 200 }) 
-                        }}
-                      />
+                      {/* If correct_answer contains an image, make it clickable */}
+                      {getImageSrc(String(question.correct_answer)) ? (
+                        <img
+                          src={getImageSrc(String(question.correct_answer))!}
+                          alt='Correct Answer'
+                          style={{
+                            maxWidth: 300,
+                            maxHeight: 200,
+                            width: 'auto',
+                            height: 'auto',
+                            borderRadius: 8,
+                            boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+                            border: '1px solid #e1e3ea',
+                            background: '#fff',
+                            display: 'block',
+                            cursor: 'pointer',
+                            marginTop: 8
+                          }}
+                          onClick={() => setSelectedImage(getImageSrc(String(question.correct_answer))!)}
+                        />
+                      ) : (
+                        <div 
+                          dangerouslySetInnerHTML={{ 
+                            __html: makeImagesClickable(renderHtmlSafely(question.correct_answer || '', { maxImageWidth: 300, maxImageHeight: 200 }))
+                          }}
+                        />
+                      )}
                     </>
                   ) : (
-                    <div 
-                      dangerouslySetInnerHTML={{ 
-                        __html: renderHtmlSafely(question.correct_answer || '', { maxImageWidth: 300, maxImageHeight: 200 }) 
-                      }}
-                    />
+                    getImageSrc(String(question.correct_answer || '')) ? (
+                      <img
+                        src={getImageSrc(String(question.correct_answer || ''))!}
+                        alt='Correct Answer'
+                        style={{
+                          maxWidth: 300,
+                          maxHeight: 200,
+                          width: 'auto',
+                          height: 'auto',
+                          borderRadius: 8,
+                          boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+                          border: '1px solid #e1e3ea',
+                          background: '#fff',
+                          display: 'block',
+                          cursor: 'pointer',
+                          marginTop: 8
+                        }}
+                        onClick={() => setSelectedImage(getImageSrc(String(question.correct_answer || ''))!)}
+                      />
+                    ) : (
+                      <div 
+                        dangerouslySetInnerHTML={{ 
+                          __html: makeImagesClickable(renderHtmlSafely(question.correct_answer || '', { maxImageWidth: 300, maxImageHeight: 200 }))
+                        }}
+                      />
+                    )
                   )}
                 </div>
               </div>
@@ -277,7 +320,7 @@ const QuestionsView: FC<QuestionsViewProps> = ({
                                     }}
                                   >
                                     <i className='fas fa-star me-1'></i>
-                                    Grade Answer
+                                    Ready to Grade
                                   </button>
                                 ) : (
                                   // In progress - show the answer

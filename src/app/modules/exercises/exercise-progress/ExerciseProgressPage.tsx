@@ -113,7 +113,7 @@ const ExerciseProgressPage: FC = () => {
       <div className='welcome-section mb-6'>
         <div className='welcome-content'>
           <div className='welcome-text'>
-            <h2 className='welcome-title'>{exercise?.title}</h2>
+            <h2 className='welcome-title'>{exercise?.title || 'Exercise Progress Overview'}</h2>
             <p className='welcome-subtitle'>This page shows real-time progress for this exercise. Data refreshes automatically.</p>
           </div>
         </div>

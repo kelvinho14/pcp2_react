@@ -495,8 +495,11 @@ const ExerciseAssignedListPage: FC = () => {
   if (isInitialLoad && loading) {
     return (
       <>
-        <PageTitle breadcrumbs={[]}>
-          {intl.formatMessage({id: 'MENU.EXERCISES.ASSIGNED_LIST'})}
+        <PageTitle breadcrumbs={[
+          { title: 'Home', path: '/dashboard', isSeparator: false, isActive: false },
+          { title: 'Assigned Exercises', path: '', isSeparator: false, isActive: true }
+        ]}>
+          Assigned Exercises
         </PageTitle>
         <div className='card'>
           <div className='card-body text-center py-10'>
@@ -513,8 +516,11 @@ const ExerciseAssignedListPage: FC = () => {
   if (error) {
     return (
       <>
-        <PageTitle breadcrumbs={[]}>
-          {intl.formatMessage({id: 'MENU.EXERCISES.ASSIGNED_LIST'})}
+        <PageTitle breadcrumbs={[
+          { title: 'Home', path: '/dashboard', isSeparator: false, isActive: false },
+          { title: 'Assigned Exercises', path: '', isSeparator: false, isActive: true }
+        ]}>
+          Assigned Exercises
         </PageTitle>
         <div className='card'>
           <div className='card-body text-center py-10'>
@@ -536,8 +542,11 @@ const ExerciseAssignedListPage: FC = () => {
 
   return (
     <>
-      <PageTitle breadcrumbs={[]}>
-        {intl.formatMessage({id: 'MENU.EXERCISES.ASSIGNED_LIST'})}
+      <PageTitle breadcrumbs={[
+        { title: 'Home', path: '/dashboard', isSeparator: false, isActive: false },
+        { title: 'Assigned Exercises', path: '', isSeparator: false, isActive: true }
+      ]}>
+        Assigned Exercises
       </PageTitle>
       
       {/* Welcome Section */}

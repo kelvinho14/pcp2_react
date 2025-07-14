@@ -1,5 +1,6 @@
 import React, { FC, useState } from 'react';
 import { Question, StudentProgress } from './types';
+import { getProgressPercentage, getCompletedQuestionsCount, getTotalQuestionsCount, getStudentScoreString } from './utils';
 
 interface GridViewProps {
   allQuestions: Question[];
@@ -25,6 +26,30 @@ const GridView: FC<GridViewProps> = ({
   const hasStudentStarted = (student: StudentProgress): boolean => {
     return student.question_progress.some(q => q.status && q.status !== ASSIGNMENT_STATUS.ASSIGNED);
   };
+
+  // Helper to count completed questions
+  const getCompletedQuestionsCount = (questionProgress: any[]) =>
+    questionProgress.filter(q => q.status && q.status !== ASSIGNMENT_STATUS.ASSIGNED).length;
+
+  // Helper to get score and color
+  const getStudentScoreInfo = (questionProgress: any[]) => {
+    let totalScore = 0;
+    let totalMax = 0;
+    questionProgress.forEach(q => {
+      if (q.tag_total) {
+        totalScore += q.tag_total.score || 0;
+        totalMax += q.tag_total.maxScore || 0;
+      }
+    });
+    let color = 'text-muted';
+    if (totalMax > 0 && totalScore === totalMax) color = 'text-success';
+    else if (totalScore > 0) color = 'text-warning';
+    return { scoreString: `${totalScore}/${totalMax}`, color };
+  };
+
+  // Helper to count correct answers
+  const getCorrectAnswersCount = (questionProgress: any[]) =>
+    questionProgress.filter(q => q.is_correct).length;
 
   // Helper to filter students based on MC answers
   const filterStudents = (students: StudentProgress[]) => {
@@ -88,22 +113,40 @@ const GridView: FC<GridViewProps> = ({
             >
             <div className='card'>
               <div className='card-header py-2'>
-                <div className='d-flex justify-content-between align-items-center'>
-                  <div className='d-flex align-items-center'>
-                    <div className='symbol symbol-40px me-3'>
+                <div className='d-flex align-items-center gap-4' style={{width: '100%'}}>
+                  {/* Avatar + Name */}
+                  <div className='d-flex align-items-center gap-2' style={{minWidth: 120}}>
+                    <div className='symbol symbol-40px'>
                       <div className='symbol-label bg-light-primary'>
                         <span className='fs-7 fw-bold text-primary'>
                           {student.student_name?.charAt(0)?.toUpperCase() || '?'}
                         </span>
                       </div>
                     </div>
-                    <div>
-                      <div className='fw-bold fs-6'>{student.student_name}</div>
+                    <span className='fw-bold fs-6'>{student.student_name}</span>
+                  </div>
+                  {/* Progress Center */}
+                  <div className='d-flex flex-column flex-grow-1 align-items-start'>
+                    <div className='d-flex align-items-center w-100'>
+                      <div className='progress h-6px w-100 me-2' style={{maxWidth: 160}}>
+                        <div
+                          className='progress-bar bg-success'
+                          style={{width: `${getProgressPercentage(student)}%`}}
+                        ></div>
+                      </div>
+                      <span className='fw-bold fs-7 ms-2'>{Math.round(getProgressPercentage(student))}%</span>
+                    </div>
+                    <div className='text-muted fs-7'>
+                      {getCompletedQuestionsCount(student.question_progress)} of {getTotalQuestionsCount(student.question_progress)} questions
                     </div>
                   </div>
-                  <div className='text-end'>
-                    <div className='fw-bold fs-6 text-success p-2'>{student.score || 0}%</div>
-                  </div>
+                  {/* Score Right */}
+                  <span className={`fw-bold fs-5 ms-4 text-end ${(() => {
+                    const [score, max] = getStudentScoreString(student.question_progress).split('/').map(Number);
+                    if (max > 0 && score === max) return 'text-success';
+                    if (score > 0) return 'text-warning';
+                    return 'text-muted';
+                  })()}`}>{getStudentScoreString(student.question_progress)}</span>
                 </div>
               </div>
               <div className='card-body py-2'>
