@@ -47,7 +47,7 @@ const DefaultTitle: FC = () => {
                     )}
                   </Fragment>
                 ))}
-              <li className='breadcrumb-item text-gray-900'>{pageTitle}</li>
+              {/* Removed extra pageTitle breadcrumb item to prevent trailing slash */}
             </ul>
           </>
         )}

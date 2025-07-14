@@ -6,6 +6,7 @@ import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
 import {KTCard} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
 import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
+import ImageModal from '../../../../components/Modal/ImageModal'
 import {renderHtmlSafely, hasImages} from '../../../../_metronic/helpers/htmlRenderer'
 import {startExerciseAttempt, submitExercise} from '../../../../store/exercises/studentExercisesSlice'
 import {AppDispatch} from '../../../../store'
@@ -89,8 +90,7 @@ const ExerciseAttemptPage: FC = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [assignmentId, setAssignmentId] = useState<string | null>(null)
   const [attemptData, setAttemptData] = useState<AttemptResponse | null>(null)
-  const [showImageModal, setShowImageModal] = useState(false)
-  const [selectedImage, setSelectedImage] = useState<string>('')
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [showTeacherMessage, setShowTeacherMessage] = useState(false)
   const questionContentRef = useRef<HTMLDivElement>(null)
 
@@ -199,7 +199,6 @@ const ExerciseAttemptPage: FC = () => {
 
   const handleImageClick = (imageSrc: string) => {
     setSelectedImage(imageSrc)
-    setShowImageModal(true)
   }
 
   const handleStartExerciseAttempt = async () => {
@@ -225,19 +224,7 @@ const ExerciseAttemptPage: FC = () => {
     }
   }, [currentQuestion?.question_content])
 
-  // Handle ESC key to close image modal
-  useEffect(() => {
-    const handleEscKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && showImageModal) {
-        setShowImageModal(false)
-      }
-    }
 
-    if (showImageModal) {
-      document.addEventListener('keydown', handleEscKey)
-      return () => document.removeEventListener('keydown', handleEscKey)
-    }
-  }, [showImageModal])
 
   const renderQuestionContent = (content: string) => {
     return <div 
@@ -673,54 +660,12 @@ const ExerciseAttemptPage: FC = () => {
       </div>
 
       {/* Image Modal */}
-      {showImageModal && (
-        <div 
-          className='modal fade show d-block' 
-          style={{
-            backgroundColor: 'rgba(0,0,0,0.9)', 
-            zIndex: 9999,
-            backdropFilter: 'blur(5px)'
-          }}
-          onClick={() => setShowImageModal(false)}
-        >
-          <div className='modal-dialog modal-dialog-centered modal-xl' onClick={(e) => e.stopPropagation()}>
-            <div className='modal-content bg-dark border-0 shadow-lg' style={{borderRadius: '12px'}}>
-              <div className='modal-header border-0 bg-dark d-flex justify-content-between align-items-center p-3'>
-                <div className='d-flex align-items-center'>
-                  <i className='fas fa-image text-white me-2'></i>
-                  <span className='text-white fw-semibold'>Image Preview</span>
-                </div>
-                <button
-                  type='button'
-                  className='btn-close btn-close-white'
-                  onClick={() => setShowImageModal(false)}
-                  aria-label='Close'
-                  style={{fontSize: '1.2rem'}}
-                ></button>
-              </div>
-              <div className='modal-body text-center p-4'>
-                <img 
-                  src={selectedImage} 
-                  alt='Enlarged image'
-                  className='img-fluid shadow-lg'
-                  style={{
-                    maxHeight: '75vh', 
-                    maxWidth: '100%', 
-                    objectFit: 'contain',
-                    borderRadius: '8px'
-                  }}
-                />
-              </div>
-              <div className='modal-footer border-0 bg-dark d-flex justify-content-center p-3'>
-                <div className='text-white small'>
-                  <i className='fas fa-info-circle me-1'></i>
-                  Click outside or press ESC to close
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ImageModal
+        isOpen={!!selectedImage}
+        imageSrc={selectedImage}
+        onClose={() => setSelectedImage(null)}
+        title="Question Image"
+      />
 
     </>
   )
