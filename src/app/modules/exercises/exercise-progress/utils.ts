@@ -84,3 +84,15 @@ export const calculateOverallStatus = (questionProgress: any[]): number => {
     return 1 // IN_PROGRESS (some questions completed)
   }
 } 
+
+export const getStudentScoreString = (questionProgress: any[]): string => {
+  let totalScore = 0;
+  let totalMax = 0;
+  questionProgress.forEach(q => {
+    if (q.tag_total) {
+      totalScore += q.tag_total.score || 0;
+      totalMax += q.tag_total.maxScore || 0;
+    }
+  });
+  return `${totalScore}/${totalMax}`;
+}; 
