@@ -32,8 +32,8 @@ export const createGroup = createAsyncThunk(
   'groups/createGroup',
   async (groupData: CreateGroupData) => {
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/user-groups/`)
-      const response = await axios.post(`${API_URL}/user-groups/`, groupData, {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/user-groups`)
+      const response = await axios.post(`${API_URL}/user-groups`, groupData, {
         headers,
         withCredentials: true
       })
@@ -66,8 +66,8 @@ export const deleteGroup = createAsyncThunk(
   'groups/deleteGroup',
   async (groupId: string) => {
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/user-groups/${groupId}/`)
-      await axios.delete(`${API_URL}/user-groups/${groupId}/`, {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/user-groups/${groupId}`)
+      await axios.delete(`${API_URL}/user-groups/${groupId}`, {
         headers,
         withCredentials: true
       })
@@ -83,8 +83,8 @@ export const deleteSelectedGroups = createAsyncThunk(
   'groups/deleteSelectedGroups',
   async (groupIds: Array<string>) => {
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/user-groups/`)
-      await axios.delete(`${API_URL}/user-groups/`, {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/user-groups`)
+      await axios.delete(`${API_URL}/user-groups`, {
         data: { group_ids: groupIds },
         headers,
         withCredentials: true
@@ -114,8 +114,8 @@ export const fetchGroups = createAsyncThunk(
       if (params?.order) queryParams.append('order', params.order)
       if (params?.search) queryParams.append('search', params.search)
 
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/user-groups/`)
-      const response = await axios.get(`${API_URL}/user-groups/?${queryParams}`, {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/user-groups`)
+      const response = await axios.get(`${API_URL}/user-groups?${queryParams}`, {
         headers,
         withCredentials: true
       })
