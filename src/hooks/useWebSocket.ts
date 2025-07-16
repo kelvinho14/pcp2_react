@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useMemo } from 'react'
 import webSocketService from '../app/services/WebSocketService'
 import { useAuth } from '../app/modules/auth/core/Auth'
 
@@ -27,12 +27,11 @@ export const useWebSocket = ({
 }: UseWebSocketProps = {}): UseWebSocketReturn => {
   const { currentUser } = useAuth()
   const isConnectedRef = useRef(false)
-  const subscriptionsRef = useRef<WebSocketSubscription[]>(subscriptions)
-
-  // Update subscriptions when they change
-  useEffect(() => {
-    subscriptionsRef.current = subscriptions
-  }, [subscriptions])
+  
+  // Memoize subscriptions to prevent recreation on every render
+  const memoizedSubscriptions = useMemo(() => subscriptions, [
+    ...subscriptions.map(sub => `${sub.type}:${sub.name}`)
+  ])
 
   // Handle WebSocket connection
   const connect = useCallback(() => {
@@ -60,8 +59,8 @@ export const useWebSocket = ({
 
   // Subscribe to channels and message types
   useEffect(() => {
-    if (currentUser && subscriptions.length > 0) {
-      subscriptions.forEach(subscription => {
+    if (currentUser && memoizedSubscriptions.length > 0) {
+      memoizedSubscriptions.forEach(subscription => {
         if (subscription.type === 'channel') {
           webSocketService.subscribeToChannel(subscription.name, subscription.handler)
         } else if (subscription.type === 'message') {
@@ -72,7 +71,7 @@ export const useWebSocket = ({
 
     return () => {
       // Cleanup subscriptions
-      subscriptions.forEach(subscription => {
+      memoizedSubscriptions.forEach(subscription => {
         if (subscription.type === 'channel') {
           webSocketService.unsubscribeFromChannel(subscription.name, subscription.handler)
         } else if (subscription.type === 'message') {
@@ -80,7 +79,7 @@ export const useWebSocket = ({
         }
       })
     }
-  }, [currentUser, subscriptions])
+  }, [currentUser, memoizedSubscriptions])
 
   return {
     isConnected: isConnectedRef.current,

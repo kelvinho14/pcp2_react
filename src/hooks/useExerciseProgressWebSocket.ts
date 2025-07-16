@@ -32,31 +32,19 @@ export const useExerciseProgressWebSocket = ({
 }: UseExerciseProgressWebSocketProps): UseExerciseProgressWebSocketReturn => {
   // Handle exercise progress updates from Redis channel with debouncing
   const handleProgressUpdate = useDebouncedCallback((data: any) => {
-    onProgressUpdate?.(data)
+    if (onProgressUpdate) {
+      onProgressUpdate(data)
+    } else if (onRefreshRequested) {
+      onRefreshRequested()
+    }
   }, 2000) // 2 second debounce
 
-  // Handle 'exercise_progress_update' message type from backend
-  const handleProgressUpdateMessage = useCallback((data: any) => {
-    if (data.exercise_id === exerciseId) {
-      if (onProgressUpdate) {
-        onProgressUpdate(data)
-      } else if (onRefreshRequested) {
-        onRefreshRequested()
-      }
-    }
-  }, [exerciseId, onProgressUpdate, onRefreshRequested])
-
-  // Define subscriptions
+  // Define subscriptions - only Redis channels, no message types
   const subscriptions = [
     {
       type: 'channel' as const,
       name: `exercise_progress_${exerciseId}`,
       handler: handleProgressUpdate
-    },
-    {
-      type: 'message' as const,
-      name: 'exercise_progress_update',
-      handler: handleProgressUpdateMessage
     }
   ]
 
