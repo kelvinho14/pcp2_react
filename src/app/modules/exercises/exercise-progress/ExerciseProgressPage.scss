@@ -449,4 +449,39 @@
       }
     }
   }
+}
+
+/* WebSocket Status Indicator */
+.ws-status-indicator {
+  background: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e1e3ea;
+  
+  &.connected {
+    color: #28a745;
+    border-color: #28a745;
+  }
+  
+  &.disconnected {
+    color: #dc3545;
+    border-color: #dc3545;
+  }
+}
+
+/* Animation for real-time updates */
+@keyframes highlightUpdate {
+  0% {
+    background-color: rgba(25, 135, 84, 0.1);
+  }
+  50% {
+    background-color: rgba(25, 135, 84, 0.3);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.real-time-update {
+  animation: highlightUpdate 1.2s ease-in-out;
 } 

@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '../../../../../store'
 import { fetchExerciseProgress } from '../../../../../store/exercises/exercisesSlice'
 import { ViewMode, SortOrder, StudentProgress } from '../types'
 import { filterStudentsBySearch, calculateExerciseSummary, getPaginationInfo } from '../utils'
+import { useExerciseProgressWebSocket } from '../../../../../hooks/useExerciseProgressWebSocket'
 
 interface UseExerciseProgressProps {
   exerciseId: string
@@ -35,6 +36,9 @@ interface UseExerciseProgressReturn {
   
   // View mode
   viewMode: ViewMode
+  
+  // WebSocket state
+  isWebSocketConnected: boolean
   
   // Actions
   setCurrentPage: (page: number) => void
@@ -82,9 +86,10 @@ export const useExerciseProgress = ({ exerciseId }: UseExerciseProgressProps): U
   const paginationInfo = getPaginationInfo(currentPage, itemsPerPage, exerciseProgressTotal)
   
   // Actions
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     if (!exerciseId) return
     
+    console.log('🔄 Refreshing exercise progress data')
     dispatch(fetchExerciseProgress({
       exerciseId,
       params: {
@@ -95,7 +100,19 @@ export const useExerciseProgress = ({ exerciseId }: UseExerciseProgressProps): U
         search: searchTerm || undefined
       }
     }))
-  }
+  }, [dispatch, exerciseId, currentPage, itemsPerPage, sortBy, sortOrder, searchTerm])
+  
+  // WebSocket integration
+  const handleProgressUpdate = useCallback((update: any) => {
+    console.log('📊 Processing WebSocket progress update:', update)
+    refreshData()
+  }, [refreshData])
+  
+  const { isConnected: isWebSocketConnected } = useExerciseProgressWebSocket({
+    exerciseId,
+    onProgressUpdate: handleProgressUpdate,
+    onRefreshRequested: refreshData
+  })
   
   const handleSearch = (value: string) => {
     setSearchTerm(value)
@@ -151,6 +168,9 @@ export const useExerciseProgress = ({ exerciseId }: UseExerciseProgressProps): U
     
     // View mode
     viewMode,
+    
+    // WebSocket state
+    isWebSocketConnected,
     
     // Actions
     setCurrentPage,
