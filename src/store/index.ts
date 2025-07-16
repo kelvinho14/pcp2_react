@@ -8,6 +8,7 @@ import exercisesReducer from './exercises/exercisesSlice'
 import aiReducer from './ai/aiSlice'
 import assignedExercisesReducer from './exercises/assignedExercisesSlice'
 import studentExercisesReducer from './exercises/studentExercisesSlice'
+import groupsReducer from './groups/groupsSlice'
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     ai: aiReducer,
     assignedExercises: assignedExercisesReducer,
     studentExercises: studentExercisesReducer,
+    groups: groupsReducer,
   },
 })
 

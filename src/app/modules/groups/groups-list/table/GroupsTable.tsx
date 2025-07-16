@@ -1,58 +1,57 @@
 import { useMemo, useEffect, useState, useCallback, useRef } from 'react'
 import { useTable, useSortBy, ColumnInstance, Row, UseSortByState, TableState, TableOptions, UseSortByColumnProps } from 'react-table'
 import { useSelector, useDispatch } from 'react-redux'
-import { fetchUsers } from '../../../../../store/user/userSlice'
+import { fetchGroups } from '../../../../../store/groups/groupsSlice'
 import { RootState, AppDispatch } from '../../../../../store'
-import { useUsersColumns } from './columns/_columns'
-import { User } from '../core/_models'
+import { useGroupsColumns } from './columns/_columns'
+import { Group } from '../core/_models'
 import { CustomHeaderColumn } from './columns/CustomHeaderColumn'
 import { CustomRow } from './columns/CustomRow'
-import { UsersListLoading } from '../components/loading/UsersListLoading'
+import { GroupsListLoading } from '../components/loading/GroupsListLoading'
 import { TablePagination } from '../../../../../_metronic/helpers/TablePagination'
 import { KTCardBody } from '../../../../../_metronic/helpers'
 
 type Props = {
-  search: string   // <-- accept search from parent
-  roleFilter?: string
-  schoolFilter?: string
-  subjectFilter?: string
+  search: string
 }
 
-const UsersTable = ({ search, roleFilter, schoolFilter, subjectFilter }: Props) => {
+const GroupsTable = ({ search }: Props) => {
   const dispatch = useDispatch<AppDispatch>()
   const dispatchRef = useRef(dispatch)
   dispatchRef.current = dispatch
   
-  const users = useSelector((state: RootState) => state.users.users)
-  const isLoading = useSelector((state: RootState) => state.users.loading)
-  const total = useSelector((state: RootState) => state.users.total)
+  const groups = useSelector((state: RootState) => state.groups.groups)
+  const isLoading = useSelector((state: RootState) => state.groups.loading)
+  const total = useSelector((state: RootState) => state.groups.total)
 
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState<{ id: string; desc: boolean } | null>(null)
   const itemsPerPage = 10
 
   // Memoize the fetch function to prevent unnecessary re-renders
-  const fetchUsersData = useCallback(() => {
+  const fetchGroupsData = useCallback(() => {
+    console.log('🔍 GroupsTable - Fetching groups...')
     dispatchRef.current(
-      fetchUsers({
+      fetchGroups({
         page,
         items_per_page: itemsPerPage,
         sort: sort?.id,
         order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
         search: search || undefined,
-        role_type: roleFilter || undefined,
-        school: schoolFilter || undefined,
-        subject: subjectFilter || undefined,
       })
     )
-  }, [page, sort, search, itemsPerPage, roleFilter, schoolFilter, subjectFilter])
+  }, [page, sort, search, itemsPerPage])
 
   useEffect(() => {
-    fetchUsersData()
-  }, [fetchUsersData])
+    fetchGroupsData()
+  }, [fetchGroupsData])
 
-  const data = useMemo(() => (Array.isArray(users) ? users : []), [users])
-  const columns = useUsersColumns()
+  const data = useMemo(() => (Array.isArray(groups) ? groups : []), [groups])
+  const columns = useGroupsColumns()
+
+  // Debug logging
+  console.log('🔍 GroupsTable - groups from Redux:', groups)
+  console.log('🔍 GroupsTable - isLoading:', isLoading)
 
   const { getTableProps, getTableBodyProps, headers, rows, prepareRow } = useTable(
     {
@@ -64,11 +63,11 @@ const UsersTable = ({ search, roleFilter, schoolFilter, subjectFilter }: Props) 
       initialState: {
         sortBy: [],
       },
-    } as TableOptions<User>,
+    } as TableOptions<Group>,
     useSortBy
   )
 
-  const handleSortChange = useCallback((column: ColumnInstance<User>) => {
+  const handleSortChange = useCallback((column: ColumnInstance<Group>) => {
     setSort((currentSort) => {
       if (!currentSort || currentSort.id !== column.id) {
         return { id: column.id, desc: false }
@@ -88,16 +87,16 @@ const UsersTable = ({ search, roleFilter, schoolFilter, subjectFilter }: Props) 
     <KTCardBody className='py-4'>
       <div className='table-responsive'>
         <table
-          id='kt_table_users'
+          id='kt_table_groups'
           className='table align-middle table-row-dashed fs-6 gy-5 dataTable no-footer'
           {...getTableProps()}
         >
           <thead>
             <tr className='text-start text-muted fw-bolder fs-7 text-uppercase gs-0'>
-              {headers.map((column: ColumnInstance<User>) => (
+              {headers.map((column: ColumnInstance<Group>) => (
                 <CustomHeaderColumn
                   key={column.id}
-                  column={column as ColumnInstance<User> & UseSortByColumnProps<User>}
+                  column={column as ColumnInstance<Group> & UseSortByColumnProps<Group>}
                   onSort={() => handleSortChange(column)}
                   currentSort={sort}
                 />
@@ -106,13 +105,13 @@ const UsersTable = ({ search, roleFilter, schoolFilter, subjectFilter }: Props) 
           </thead>
           <tbody className='text-gray-600 fw-bold' {...getTableBodyProps()}>
             {rows.length > 0 ? (
-              rows.map((row: Row<User>, i) => {
+              rows.map((row: Row<Group>, i) => {
                 prepareRow(row)
                 return <CustomRow row={row} key={`row-${i}-${row.id}`} />
               })
             ) : (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={6}>
                   <div className='d-flex text-center w-100 align-content-center justify-content-center'>
                     No matching records found
                   </div>
@@ -133,9 +132,9 @@ const UsersTable = ({ search, roleFilter, schoolFilter, subjectFilter }: Props) 
         className='mt-5'
       />
       
-      {isLoading && <UsersListLoading />}
+      {isLoading && <GroupsListLoading />}
     </KTCardBody>
   )
 }
 
-export { UsersTable }
+export { GroupsTable } 

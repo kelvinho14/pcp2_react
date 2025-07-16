@@ -44,7 +44,7 @@ const AdminUserManagementTab = () => {
             <div className='menu-item'>
               <div className='menu-content pt-2 pb-2'>
                 <span className='menu-section text-muted text-uppercase fs-8 ls-1'>
-                  <i className='fa-solid fa-user fs-3 me-2'></i>User Management
+                  <i className='fa-solid fa-user fs-3 me-2'></i>Users
                 </span>
               </div>
             </div>
