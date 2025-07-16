@@ -14,8 +14,7 @@
 }
 
 // Progress Overview Cards
-.progress-overview {
-  margin-bottom: 2rem;
+.assigned-exercises-progress-overview {
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -118,7 +117,7 @@
   }
 }
 
-.status-cards-grid {
+.assigned-exercises-status-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 1.5rem;
@@ -334,14 +333,14 @@
 }
 
 // Welcome Section
-.welcome-section {
+.assigned-exercises-welcome-section {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1rem;
   margin-bottom: 2rem;
   color: white;
   
-  .welcome-content {
+  .assigned-exercises-welcome-content {
     display: flex;
     justify-content: space-between;
     align-items: center;

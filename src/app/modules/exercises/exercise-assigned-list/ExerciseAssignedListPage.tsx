@@ -549,8 +549,8 @@ const ExerciseAssignedListPage: FC = () => {
       </PageTitle>
       
       {/* Welcome Section */}
-      <div className='welcome-section'>
-        <div className='welcome-content'>
+      <div className='assigned-exercises-welcome-section'>
+        <div className='assigned-exercises-welcome-content'>
           <div className='welcome-text'>
             <h2 className='welcome-title'>Welcome to Your Assigned Exercises Hub! 📚</h2>
             <p className='welcome-subtitle'>Track student progress, manage assignments, and monitor completion rates</p>
@@ -585,8 +585,8 @@ const ExerciseAssignedListPage: FC = () => {
       {showFilters && <IsolatedFilters />}
 
       {/* Stats Cards */}
-      <div className='progress-overview'>
-        <div className='status-cards-grid'>
+      <div className='assigned-exercises-progress-overview'>
+        <div className='assigned-exercises-status-cards-grid'>
           <div>
             <div 
               className={`progress-card total ${!filters.status ? 'active' : ''}`}

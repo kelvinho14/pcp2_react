@@ -52,7 +52,7 @@ const AsideDefault = () => {
           {/* begin::Secondary */}
           <div className='aside-secondary d-flex flex-row-fluid'>
             {/* begin::Workspace */}
-            <div className='aside-workspace my-5 p-5' id='kt_aside_wordspace'>
+            <div className='aside-workspace my-5 p-1' id='kt_aside_wordspace'>
               <TabsBase link={link} />
             </div>
             {/* end::Workspace */}
