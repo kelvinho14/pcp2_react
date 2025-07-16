@@ -8,7 +8,7 @@ import {
 } from '../../../../assets/ts/components'
 import { AsideMenuItem } from '../AsideMenuItem'
 import { useAuth } from '../../../../../app/modules/auth/core/Auth'
-import { ROLES } from '../../../../../app/constants/roles'
+import { isTeachingStaff } from '../../../../../app/constants/roles'
 
 
 const TeacherUserManagementTab = () => {
@@ -40,20 +40,38 @@ const TeacherUserManagementTab = () => {
             />
         
           {/* User management section for teachers */}
-          {(currentUser?.role?.role_type === 2 || currentUser?.role?.role_type === 3 || currentUser?.role?.role_type === 4 || currentUser?.role?.role_type === 5) && (
+          {isTeachingStaff(currentUser?.role?.role_type) && (
             <div className='menu-item'>
               <div className='menu-content pt-2 pb-2'>
                 <span className='menu-section text-muted text-uppercase fs-8 ls-1'>
-                  <i className='fa-solid fa-user fs-3 me-2'></i>User Management
+                  <i className='fa-solid fa-user fs-3 me-2'></i>Users
                 </span>
               </div>
             </div>
           )}
           {/* User management submenu for teachers */}
-          {(currentUser?.role?.role_type === 2 || currentUser?.role?.role_type === 3 || currentUser?.role?.role_type === 4 || currentUser?.role?.role_type === 5) && (
+          {isTeachingStaff(currentUser?.role?.role_type) && (
             <>
               <AsideMenuItem to='/users/add' title='Add User' hasBullet={true} />
               <AsideMenuItem to='/users/list' title='View List' hasBullet={true} />
+            </>
+          )}
+
+          {/* Group management section for teachers */}
+          {isTeachingStaff(currentUser?.role?.role_type) && (
+            <div className='menu-item'>
+              <div className='menu-content pt-2 pb-2'>
+                <span className='menu-section text-muted text-uppercase fs-8 ls-1'>
+                  <i className='fa-solid fa-users fs-3 me-2'></i>Groups
+                </span>
+              </div>
+            </div>
+          )}
+          {/* Group management submenu for teachers */}
+          {isTeachingStaff(currentUser?.role?.role_type) && (
+            <>
+              <AsideMenuItem to='/groups/add' title='Add Group' hasBullet={true} />
+              <AsideMenuItem to='/groups/list' title='View List' hasBullet={true} />
             </>
           )}
         </div>

@@ -4,15 +4,15 @@ import { getHeadersWithSchoolSubject } from '../../_metronic/helpers/axios'
 const API_URL = import.meta.env.VITE_APP_API_URL;
 
 type FetchUsersParams = {
-  page: number
-  items_per_page: number
+  page?: number
+  items_per_page?: number
   sort?: string
   order?: string
   search?: string
-  role?: string
   role_type?: string
   school?: string
   subject?: string
+  all?: number
 }
 
 type School = {
@@ -30,20 +30,22 @@ type Subject = {
 
 export const fetchUsers = createAsyncThunk(
   'users/fetchUsers',
-  async ({ page, items_per_page, sort, order, search, role, role_type, school, subject }: FetchUsersParams) => {
-    const params: any = { page, items_per_page }
+  async ({ page, items_per_page, sort, order, search, role_type, school, subject, all }: FetchUsersParams) => {
+    const params: any = {}
+    if (page) params.page = page
+    if (items_per_page) params.items_per_page = items_per_page
     if (sort) params.sort = sort
     if (order) params.order = order
     if (search) params.search = search
-    if (role) params.role = role
     if (role_type) params.role_type = role_type
     if (school) params.school_id = school
     if (subject) params.subject_id = subject
+    if (all) params.all = all
 
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/users`)
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/users/`)
       
-      const response = await axios.get(API_URL+'/users', { 
+      const response = await axios.get(API_URL+'/users/', { 
         params, 
         headers,
         withCredentials: true 
@@ -51,8 +53,8 @@ export const fetchUsers = createAsyncThunk(
       
       return {
         items: response.data.data,
-        total: response.data.payload.pagination.total,
-        roles: response.data.payload.roles || [],
+        total: response.data.data?.length || 0,
+        roles: response.data.payload?.roles || [],
       }
     } catch (error) {
       throw error
@@ -112,8 +114,8 @@ export const deleteSelectedUsers = createAsyncThunk(
   'users/deleteSelectedUsers',
   async (userIds: Array<string | number>) => {
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/users`)
-      await axios.delete(`${API_URL}/users`, {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/users/`)
+      await axios.delete(`${API_URL}/users/`, {
         data: { user_ids: userIds },
         headers,
         withCredentials: true

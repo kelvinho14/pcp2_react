@@ -32,4 +32,13 @@ export const getRoleName = (roleType: RoleType): string => {
 // Helper function to check if role type is valid
 export const isValidRoleType = (roleType: number): roleType is RoleType => {
   return Object.values(ROLES).includes(roleType as RoleType)
+}
+
+// Helper function to check if user is teaching staff (Super Teacher, Teacher, Tutor, or Assistant)
+export const isTeachingStaff = (roleType?: number): boolean => {
+  if (!roleType) return false
+  return roleType === ROLES.SUPER_TEACHER || 
+         roleType === ROLES.TEACHER || 
+         roleType === ROLES.TUTOR || 
+         roleType === ROLES.ASSISTANT
 } 

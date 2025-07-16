@@ -90,7 +90,7 @@ export function AsideMenuMain() {
       <AsideMenuItem
         to='/admin/users/list'
         icon='shield-tick'
-        title='User management'
+        title='Users'
         fontIcon='bi-layers'
       />
     </>
