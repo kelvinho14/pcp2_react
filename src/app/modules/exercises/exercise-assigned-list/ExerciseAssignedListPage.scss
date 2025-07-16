@@ -1,8 +1,27 @@
 // Assigned Exercises List Page Custom Styles
 
+// Main container fixes
+.row.g-6 {
+  margin-left: -0.75rem;
+  margin-right: -0.75rem;
+  
+  > .col-lg-4,
+  > .col-md-6,
+  > .col-sm-12 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
 // Progress Overview Cards
 .progress-overview {
   margin-bottom: 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: white;
+  padding: 1rem 0;
+
   
   .progress-card {
     background: white;
@@ -107,10 +126,12 @@
 }
 
 // Exercise Cards Hover Effects
-.col-xl-6, .col-xxl-4 {
+.col-xl-6, .col-xxl-4, .col-lg-4, .col-md-6, .col-sm-12 {
   .card {
     transition: all 0.3s ease;
     border: 2px solid transparent;
+    overflow: hidden; // Prevent content overflow
+    height: 100%; // Ensure consistent height
     
     &:hover {
       transform: translateY(-6px);
@@ -136,6 +157,12 @@
     
     .card-header {
       transition: background 0.3s ease;
+      overflow: hidden; // Prevent header overflow
+    }
+    
+    .card-body {
+      overflow: hidden; // Prevent body overflow
+      word-wrap: break-word; // Break long words
     }
     
     .card-title h5 {
@@ -200,8 +227,12 @@
 
 // Additional fix for card containers
 .col-xl-6 .card,
-.col-xxl-4 .card {
+.col-xxl-4 .card,
+.col-lg-4 .card,
+.col-md-6 .card,
+.col-sm-12 .card {
   overflow: hidden; // Prevent content from overflowing
+  word-wrap: break-word; // Break long words
 }
 
 .card-header {
@@ -211,6 +242,95 @@
 .card-title {
   width: 100%;
   overflow: hidden;
+}
+
+// Fix for assignment content overflow
+.card-body .mb-4.border.rounded.p-3 {
+  overflow: hidden;
+  word-wrap: break-word;
+}
+
+// Fix for student names and emails
+.card-body .d-flex.flex-column.mb-2.p-2.bg-light.rounded {
+  overflow: hidden;
+  word-wrap: break-word;
+}
+
+.card-body .fs-7.fw-medium,
+.card-body .text-muted.ms-2.fs-7 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+// Fix for progress container
+.progress-container {
+  min-width: 0;
+  flex: 1;
+}
+
+// Fix for assignment groups
+.mb-3 .ms-4 {
+  overflow: hidden;
+  word-wrap: break-word;
+}
+
+// Additional card content fixes
+.card-body {
+  .row.g-3.mb-4 {
+    margin-left: 0;
+    margin-right: 0;
+    
+    .col-6 {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+  }
+  
+  .mb-4.border.rounded.p-3 {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  
+  .d-flex.flex-column.mb-2.p-2.bg-light.rounded {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+// Fix for student info overflow
+.d-flex.align-items-center {
+  .fs-7.fw-medium,
+  .text-muted.ms-2.fs-7 {
+    max-width: 120px; // Limit width to prevent overflow
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// Fix for badge overflow
+.badge {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Fix for progress container
+.progress-container.flex-grow-1.me-2 {
+  min-width: 0;
+  flex: 1;
+  max-width: calc(100% - 100px); // Leave space for question count
+}
+
+// Fix for question count text
+.fs-7.text-muted {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
 }
 
 // Welcome Section
@@ -520,6 +640,47 @@
         
         .item-actions {
           align-self: center;
+        }
+      }
+    }
+  }
+  
+  // Fix card overflow on mobile
+  .col-lg-4, .col-md-6, .col-sm-12 {
+    .card {
+      .card-body {
+        padding: 1rem;
+        
+        .mb-4.border.rounded.p-3 {
+          padding: 0.75rem !important;
+        }
+        
+        .d-flex.flex-column.mb-2.p-2.bg-light.rounded {
+          padding: 0.5rem !important;
+        }
+      }
+    }
+  }
+}
+
+// Additional responsive fixes for very small screens
+@media (max-width: 576px) {
+  .col-lg-4, .col-md-6, .col-sm-12 {
+    .card {
+      .card-body {
+        padding: 0.75rem;
+        
+        .mb-4.border.rounded.p-3 {
+          padding: 0.5rem !important;
+        }
+        
+        .d-flex.flex-column.mb-2.p-2.bg-light.rounded {
+          padding: 0.25rem !important;
+        }
+        
+        .fs-7.fw-medium,
+        .text-muted.ms-2.fs-7 {
+          font-size: 0.75rem !important;
         }
       }
     }

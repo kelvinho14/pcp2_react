@@ -456,8 +456,7 @@ const ExerciseAttemptPage: FC = () => {
             </div>
             <div className='question-progress'>
               {attemptData && attemptData.saved_answers_count > 0 && (
-                <span className='badge badge-light-success fs-6'>
-                  <i className='fas fa-check me-1'></i>
+                <span className='badge badge-light-info fs-6'>
                   {attemptData.saved_answers_count} answered
                 </span>
               )}
@@ -467,21 +466,16 @@ const ExerciseAttemptPage: FC = () => {
           {/* Teacher Message - Collapsible */}
           {assignment.message_for_student && (
             <div className='mt-4'>
-              <div className='alert alert-info py-3 px-4 mb-0'>
+              <div 
+                className='alert alert-primary py-3 px-4 mb-0 teacher-message-container'
+                onClick={() => setShowTeacherMessage(!showTeacherMessage)}
+                style={{cursor: 'pointer'}}
+              >
                 <div className='d-flex justify-content-between align-items-start'>
                   <div className='d-flex align-items-center'>
                     <i className='fas fa-comment me-2'></i>
                     <strong>Teacher's Message</strong>
                   </div>
-                  <button
-                    type='button'
-                    className='btn btn-link text-dark p-0'
-                    onClick={() => setShowTeacherMessage(!showTeacherMessage)}
-                    style={{textDecoration: 'none'}}
-                  >
-                    <i className={`fas fa-chevron-${showTeacherMessage ? 'up' : 'down'} me-1`}></i>
-                    {showTeacherMessage ? 'Hide' : 'Show'}
-                  </button>
                 </div>
                 {showTeacherMessage && (
                   <div className='mt-3 pt-3 border-top'>

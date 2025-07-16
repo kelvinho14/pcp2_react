@@ -289,7 +289,6 @@ const ExerciseAssignedListPage: FC = () => {
                                   <div className='d-flex align-items-center'>
                                     <i className='fas fa-user text-muted me-2'></i>
                                     <span className='fs-7 fw-medium'>{assignment.student.name}</span>
-                                    <span className='text-muted ms-2 fs-7'>({assignment.student.email})</span>
                                   </div>
                                   <div className='d-flex align-items-center'>
                                     <span className={`badge badge-light-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)} fs-7 me-2`}>
@@ -558,11 +557,11 @@ const ExerciseAssignedListPage: FC = () => {
           </div>
           <div className='welcome-actions'>
             <button 
-              className='btn btn-light-primary me-3'
+              className='btn btn-light-primary me-3 btn-sm'
               onClick={() => setShowFilters(!showFilters)}
             >
               <i className='fas fa-filter me-1'></i>
-              {showFilters ? 'Hide Filters' : 'Filter Assignments'}
+              {showFilters ? 'Hide Filters' : 'Filter'}
             </button>
             <div className='view-toggle'>
               <button 
