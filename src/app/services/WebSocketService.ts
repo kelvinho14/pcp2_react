@@ -6,6 +6,8 @@ class WebSocketService {
   private maxReconnectAttempts = 5
   private reconnectTimeout = 3000 // 3 seconds
   private messageHandlers: Map<string, ((data: any) => void)[]> = new Map()
+  private channelHandlers: Map<string, ((data: any) => void)[]> = new Map()
+  private subscribedChannels: Set<string> = new Set()
   private isConnecting = false
   private isLoggingOut = false // Flag to prevent reconnection after logout
 
@@ -35,6 +37,9 @@ class WebSocketService {
       console.log('WebSocket connected successfully')
       this.reconnectAttempts = 0
       this.isConnecting = false
+      
+      // Resubscribe to all channels after reconnection
+      this.resubscribeToChannels()
       
       // Send initial ping
       this.sendPing()
@@ -80,10 +85,43 @@ class WebSocketService {
   }
 
   private handleMessage(data: any) {
-    console.log('Handling message type:', data.type)
-    const handlers = this.messageHandlers.get(data.type) || []
-    console.log('Found handlers:', handlers.length)
-    handlers.forEach(handler => handler(data.data))
+    console.log('Handling message:', data)
+    
+    // Handle Redis channel messages
+    if (data.channel && data.message) {
+      console.log('Handling Redis channel message:', data.channel)
+      const handlers = this.channelHandlers.get(data.channel) || []
+      console.log('Found channel handlers:', handlers.length)
+      handlers.forEach(handler => {
+        try {
+          const messageData = JSON.parse(data.message)
+          handler(messageData)
+        } catch (error) {
+          console.error('Error parsing Redis message:', error)
+          // Fallback to raw message if JSON parsing fails
+          handler(data.message)
+        }
+      })
+      return
+    }
+    
+    // Handle regular message types (for backward compatibility)
+    if (data.type) {
+      console.log('Handling message type:', data.type)
+      const handlers = this.messageHandlers.get(data.type) || []
+      console.log('Found handlers:', handlers.length)
+      handlers.forEach(handler => handler(data.data))
+    }
+  }
+
+  private resubscribeToChannels() {
+    console.log('Resubscribing to channels:', Array.from(this.subscribedChannels))
+    this.subscribedChannels.forEach(channel => {
+      this.sendMessage({
+        type: 'subscribe',
+        channel: channel
+      })
+    })
   }
 
   public subscribe(type: string, handler: (data: any) => void) {
@@ -100,6 +138,47 @@ class WebSocketService {
     const index = handlers.indexOf(handler)
     if (index > -1) {
       handlers.splice(index, 1)
+    }
+  }
+
+  public subscribeToChannel(channel: string, handler: (data: any) => void) {
+    console.log('Subscribing to Redis channel:', channel)
+    if (!this.channelHandlers.has(channel)) {
+      this.channelHandlers.set(channel, [])
+    }
+    this.channelHandlers.get(channel)?.push(handler)
+    
+    // Track subscribed channels for reconnection
+    this.subscribedChannels.add(channel)
+    
+    // Send subscription message to server
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.sendMessage({
+        type: 'subscribe',
+        channel: channel
+      })
+    }
+  }
+
+  public unsubscribeFromChannel(channel: string, handler: (data: any) => void) {
+    console.log('Unsubscribing from Redis channel:', channel)
+    const handlers = this.channelHandlers.get(channel) || []
+    const index = handlers.indexOf(handler)
+    if (index > -1) {
+      handlers.splice(index, 1)
+    }
+    
+    // If no more handlers for this channel, remove from tracking
+    if (handlers.length === 0) {
+      this.subscribedChannels.delete(channel)
+      
+      // Send unsubscription message to server
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.sendMessage({
+          type: 'unsubscribe',
+          channel: channel
+        })
+      }
     }
   }
 
@@ -134,6 +213,11 @@ class WebSocketService {
     }
     this.isConnecting = false
     this.reconnectAttempts = 0
+    this.subscribedChannels.clear()
+  }
+
+  public isConnected(): boolean {
+    return this.ws?.readyState === WebSocket.OPEN
   }
 }
 

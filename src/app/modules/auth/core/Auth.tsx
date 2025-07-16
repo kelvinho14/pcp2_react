@@ -82,7 +82,8 @@ const AuthInit: FC<WithChildren> = ({children}) => {
             sessionStorage.setItem('school_subject_id', user.school_subject_ids[0])
           }
           setCurrentUser(user)
-          // webSocketService.connect(true)
+          // Connect WebSocket when user is authenticated
+          webSocketService.connect(true)
         } else {
           setCurrentUser(undefined)
           webSocketService.disconnect()
@@ -102,6 +103,9 @@ const AuthInit: FC<WithChildren> = ({children}) => {
   useEffect(() => {
     if (!currentUser) {
       webSocketService.disconnect()
+    } else {
+      // Connect WebSocket when user is set
+      webSocketService.connect(true)
     }
   }, [currentUser])
 

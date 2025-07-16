@@ -11,7 +11,7 @@ import './ExerciseProgressPage.scss'
 import QuestionsView from './QuestionsView'
 import StudentsView from './StudentsView'
 import GridView from './GridView'
-import { ExerciseSummary, ViewModeToggle, RefreshButton } from './components'
+import { ExerciseSummary, ViewModeToggle } from './components'
 
 const ExerciseProgressPage: FC = () => {
   const {exerciseId} = useParams<{exerciseId: string}>()
@@ -34,6 +34,7 @@ const ExerciseProgressPage: FC = () => {
     sortBy,
     sortOrder,
     viewMode,
+    isWebSocketConnected,
     setCurrentPage,
     setItemsPerPage,
     setSearchTerm,
@@ -114,7 +115,9 @@ const ExerciseProgressPage: FC = () => {
         <div className='welcome-content'>
           <div className='welcome-text'>
             <h2 className='welcome-title'>{exercise?.title || 'Exercise Progress Overview'}</h2>
-            <p className='welcome-subtitle'>This page shows real-time progress for this exercise. Data refreshes automatically.</p>
+            <p className='welcome-subtitle'>
+              This page shows real-time progress for this exercise. 
+            </p>
           </div>
         </div>
       </div>
@@ -156,10 +159,16 @@ const ExerciseProgressPage: FC = () => {
                 />
                 
                 <div className='d-flex align-items-center gap-3'>
-                  <RefreshButton 
-                    onRefresh={handleRefresh}
-                    isLoading={isLoading}
-                  />
+                  {/* WebSocket Status Indicator */}
+                  <div className='d-flex align-items-center'>
+                    <div className={`ws-status-indicator ${isWebSocketConnected ? 'connected' : 'disconnected'}`}>
+                      <i className={`fas ${isWebSocketConnected ? 'fa-wifi' : 'fa-exclamation-triangle'}`}></i>
+                      <span className='ms-1 d-none d-sm-inline'>
+                        {isWebSocketConnected ? 'Live' : 'Offline'}
+                      </span>
+                    </div>
+                  </div>
+                  
                 </div>
               </div>
             </div>
@@ -251,8 +260,6 @@ const ExerciseProgressPage: FC = () => {
               </div>
             </div>
           )}
-
-
         </KTCardBody>
       </KTCard>
     </div>
