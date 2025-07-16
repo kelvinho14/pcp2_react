@@ -7,7 +7,7 @@ type Props = {
 
 const GroupSelectionCell: FC<Props> = ({id}) => {
   const {selected, onSelect, disabled} = useListView()
-  const isSelected = useMemo(() => selected.includes(id), [id, selected])
+  const isSelected = useMemo(() => selected.includes(id as any), [id, selected])
   
   return (
     <div className='form-check form-check-custom form-check-solid'>
@@ -17,7 +17,7 @@ const GroupSelectionCell: FC<Props> = ({id}) => {
         data-kt-check={isSelected}
         data-kt-check-target='#kt_table_groups .form-check-input'
         checked={isSelected}
-        onChange={() => onSelect(id)}
+        onChange={() => onSelect(id as any)}
         disabled={disabled || id === undefined || id === null}
       />
     </div>
