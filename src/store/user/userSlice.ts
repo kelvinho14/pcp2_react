@@ -43,9 +43,9 @@ export const fetchUsers = createAsyncThunk(
     if (all) params.all = all
 
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/users/`)
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/users`)
       
-      const response = await axios.get(API_URL+'/users/', { 
+      const response = await axios.get(API_URL+'/users', { 
         params, 
         headers,
         withCredentials: true 
@@ -114,8 +114,8 @@ export const deleteSelectedUsers = createAsyncThunk(
   'users/deleteSelectedUsers',
   async (userIds: Array<string | number>) => {
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/users/`)
-      await axios.delete(`${API_URL}/users/`, {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/users`)
+      await axios.delete(`${API_URL}/users`, {
         data: { user_ids: userIds },
         headers,
         withCredentials: true
@@ -161,8 +161,8 @@ export const fetchSubjects = createAsyncThunk(
   'users/fetchSubjects',
   async (schoolId: string) => {
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/subjects/school-subjects/`)
-      const response = await axios.get(`${API_URL}/subjects/school-subjects/?school_id=${schoolId}&all=1`, { 
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/subjects/school-subjects`)
+      const response = await axios.get(`${API_URL}/subjects/school-subjects?school_id=${schoolId}&all=1`, { 
         headers,
         withCredentials: true 
       })
