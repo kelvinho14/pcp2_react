@@ -461,19 +461,11 @@
   &.connected {
     color: #28a745;
     border-color: #28a745;
-    
-    i {
-      color: #28a745;
-    }
   }
   
   &.disconnected {
     color: #dc3545;
     border-color: #dc3545;
-    
-    i {
-      color: #dc3545;
-    }
   }
 }
 

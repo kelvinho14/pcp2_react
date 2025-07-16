@@ -117,6 +117,17 @@ const ExerciseProgressPage: FC = () => {
             <h2 className='welcome-title'>{exercise?.title || 'Exercise Progress Overview'}</h2>
             <p className='welcome-subtitle'>
               This page shows real-time progress for this exercise. 
+              {isWebSocketConnected ? (
+                <span className='text-success ms-2'>
+                  <i className='fas fa-wifi me-1'></i>
+                  Live updates enabled
+                </span>
+              ) : (
+                <span className='text-warning ms-2'>
+                  <i className='fas fa-exclamation-triangle me-1'></i>
+                  Manual refresh required
+                </span>
+              )}
             </p>
           </div>
         </div>
