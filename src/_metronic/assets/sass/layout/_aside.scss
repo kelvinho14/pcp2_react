@@ -140,3 +140,20 @@
 		}
 	}
 }
+
+// Custom class to prevent scrollbar space reservation
+.no-scrollbar-space {
+  overflow-y: auto !important;
+
+  // Remove scrollbar space reservation for Webkit browsers
+  &::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  // Firefox
+  scrollbar-width: none;
+
+  // IE/Edge
+  -ms-overflow-style: none;
+}

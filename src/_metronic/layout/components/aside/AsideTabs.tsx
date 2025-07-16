@@ -167,7 +167,7 @@ const AsideTabs: FC<Props> = ({link, setLink}) => {
 
   return (
     <div
-      className='hover-scroll-y mb-10'
+      className='hover-scroll-y mb-10 no-scrollbar-space'
       data-kt-scroll='true'
       data-kt-scroll-activate='{default: false, lg: true}'
       data-kt-scroll-height='auto'
