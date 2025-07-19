@@ -44,12 +44,24 @@ export interface UserSocialNetworksModel {
   instagram: string
 }
 
+export interface SchoolSubject {
+  subject_id: string
+  subject_name: string
+}
+
+export interface School {
+  school_id: string
+  school_name: string
+  school_subjects: SchoolSubject[]
+}
+
 export interface UserModel {
   user_id: string
   email: string
   name?: string
   school_id?: string
   school_subject_ids?: string[]
+  schools?: School[]
   role: {
     role_id: string
     name: string
