@@ -1,12 +1,14 @@
-import {useState} from 'react'
+import {useState, useEffect} from 'react'
 import * as Yup from 'yup'
 import clsx from 'clsx'
-import {Link} from 'react-router-dom'
+import {Link, useNavigate} from 'react-router-dom'
 import {useFormik} from 'formik'
 import {getUserByToken, login} from '../core/_requests'
 import {toAbsoluteUrl} from '../../../../_metronic/helpers'
 import {useAuth} from '../core/Auth'
 import webSocketService from '../../../services/WebSocketService'
+import SubjectSelectionModal from './SubjectSelectionModal'
+import {useSchoolSelection} from '../hooks/useSchoolSelection'
 
 const loginSchema = Yup.object().shape({
   email: Yup.string()
@@ -20,10 +22,16 @@ const loginSchema = Yup.object().shape({
     .required('Password is required'),
 })
 
-const initialValues = {
+const INITIAL_VALUES = {
   email: '',
   password: '',
 }
+
+const ERROR_MESSAGES = {
+  INVALID_CREDENTIALS: 'The login details are incorrect',
+  INVALID_RESPONSE: 'Invalid response format',
+  NETWORK_ERROR: 'Network error. Please try again.',
+} as const
 
 /*
   Formik+YUP+Typescript:
@@ -33,10 +41,23 @@ const initialValues = {
 
 export function Login() {
   const [loading, setLoading] = useState(false)
-  const {setCurrentUser} = useAuth()
+  const {currentUser} = useAuth()
+  const {
+    showSubjectModal,
+    userSchools,
+    isProcessing,
+    handleSchoolSubjectSelection,
+    processUserAfterLogin,
+    checkExistingUserSession
+  } = useSchoolSelection()
+
+  // Check if user is already logged in when they visit /auth
+  useEffect(() => {
+    checkExistingUserSession(currentUser)
+  }, [currentUser, checkExistingUserSession])
 
   const formik = useFormik({
-    initialValues,
+    initialValues: INITIAL_VALUES,
     validationSchema: loginSchema,
     onSubmit: async (values, {setStatus, setSubmitting}) => {
       setLoading(true)
@@ -44,25 +65,21 @@ export function Login() {
         const {data} = await login(values.email, values.password)
         if (data.status === 'success' && data.data) {
           const user = data.data
-          console.log( user)
           
-          // Store school_subject_ids in sessionStorage
-          if (user.school_subject_ids && Array.isArray(user.school_subject_ids) && user.school_subject_ids.length > 0 && user.school_subject_ids[0]) {
-            sessionStorage.setItem('school_subject_id', user.school_subject_ids[0])
-            console.log('Stored first school_subject_id in sessionStorage:', user.school_subject_ids[0])
-            localStorage.setItem('school_subject_ids', JSON.stringify(user.school_subject_ids))
-            console.log('Stored school_subject_ids array in localStorage:', user.school_subject_ids)
-          }
-          
-          setCurrentUser(user)
           // Connect WebSocket after successful login
           webSocketService.connect(true)
+          
+          // Process user based on role and schools data
+          processUserAfterLogin(user)
         } else {
-          throw new Error('Invalid response format')
+          throw new Error(ERROR_MESSAGES.INVALID_RESPONSE)
         }
       } catch (error) {
-        console.error(error)
-        setStatus('The login details are incorrect')
+        console.error('❌ Login failed:', error)
+        const errorMessage = error instanceof Error 
+          ? (error.message === ERROR_MESSAGES.INVALID_RESPONSE ? ERROR_MESSAGES.INVALID_RESPONSE : ERROR_MESSAGES.INVALID_CREDENTIALS)
+          : ERROR_MESSAGES.NETWORK_ERROR
+        setStatus(errorMessage)
         setSubmitting(false)
         setLoading(false)
       }
@@ -213,12 +230,12 @@ export function Login() {
           type='submit'
           id='kt_sign_in_submit'
           className='btn btn-primary'
-          disabled={formik.isSubmitting || !formik.isValid}
+          disabled={formik.isSubmitting || !formik.isValid || loading || isProcessing}
         >
-          {!loading && <span className='indicator-label'>Continue</span>}
-          {loading && (
+          {(!loading && !isProcessing) && <span className='indicator-label'>Continue</span>}
+          {(loading || isProcessing) && (
             <span className='indicator-progress' style={{display: 'block'}}>
-              Please wait...
+              {loading ? 'Signing in...' : 'Processing...'}
               <span className='spinner-border spinner-border-sm align-middle ms-2'></span>
             </span>
           )}
@@ -232,6 +249,14 @@ export function Login() {
           Sign up
         </Link>
       </div>
+
+       {showSubjectModal && userSchools && userSchools.length > 0 && (
+         <SubjectSelectionModal
+           show={showSubjectModal}
+           schools={userSchools}
+           onSubjectSelect={handleSchoolSubjectSelection}
+         />
+       )}
     </form>
   )
 }

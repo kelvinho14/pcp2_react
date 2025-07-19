@@ -6,18 +6,23 @@ import {getCurrentUser} from './_requests'
 import {WithChildren} from '../../../../_metronic/helpers'
 import webSocketService from '../../../services/WebSocketService'
 import AuthInterceptor from '../../../services/AuthInterceptor'
+import SchoolSelectionService from '../services/SchoolSelectionService'
 import axios from 'axios'
 
 type AuthContextProps = {
   currentUser: UserModel | undefined
   setCurrentUser: Dispatch<SetStateAction<UserModel | undefined>>
   logout: () => void
+  skipSchoolRedirect?: boolean
+  setSkipSchoolRedirect: (skip: boolean) => void
 }
 
 const initAuthContextPropsState = {
   currentUser: undefined,
   setCurrentUser: () => {},
   logout: () => {},
+  skipSchoolRedirect: false,
+  setSkipSchoolRedirect: () => {},
 }
 
 const AuthContext = createContext<AuthContextProps>(initAuthContextPropsState)
@@ -28,6 +33,7 @@ const useAuth = () => {
 
 const AuthProvider: FC<WithChildren> = ({children}) => {
   const [currentUser, setCurrentUser] = useState<UserModel | undefined>()
+  const [skipSchoolRedirect, setSkipSchoolRedirect] = useState(false)
 
   const logout = async () => {
     try {
@@ -38,10 +44,11 @@ const AuthProvider: FC<WithChildren> = ({children}) => {
     } catch (error) {
       console.error('Error during logout:', error)
     } finally {
-      // Clear JWT data and school_subject_ids
-      sessionStorage.removeItem('school_subject_id')
+      // Clear all session data using service
+      SchoolSelectionService.clearStoredSelection()
       webSocketService.disconnect()
       setCurrentUser(undefined)
+      setSkipSchoolRedirect(false)
     }
   }
 
@@ -59,7 +66,9 @@ const AuthProvider: FC<WithChildren> = ({children}) => {
     <AuthContext.Provider value={{
       currentUser,
       setCurrentUser,
-      logout
+      logout,
+      skipSchoolRedirect,
+      setSkipSchoolRedirect
     }}>
       {children}
     </AuthContext.Provider>
@@ -67,23 +76,60 @@ const AuthProvider: FC<WithChildren> = ({children}) => {
 }
 
 const AuthInit: FC<WithChildren> = ({children}) => {
-  const {setCurrentUser, currentUser, logout} = useAuth()
+  const {setCurrentUser, currentUser, logout, skipSchoolRedirect} = useAuth()
   const [showSplashScreen, setShowSplashScreen] = useState(true)
+
+  const processUserAfterAuth = (user: UserModel): string | null => {
+    console.log('🔍 Processing authenticated user:', user, 'skipSchoolRedirect:', skipSchoolRedirect)
+    
+    // If we're in the middle of a login flow with modal, don't redirect
+    if (skipSchoolRedirect) {
+      console.log('🚫 Skipping school redirect due to login flow')
+      setCurrentUser(user)
+      return null
+    }
+    
+    // Check if we have valid stored selection
+    const validStoredSelection = SchoolSelectionService.getValidStoredSelection(user)
+    if (validStoredSelection) {
+      console.log('📦 Found valid stored selection:', validStoredSelection)
+      setCurrentUser(user)
+      return null // No redirect needed
+    }
+
+    // Use service to determine next action
+    const result = SchoolSelectionService.processUserSchoolSelection(user)
+    
+    setCurrentUser(user)
+    
+    if (!result.needsSelection) {
+      // Admin, no schools, or auto-selected
+      return null // No redirect needed
+    }
+
+    // User needs to make a selection - redirect to selection page
+    console.log('🔀 User needs to select school/subject, redirecting to selection page')
+    return '/auth/select-subject'
+  }
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        
         const {data} = await getCurrentUser()
         if (data.status === 'success' && data.data) {
           const user = data.data
-          // Store school_subject_ids in sessionStorage
-          if (user.school_subject_ids && Array.isArray(user.school_subject_ids) && user.school_subject_ids.length > 0 && user.school_subject_ids[0]) {
-            sessionStorage.setItem('school_subject_id', user.school_subject_ids[0])
-          }
-          setCurrentUser(user)
+          
+          // Process user based on role and schools data
+          const redirectPath = processUserAfterAuth(user)
+          
           // Connect WebSocket when user is authenticated
           webSocketService.connect(true)
+          
+          // Handle redirect if needed
+          if (redirectPath) {
+            window.location.href = redirectPath
+            return
+          }
         } else {
           setCurrentUser(undefined)
           webSocketService.disconnect()
