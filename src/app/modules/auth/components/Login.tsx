@@ -8,8 +8,7 @@ import {toAbsoluteUrl} from '../../../../_metronic/helpers'
 import {useAuth} from '../core/Auth'
 import webSocketService from '../../../services/WebSocketService'
 import SubjectSelectionModal from './SubjectSelectionModal'
-import SchoolSelectionService, { StoredSchoolSelection } from '../services/SchoolSelectionService'
-import { UserModel } from '../core/_models'
+import {useSchoolSelection} from '../hooks/useSchoolSelection'
 
 const loginSchema = Yup.object().shape({
   email: Yup.string()
@@ -23,10 +22,16 @@ const loginSchema = Yup.object().shape({
     .required('Password is required'),
 })
 
-const initialValues = {
+const INITIAL_VALUES = {
   email: '',
   password: '',
 }
+
+const ERROR_MESSAGES = {
+  INVALID_CREDENTIALS: 'The login details are incorrect',
+  INVALID_RESPONSE: 'Invalid response format',
+  NETWORK_ERROR: 'Network error. Please try again.',
+} as const
 
 /*
   Formik+YUP+Typescript:
@@ -36,82 +41,23 @@ const initialValues = {
 
 export function Login() {
   const [loading, setLoading] = useState(false)
-  const [showSubjectModal, setShowSubjectModal] = useState(false)
-  const [userSchools, setUserSchools] = useState<UserModel['schools']>(undefined)
-  const [pendingUser, setPendingUser] = useState<UserModel | null>(null) // Store user until modal is done
-  const {currentUser, setCurrentUser} = useAuth()
-  const navigate = useNavigate()
+  const {currentUser} = useAuth()
+  const {
+    showSubjectModal,
+    userSchools,
+    isProcessing,
+    handleSchoolSubjectSelection,
+    processUserAfterLogin,
+    checkExistingUserSession
+  } = useSchoolSelection()
 
   // Check if user is already logged in when they visit /auth
   useEffect(() => {
-    console.log('👤 CurrentUser:', currentUser)
-    if (currentUser) {
-      const stored = SchoolSelectionService.getStoredSelection()
-      if (stored?.school_id && stored?.school_name && stored?.subject_id && stored?.subject_name) {
-        navigate('/dashboard')
-      } else {
-        // User is logged in but no school/subject selection - show modal
-        processUserAfterLogin(currentUser)
-      }
-    }
-  }, [currentUser, navigate])
-
-  const handleSchoolSubjectSelection = (schoolId: string, schoolName: string, subjectId: string, subjectName: string) => {
-    console.log('✅ User selected school/subject:', { schoolId, schoolName, subjectId, subjectName })
-    
-    const selection: StoredSchoolSelection = {
-      school_id: schoolId,
-      school_name: schoolName,
-      subject_id: subjectId,
-      subject_name: subjectName
-    }
-    
-    SchoolSelectionService.storeSelection(selection)
-    setShowSubjectModal(false)
-    
-    // NOW set the currentUser after selection is made
-    if (pendingUser) {
-      console.log('👤 Now setting currentUser after selection')
-      setCurrentUser(pendingUser)
-      setPendingUser(null)
-    }
-    
-    navigate('/dashboard')
-  }
-
-  const processUserAfterLogin = (user: UserModel) => {
-    console.log('👤 Processing user after login:', user)
-    
-    // Use the service to determine what to do
-    const result = SchoolSelectionService.processUserSchoolSelection(user)
-    
-    console.log('🔍 Service result:', result)
-    
-    if (!result.needsSelection) {
-      // Admin, no schools, or auto-selected - set user and go to dashboard
-      console.log('➡️ No selection needed, navigating to dashboard')
-      setCurrentUser(user)
-      navigate('/dashboard')
-      return
-    }
-
-    // Show modal for selection - DON'T set currentUser yet to avoid route change
-    console.log('📋 Showing selection modal with schools:', result.availableSchools)
-    if (result.availableSchools) {
-      console.log('⏳ Storing user in pendingUser (not setting currentUser yet)')
-      setPendingUser(user) // Store user but don't set in auth context yet
-      setUserSchools(result.availableSchools)
-      setShowSubjectModal(true)
-      
-      // Debug: Check state after setting
-      setTimeout(() => {
-        console.log('🔍 Modal state after 100ms:', { showSubjectModal, userSchools: userSchools?.length, pendingUser: !!pendingUser })
-      }, 100)
-    }
-  }
+    checkExistingUserSession(currentUser)
+  }, [currentUser, checkExistingUserSession])
 
   const formik = useFormik({
-    initialValues,
+    initialValues: INITIAL_VALUES,
     validationSchema: loginSchema,
     onSubmit: async (values, {setStatus, setSubmitting}) => {
       setLoading(true)
@@ -119,7 +65,6 @@ export function Login() {
         const {data} = await login(values.email, values.password)
         if (data.status === 'success' && data.data) {
           const user = data.data
-          console.log('✅ Login successful:', user)
           
           // Connect WebSocket after successful login
           webSocketService.connect(true)
@@ -127,11 +72,14 @@ export function Login() {
           // Process user based on role and schools data
           processUserAfterLogin(user)
         } else {
-          throw new Error('Invalid response format')
+          throw new Error(ERROR_MESSAGES.INVALID_RESPONSE)
         }
       } catch (error) {
         console.error('❌ Login failed:', error)
-        setStatus('The login details are incorrect')
+        const errorMessage = error instanceof Error 
+          ? (error.message === ERROR_MESSAGES.INVALID_RESPONSE ? ERROR_MESSAGES.INVALID_RESPONSE : ERROR_MESSAGES.INVALID_CREDENTIALS)
+          : ERROR_MESSAGES.NETWORK_ERROR
+        setStatus(errorMessage)
         setSubmitting(false)
         setLoading(false)
       }
@@ -282,12 +230,12 @@ export function Login() {
           type='submit'
           id='kt_sign_in_submit'
           className='btn btn-primary'
-          disabled={formik.isSubmitting || !formik.isValid}
+          disabled={formik.isSubmitting || !formik.isValid || loading || isProcessing}
         >
-          {!loading && <span className='indicator-label'>Continue</span>}
-          {loading && (
+          {(!loading && !isProcessing) && <span className='indicator-label'>Continue</span>}
+          {(loading || isProcessing) && (
             <span className='indicator-progress' style={{display: 'block'}}>
-              Please wait...
+              {loading ? 'Signing in...' : 'Processing...'}
               <span className='spinner-border spinner-border-sm align-middle ms-2'></span>
             </span>
           )}
