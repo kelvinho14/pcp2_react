@@ -70,7 +70,7 @@ const HeaderSchoolSubjectMenu: FC = () => {
         <div className='menu-content px-3'>
           <div className='text-gray-900 fw-bolder fs-5 mb-1'>School & Subject</div>
           
-        </div>
+          </div>
       </div>
 
       <div className='separator my-2'></div>
@@ -94,31 +94,31 @@ const HeaderSchoolSubjectMenu: FC = () => {
               
               return (
                 <div key={subject.subject_id} className='menu-item px-3'>
-                  <div
+                <div
                     className={`menu-link px-3 py-3 cursor-pointer ${
                       isSelected ? 'active' : ''
-                    }`}
-                    data-school-id={school.school_id}
-                    data-school-name={school.school_name}
-                    data-subject-id={subject.subject_id}
-                    data-subject-name={subject.subject_name}
-                  >
-                    <div className='d-flex align-items-center'>
+                  }`}
+                  data-school-id={school.school_id}
+                  data-school-name={school.school_name}
+                  data-subject-id={subject.subject_id}
+                  data-subject-name={subject.subject_name}
+                >
+                  <div className='d-flex align-items-center'>
                       <div className='symbol symbol-30px me-3'>
-                        <span className={`symbol-label ${
-                          isSelected ? 'bg-primary' : 'bg-light-gray-300'
-                        }`}>
+                      <span className={`symbol-label ${
+                        isSelected ? 'bg-primary' : 'bg-light-gray-300'
+                      }`}>
                           <i className={`fa-solid fa-book fs-3 ${
-                            isSelected ? 'text-white' : 'text-gray-600'
-                          }`}></i>
-                        </span>
-                      </div>
+                          isSelected ? 'text-white' : 'text-gray-600'
+                        }`}></i>
+                      </span>
+                    </div>
 
                       <div className='flex-grow-1 me-3'>
                         <div className={`fw-bold ${
-                          isSelected ? 'text-primary' : 'text-gray-800'
-                        }`}>
-                          {subject.subject_name}
+                        isSelected ? 'text-primary' : 'text-gray-800'
+                      }`}>
+                        {subject.subject_name}
                         </div>
                       </div>
 

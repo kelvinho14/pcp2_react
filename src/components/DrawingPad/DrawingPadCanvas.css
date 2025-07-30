@@ -1,0 +1,26 @@
+.drawing-pad-canvas {
+  display: block;
+  background: #fff;
+  border: 2px solid #e9ecef;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: crosshair;
+  transition: border-color 0.2s ease;
+}
+
+.drawing-pad-canvas:hover {
+  border-color: #007bff;
+}
+
+.drawing-pad-canvas:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .drawing-pad-canvas {
+    cursor: default;
+  }
+} 

@@ -1,0 +1,350 @@
+.drawing-pad {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f9fa;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.drawing-pad-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.drawing-pad-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: #fff;
+}
+
+.drawing-pad-canvas {
+  border: 2px solid #e9ecef;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: #fff;
+}
+
+.drawing-pad-canvas:hover {
+  border-color: #007bff;
+}
+
+/* Toolbar Styles */
+.drawing-pad-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e9ecef;
+  flex-wrap: wrap;
+  position: relative; /* Ensure proper positioning context */
+  z-index: 1000; /* Ensure toolbar is above canvas */
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-right: 1px solid #e9ecef;
+  position: relative; /* Ensure proper positioning context */
+}
+
+.toolbar-section:last-child {
+  border-right: none;
+}
+
+.toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: #fff;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  margin: 0;
+  padding: 0;
+}
+
+.toolbar-button:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  color: #212529;
+}
+
+.toolbar-button:active {
+  background: #dee2e6;
+  transform: translateY(1px);
+}
+
+.toolbar-button.active {
+  background: #007bff;
+  border-color: #007bff;
+  color: #fff;
+}
+
+.toolbar-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toolbar-button.disabled:hover {
+  background: #fff;
+  border-color: #dee2e6;
+  color: #495057;
+}
+
+.toolbar-button i {
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tool group buttons - make them consistent with toolbar buttons */
+.tool-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+}
+
+.tool-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: #fff;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  margin: 0;
+  padding: 0;
+}
+
+.tool-button:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  color: #212529;
+}
+
+.tool-button:active {
+  background: #dee2e6;
+  transform: translateY(1px);
+}
+
+.tool-button.active {
+  background: #007bff;
+  border-color: #007bff;
+  color: #fff;
+}
+
+.tool-button.active.highlighter {
+  background: #3ec996;
+  border-color: #3ec996;
+  color: #fff;
+}
+
+.tool-button i {
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Pick tool cursor styles */
+.drawing-pad-canvas.pick-tool {
+  cursor: grab !important;
+}
+
+.drawing-pad-canvas.pick-tool:active {
+  cursor: grabbing !important;
+}
+
+/* History button states */
+.toolbar-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.toolbar-button.disabled:hover {
+  background: #fff;
+  border-color: #dee2e6;
+  color: #495057;
+  transform: none;
+}
+
+/* Color Picker Styles */
+.color-picker-container {
+  position: relative;
+  display: inline-block;
+}
+
+.color-button {
+  border: 2px solid #dee2e6 !important;
+  position: relative;
+}
+
+.color-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid #495057;
+}
+
+.color-picker-dropdown {
+  position: absolute;
+  top: 100%; /* Position right below the icon */
+  left: 0;
+  background: white;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  z-index: 1001; /* Higher than toolbar */
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 200px;
+  margin-top: 4px;
+}
+
+.color-option {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #e1e5e9;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 1002;
+  pointer-events: auto;
+}
+
+.color-option:hover {
+  border-color: #007bff;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.color-option:active {
+  transform: scale(0.95);
+}
+
+/* Thickness Picker Styles */
+.thickness-picker-container {
+  position: relative;
+  display: inline-block;
+}
+
+.thickness-picker-dropdown {
+  position: absolute;
+  top: 100%; /* Position right below the icon */
+  left: 0;
+  background: white;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 12px;
+  z-index: 1001; /* Higher than toolbar */
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 160px;
+  margin-top: 4px;
+}
+
+.thickness-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  position: relative;
+  z-index: 1002;
+  pointer-events: auto;
+  width: 100%;
+  font-size: 14px;
+  color: #495057;
+}
+
+.thickness-option:hover {
+  background-color: #f8f9fa;
+}
+
+.thickness-option:active {
+  background-color: #e9ecef;
+}
+
+.thickness-preview {
+  width: 40px;
+  height: 2px;
+  background: #000;
+  border-radius: 2px;
+  min-height: 1px;
+  flex-shrink: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .drawing-pad {
+    border-radius: 4px;
+  }
+  
+  .drawing-pad-main {
+    padding: 10px;
+  }
+  
+  .drawing-pad-canvas {
+    max-width: 100%;
+    max-height: 100%;
+  }
+  
+  .drawing-pad-toolbar {
+    padding: 8px 12px;
+    gap: 4px;
+  }
+  
+  .toolbar-section {
+    padding: 0 4px;
+  }
+  
+  .toolbar-button {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+  
+  .toolbar-button i {
+    font-size: 14px;
+  }
+} 

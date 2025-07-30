@@ -1,0 +1,25 @@
+{
+  "name": "@components/drawing-pad",
+  "version": "1.0.0",
+  "description": "A React-based drawing pad component with comprehensive toolbar and drawing tools",
+  "main": "index.ts",
+  "types": "index.ts",
+  "dependencies": {
+    "react": "^18.0.0",
+    "typescript": "^4.9.0"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "keywords": [
+    "react",
+    "drawing",
+    "canvas",
+    "toolbar",
+    "typescript",
+    "component"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+} 
