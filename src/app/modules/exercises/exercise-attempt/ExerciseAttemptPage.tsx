@@ -6,6 +6,7 @@ import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
 import {KTCard} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
 import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
+import {DrawingPad} from '../../../../components/DrawingPad'
 import ImageModal from '../../../../components/Modal/ImageModal'
 import {renderHtmlSafely, hasImages} from '../../../../_metronic/helpers/htmlRenderer'
 import {startExerciseAttempt, submitExercise} from '../../../../store/exercises/studentExercisesSlice'
@@ -119,7 +120,6 @@ const ExerciseAttemptPage: FC = () => {
   // Handle beforeunload event to warn user when leaving the exercise page
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      console.log('Beforeunload triggered')
       // For refresh/close, we have to use browser's native dialog
       // but we can make it more user-friendly with emoji and better text
       e.preventDefault()
@@ -130,7 +130,6 @@ const ExerciseAttemptPage: FC = () => {
     // Also handle visibility change (when user switches tabs)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        console.log('User switched tabs or minimized window')
       }
     }
 
@@ -206,9 +205,7 @@ const ExerciseAttemptPage: FC = () => {
     
     try {
       await dispatch(startExerciseAttempt(assignmentId)).unwrap()
-      console.log('✅ Exercise attempt started successfully')
     } catch (error: any) {
-      console.error('❌ Failed to start exercise attempt:', error)
       toast.error(error || 'Failed to start exercise. Please try again.', 'Error')
     }
   }
@@ -247,7 +244,6 @@ const ExerciseAttemptPage: FC = () => {
       if (response.data.status === 'success') {
         const attemptData: AttemptResponse = response.data.data
         setAttemptData(attemptData)
-        console.log('✅ Attempt data refreshed, saved_answers_count:', attemptData.saved_answers_count)
       }
     } catch (error) {
       console.error('❌ Failed to refresh attempt data:', error)
@@ -272,8 +268,6 @@ const ExerciseAttemptPage: FC = () => {
         headers,
         withCredentials: true
       })
-      
-      console.log('✅ Answer saved successfully with last_seen timestamp')
       
       // Refresh attempt data to update saved_answers_count
       await refreshAttemptData()
@@ -313,7 +307,6 @@ const ExerciseAttemptPage: FC = () => {
     
     setAnswers(newAnswers)
     setHasUnsavedChanges(true)
-    console.log('MC answer changed, hasUnsavedChanges set to true')
     
     // Save to API (even for empty answers)
     saveAnswerToAPI(currentQuestion.question_id, 0, { mc_answer: optionLetter })
@@ -340,7 +333,6 @@ const ExerciseAttemptPage: FC = () => {
     
     setAnswers(newAnswers)
     setHasUnsavedChanges(true)
-    console.log('LQ answer changed, hasUnsavedChanges set to true')
     
     // Save to API immediately (no timeout)
     if (currentQuestion.question_id) {
@@ -350,9 +342,50 @@ const ExerciseAttemptPage: FC = () => {
   }
 
   const getCurrentAnswer = () => {
-    if (!currentQuestion) return null
-    return answers.find(a => a.question_id === currentQuestion.question_id)
+    return answers.find(answer => answer.question_id === currentQuestion?.question_id)
   }
+
+  // Function to determine if a question is long based on question type
+  const isLongQuestion = (questionType: string) => {
+    return questionType === 'lq'
+  }
+
+  // Function to check if a string looks like Zwibbler3 JSON data
+  const isZwibbler3Data = (data: string): boolean => {
+    // Check if it starts with "zwibbler3." (the actual Zwibbler3 format)
+    if (data.startsWith('zwibbler3.')) {
+      return true
+    }
+    
+    try {
+      const parsed = JSON.parse(data)
+      // Check if it has the basic Zwibbler3 structure
+      return parsed && typeof parsed === 'object' && 
+             (parsed.version === '3.0' || parsed.pages || parsed.nodes)
+    } catch {
+      return false
+    }
+  }
+
+  // Function to load existing drawing data into the DrawingPad
+  const loadExistingDrawingData = useCallback((questionId: string): string | null => {
+    // First check if there's a saved answer for this question
+    const currentQuestion = exercise?.questions.find(q => q.question_id === questionId)
+    if (currentQuestion?.saved_answer?.lq_answer) {
+      const savedData = currentQuestion.saved_answer.lq_answer
+      if (isZwibbler3Data(savedData)) {
+        return savedData
+      }
+    }
+    
+    // Also check the local answers state
+    const localAnswer = answers.find(a => a.question_id === questionId)
+    if (localAnswer?.lq_answer && isZwibbler3Data(localAnswer.lq_answer)) {
+      return localAnswer.lq_answer
+    }
+    
+    return null
+  }, [exercise, answers])
 
   const handleNext = () => {
     if (currentQuestionIndex < (exercise?.questions.length || 0) - 1) {
@@ -392,7 +425,6 @@ const ExerciseAttemptPage: FC = () => {
 
   // Simple navigation function
   const navigateWithConfirmation = useCallback((path: string) => {
-    console.log('Navigation attempted')
     navigate(path)
   }, [navigate])
 
@@ -591,12 +623,24 @@ const ExerciseAttemptPage: FC = () => {
                   ) : (
                     <div className='lq-answer'>
                       <h6 className='mb-3'>Write your answer:</h6>
-                      <TinyMCEEditor
-                        value={currentAnswer?.lq_answer || ''}
-                        onBlur={handleLQAnswer}
-                        height={300}
-                        placeholder='Enter your answer here...'
-                      />
+                      {isLongQuestion(currentQuestion.type) ? (
+                        <DrawingPad
+                          width={800}
+                          height={600}
+                          className="w-100"
+                          filename={`Drawing_${currentQuestion.question_id}.pdf`}
+                          saveFunction={saveAnswerToAPI}
+                          questionId={currentQuestion.question_id}
+                          initialData={loadExistingDrawingData(currentQuestion.question_id)}
+                        />
+                      ) : (
+                        <TinyMCEEditor
+                          value={currentAnswer?.lq_answer || ''}
+                          onBlur={handleLQAnswer}
+                          height={300}
+                          placeholder='Enter your answer here...'
+                        />
+                      )}
                     </div>
                   )}
                 </div>
