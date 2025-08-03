@@ -64,21 +64,10 @@ const TestPage: FC = () => {
             </div>
           </div>
           <DrawingPad
-            id="testDrawingPad"
             width={canvasSize.width}
             height={canvasSize.height}
-            showToolbar={true}
-            showPropertyPanel={false}
-            showColourPanel={true}
-            defaultBrushWidth={3}
-            background="#ffffff"
-            snap={20}
-            pageView={true}
             onExport={(format: 'pdf' | 'png' | 'jpg') => {
               console.log(`Exporting drawing as ${format}`)
-            }}
-            onSave={(data: string) => {
-              console.log('Saving drawing data:', data)
             }}
             className="test-drawing-pad"
           />
