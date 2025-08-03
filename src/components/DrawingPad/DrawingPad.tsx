@@ -11,10 +11,13 @@ declare global {
 
 const DrawingPad: React.FC<DrawingPadProps> = ({
   width = 800,
-  height = 600,
+  height = 800, // Increased from 600 to 800 for taller canvas
   onExport,
   className = '',
-  filename = 'LiveDrawing.pdf'
+  filename = 'Drawing.pdf',
+  saveFunction,
+  questionId,
+  initialData
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null)
   const [zwibblerCtx, setZwibblerCtx] = useState<any>(null)
@@ -24,6 +27,61 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
   const [currentColor, setCurrentColor] = useState('#000000')
   const [currentThickness, setCurrentThickness] = useState(4)
   const [currentTool, setCurrentTool] = useState<'pen' | 'highlighter' | 'eraser' | 'line' | 'pick' | 'pan' | 'text'>('pen')
+  const changeCountRef = useRef(0)
+  const onDocumentChangedRef = useRef<(() => void) | null>(null)
+  const stableCtxRef = useRef<any>(null)
+
+  // Document change handler
+  const onDocumentChanged = useCallback(() => {
+    changeCountRef.current += 1
+    
+    if (changeCountRef.current >= 5) {
+      // Use the stable context reference
+      const ctx = stableCtxRef.current || zwibblerInstance?.ctx || zwibblerCtx
+      
+      if (ctx && typeof ctx.save === 'function') {
+        try {
+          const savedContent = ctx.save('zwibbler3')
+          
+          // Call the save API with the drawing content
+          if (savedContent) {
+            // If it's a Promise, handle it
+            if (savedContent && typeof savedContent.then === 'function') {
+              savedContent.then((content: any) => {
+                // Call attempts API to save the question
+                saveDrawingToAttempts(content)
+              }).catch((error: any) => {
+                console.error('Error saving drawing:', error)
+              })
+            } else {
+              // Call attempts API to save the question
+              saveDrawingToAttempts(savedContent)
+            }
+          }
+        } catch (error) {
+          console.error('Error calling save:', error)
+        }
+      }
+      changeCountRef.current = 0 // Reset counter
+    }
+  }, [zwibblerCtx, zwibblerInstance])
+
+  // Function to save drawing content to attempts API
+  const saveDrawingToAttempts = useCallback(async (drawingContent: string) => {
+    try {
+      if (saveFunction && questionId) {
+        // Use the passed saveFunction with the actual question ID
+        await saveFunction(questionId, 1, { lq_answer: drawingContent })
+      }
+    } catch (error) {
+      console.error('Error saving drawing to attempts API:', error)
+    }
+  }, [saveFunction, questionId])
+
+  // Store the callback in a ref to prevent multiple listeners
+  useEffect(() => {
+    onDocumentChangedRef.current = onDocumentChanged
+  }, [onDocumentChanged])
 
   // Click outside handler
   useEffect(() => {
@@ -47,8 +105,6 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
   useEffect(() => {
     if (!canvasRef.current || !window.Zwibbler) return
 
-    console.log('Initializing Zwibbler with canvas ref:', canvasRef.current)
-
     try {
       // Initialize Zwibbler with the same approach as the HTML reference
       const zwibbler = window.Zwibbler.create(canvasRef.current, {
@@ -64,14 +120,28 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
       const ctx = zwibbler.ctx
       setZwibblerCtx(ctx)
       setZwibblerInstance(zwibbler)
+      stableCtxRef.current = ctx // Store a stable reference
 
-      console.log('Zwibbler initialized successfully, ctx:', ctx)
+      // Set up document change listener
+      if (ctx && typeof ctx.on === 'function') {
+        // Remove any existing listener first
+        if (onDocumentChangedRef.current) {
+          try {
+            ctx.off('document-changed', onDocumentChangedRef.current)
+          } catch (e) {
+            // Ignore errors if off method doesn't exist
+          }
+        }
+        
+        // Add the new listener
+        ctx.on('document-changed', onDocumentChanged)
+        onDocumentChangedRef.current = onDocumentChanged
+      }
 
       // Set up the canvas like in the HTML reference
       if (ctx) {
         // Set paper size to A4 portrait
         ctx.setPaperSize('A4', false)
-        console.log('Paper size set to A4 portrait')
 
         // Set up background like in the HTML reference
         ctx.useSinglelineBackground = () => {
@@ -81,12 +151,10 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
         
         // Call the background function
         ctx.useSinglelineBackground()
-        console.log('Singleline background set')
 
         // Set page placement and zoom like in the HTML reference
         ctx.setConfig('pagePlacement', 'centre')
         ctx.setZoom('page')
-        console.log('Page placement and zoom set')
 
         // Set up colors like in the HTML reference
         ctx.colours = [
@@ -100,9 +168,38 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
           '#7a5547'
         ]
 
-        // Set initial brush tool like in the HTML reference
-        ctx.useBrushTool('#3ec996', 4)
-        console.log('Initial brush tool set')
+        // Set initial brush tool with first color (black) and default thickness
+        ctx.useBrushTool('#000', 4)
+        
+        // Ensure pen tool is active by default
+        setCurrentTool('pen')
+        setCurrentColor('#000000')
+        
+        // Add a small delay to ensure Zwibbler is fully initialized
+        setTimeout(() => {
+          // Explicitly activate the pen tool to ensure drawing mode
+          if (typeof ctx.usePenTool === 'function') {
+            ctx.usePenTool()
+          } else if (typeof ctx.useBrushTool === 'function') {
+            // If usePenTool doesn't exist, useBrushTool should put us in drawing mode
+            ctx.useBrushTool('#000', 4)
+          }
+          
+          // Try to disable pan mode if it exists
+          if (typeof ctx.disablePan === 'function') {
+            ctx.disablePan()
+          }
+          
+          // Try to explicitly set drawing mode
+          if (typeof ctx.setDrawingMode === 'function') {
+            ctx.setDrawingMode(true)
+          }
+          
+          // Force a redraw to ensure the tool is properly set
+          if (typeof ctx.redraw === 'function') {
+            ctx.redraw()
+          }
+        }, 100)
       }
     } catch (error) {
       console.error('Error initializing Zwibbler:', error)
@@ -111,7 +208,6 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
 
   // Tool functions
   const usePen = useCallback((width: number, color: string, type: number) => {
-    console.log('usePen called with:', width, color, type)
     
     // Set the correct tool based on type
     if (type === 2) {
@@ -128,7 +224,6 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
         finalColor = window.Zwibbler.setColourOpacity(color, 0.5)
       }
       zwibblerCtx.useBrushTool(finalColor, width)
-      console.log('Pen tool activated with:', finalColor, width)
     }
   }, [zwibblerCtx])
 
@@ -136,134 +231,96 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
   const findToolMethods = useCallback(() => {
     if (zwibblerCtx) {
       const protoMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(zwibblerCtx))
-      console.log('All available tool methods:', protoMethods.filter(m => 
-        m.toLowerCase().includes('tool') || 
-        m.toLowerCase().includes('brush') || 
-        m.toLowerCase().includes('pen') || 
-        m.toLowerCase().includes('eraser') || 
-        m.toLowerCase().includes('line') || 
-        m.toLowerCase().includes('pick') || 
-        m.toLowerCase().includes('pan') ||
-        m.toLowerCase().includes('shape')
-      ))
     }
   }, [zwibblerCtx])
 
   const useHighlighter = useCallback(() => {
-    console.log('useHighlighter called')
     setCurrentTool('highlighter')
     if (zwibblerCtx) {
       const color = window.Zwibbler.setColourOpacity(currentColor, 0.5)
       zwibblerCtx.useBrushTool(color, currentThickness)
-      console.log('Highlighter tool activated')
     }
   }, [zwibblerCtx, currentColor, currentThickness])
 
   const useEraser = useCallback(() => {
-    console.log('useEraser called')
     setCurrentTool('eraser')
     if (zwibblerCtx) {
       zwibblerCtx.useBrushTool({ lineWidth: currentThickness, strokeStyle: 'erase' })
-      console.log('Eraser tool activated')
     }
   }, [zwibblerCtx, currentThickness])
 
   const useLineTool = useCallback(() => {
-    console.log('useLineTool called')
     setCurrentTool('line')
     if (zwibblerCtx) {
       zwibblerCtx.useLineTool()
-      console.log('Line tool activated')
     }
   }, [zwibblerCtx])
 
   const usePickTool = useCallback(() => {
-    console.log('usePickTool called')
     setCurrentTool('pick')
     if (zwibblerCtx) {
       zwibblerCtx.usePickTool()
-      console.log('Pick tool activated')
     }
   }, [zwibblerCtx])
 
   // Function to force redraw
   const forceRedraw = useCallback(() => {
-    console.log('forceRedraw called, zwibblerCtx:', zwibblerCtx)
     if (zwibblerCtx && typeof zwibblerCtx.redraw === 'function') {
       zwibblerCtx.redraw()
-      console.log('Canvas redrawn')
     } else if (zwibblerCtx && typeof zwibblerCtx.refresh === 'function') {
       zwibblerCtx.refresh()
-      console.log('Canvas refreshed')
     } else if (zwibblerInstance && typeof zwibblerInstance.redraw === 'function') {
       zwibblerInstance.redraw()
-      console.log('Canvas redrawn on instance')
     } else if (zwibblerInstance && typeof zwibblerInstance.refresh === 'function') {
       zwibblerInstance.refresh()
-      console.log('Canvas refreshed on instance')
     }
   }, [zwibblerCtx, zwibblerInstance])
 
   // Function to clear background properly
   const clearBackgroundProperly = useCallback(() => {
-    console.log('clearBackgroundProperly called, zwibblerCtx:', zwibblerCtx)
     if (zwibblerCtx && typeof zwibblerCtx.setConfig === 'function') {
       // Set background color to grey
       zwibblerCtx.setConfig('background', '#f0f0f0')
-      console.log('Background set to grey')
     } else if (zwibblerInstance && typeof zwibblerInstance.setConfig === 'function') {
       zwibblerInstance.setConfig('background', '#f0f0f0')
-      console.log('Background set to grey on instance')
     } else if (zwibblerCtx && typeof zwibblerCtx.setPageBackground === 'function') {
       // Try to clear page background and let the default background show
       zwibblerCtx.setPageBackground(0, '')
-      console.log('Page background cleared')
     } else if (zwibblerInstance && typeof zwibblerInstance.setPageBackground === 'function') {
       zwibblerInstance.setPageBackground(0, '')
-      console.log('Page background cleared on instance')
     }
   }, [zwibblerCtx, zwibblerInstance])
 
   // Function to restore paper background
   const restorePaperBackground = useCallback(() => {
-    console.log('restorePaperBackground called, zwibblerCtx:', zwibblerCtx)
     if (zwibblerCtx && typeof zwibblerCtx.setPageBackground === 'function') {
       // Restore the paper background
       zwibblerCtx.setPageBackground(0, 'https://app.myplp.io/chem/theme/assets/singleline_paper_2.jpg')
-      console.log('Paper background restored')
     } else if (zwibblerInstance && typeof zwibblerInstance.setPageBackground === 'function') {
       zwibblerInstance.setPageBackground(0, 'https://app.myplp.io/chem/theme/assets/singleline_paper_2.jpg')
-      console.log('Paper background restored on instance')
     }
   }, [zwibblerCtx, zwibblerInstance])
 
   const usePanTool = useCallback(() => {
-    console.log('usePanTool called')
     setCurrentTool('pan')
     if (zwibblerCtx) {
       zwibblerCtx.usePanTool()
-      console.log('Pan tool activated')
     }
   }, [zwibblerCtx])
 
   const useTextTool = useCallback(() => {
-    console.log('useTextTool called')
     setCurrentTool('text')
     if (zwibblerCtx) {
       zwibblerCtx.useTextTool()
-      console.log('Text tool activated')
     }
   }, [zwibblerCtx])
 
   // Function to clear background
   const clearBackground = useCallback(() => {
-    console.log('clearBackground called, zwibblerCtx:', zwibblerCtx)
     if (zwibblerCtx && typeof zwibblerCtx.setConfig === 'function') {
       zwibblerCtx.setConfig('backgroundColor', '#f0f0f0')
-      console.log('Background cleared')
     } else if (zwibblerInstance && typeof zwibblerInstance.setConfig === 'function') {
       zwibblerInstance.setConfig('backgroundColor', '#f0f0f0')
-      console.log('Background cleared on instance')
     }
   }, [zwibblerCtx, zwibblerInstance])
 
@@ -310,28 +367,19 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
 
   // Undo/Redo
   const undo = useCallback(() => {
-    console.log('undo called, zwibblerCtx:', zwibblerCtx)
     if (zwibblerCtx && typeof zwibblerCtx.undo === 'function') {
       zwibblerCtx.undo()
-      console.log('Using Zwibbler undo')
-    } else {
-      console.log('Zwibbler undo not available')
     }
   }, [zwibblerCtx])
 
   const redo = useCallback(() => {
-    console.log('redo called, zwibblerCtx:', zwibblerCtx)
     if (zwibblerCtx && typeof zwibblerCtx.redo === 'function') {
       zwibblerCtx.redo()
-      console.log('Using Zwibbler redo')
-    } else {
-      console.log('Zwibbler redo not available')
     }
   }, [zwibblerCtx])
 
   // Clear everything
   const clear = useCallback(() => {
-    console.log('clear called, zwibblerCtx:', zwibblerCtx)
     
     if (zwibblerCtx && confirm("Clear entire drawing?")) {
       zwibblerCtx.begin()
@@ -349,74 +397,117 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
       
       // Call the background function
       zwibblerCtx.useSinglelineBackground()
-      console.log('Background restored after clear')
     }
   }, [zwibblerCtx])
 
   // Paper size functions
   const setLandscape = useCallback(() => {
-    console.log('setLandscape called, zwibblerCtx:', zwibblerCtx)
     if (zwibblerCtx && typeof zwibblerCtx.setPaperSize === 'function') {
       zwibblerCtx.setPaperSize('A4', true) // true = landscape
-      console.log('Using Zwibbler landscape')
-    } else {
-      console.log('Zwibbler landscape not available')
     }
   }, [zwibblerCtx])
 
   const setPortrait = useCallback(() => {
-    console.log('setPortrait called, zwibblerCtx:', zwibblerCtx)
     if (zwibblerCtx && typeof zwibblerCtx.setPaperSize === 'function') {
       zwibblerCtx.setPaperSize('A4', false) // false = portrait
-      console.log('Using Zwibbler portrait')
-    } else {
-      console.log('Zwibbler portrait not available')
     }
   }, [zwibblerCtx])
 
   // Insert image
   const insertImage = useCallback(() => {
-    console.log('insertImage called, zwibblerCtx:', zwibblerCtx)
     if (zwibblerCtx && typeof zwibblerCtx.insertImage === 'function') {
       zwibblerCtx.insertImage()
-      console.log('Using Zwibbler insert image')
-    } else {
-      console.log('Zwibbler insert image not available')
     }
   }, [zwibblerCtx])
 
   // Download/Export
   const download = useCallback(() => {
-    console.log('download called, zwibblerCtx:', zwibblerCtx)
     if (zwibblerCtx && typeof zwibblerCtx.download === 'function') {
       zwibblerCtx.download('pdf', filename)
-      console.log('Using Zwibbler download')
-    } else {
-      console.log('Zwibbler download not available')
     }
   }, [zwibblerCtx, filename])
 
   const save = useCallback(() => {
-    console.log('save called, zwibblerCtx:', zwibblerCtx)
     if (zwibblerCtx && typeof zwibblerCtx.save === 'function') {
-      console.log(zwibblerCtx.save('zwibbler3'))
-      console.log('Drawing saved as zwibbler3 format')
-    } else {
-      console.log('Zwibbler save not available')
+      zwibblerCtx.save('zwibbler3')
     }
   }, [zwibblerCtx])
 
   // Reset zoom
   const resetZoom = useCallback(() => {
-    console.log('resetZoom called, zwibblerCtx:', zwibblerCtx)
     
     if (zwibblerCtx && typeof zwibblerCtx.setZoom === 'function') {
       zwibblerCtx.setZoom('page')
-      console.log('Reset zoom to fit page')
-    } else {
-      console.log('Zwibbler setZoom not available')
     }
   }, [zwibblerCtx])
+
+  // Function to load Zwibbler3 JSON data into the drawing pad
+  // Example usage:
+  // const sampleData = '{"version":"3.0","pages":[{"id":"page1","width":800,"height":600,"nodes":[]}]}'
+  // loadDrawingData(sampleData)
+  const loadDrawingData = useCallback((jsonData: string) => {
+    
+    if (zwibblerCtx && typeof zwibblerCtx.load === 'function') {
+      try {
+        // Parse the JSON data if it's a string
+        const dataToLoad = typeof jsonData === 'string' ? jsonData : JSON.stringify(jsonData)
+        
+        // Load the data into Zwibbler
+        const success = zwibblerCtx.load(dataToLoad)
+        
+        if (success) {
+          // Trigger a redraw
+          zwibblerCtx.redraw()
+          
+          // IMPORTANT: After loading data, ensure we're in pen mode
+          // The loaded data might have saved a different tool state
+          setTimeout(() => {
+            // Re-activate pen tool after loading
+            if (typeof zwibblerCtx.usePenTool === 'function') {
+              zwibblerCtx.usePenTool()
+            } else if (typeof zwibblerCtx.useBrushTool === 'function') {
+              zwibblerCtx.useBrushTool(currentColor, currentThickness)
+            }
+            
+            // Ensure our state is consistent
+            setCurrentTool('pen')
+          }, 50)
+        } else {
+          console.error('Failed to load drawing data')
+        }
+      } catch (error) {
+        console.error('Error loading drawing data:', error)
+      }
+    }
+  }, [zwibblerCtx, currentColor, currentThickness])
+
+  // Function to load drawing data from a file
+  const loadDrawingFromFile = useCallback((file: File) => {
+    
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const content = e.target?.result as string
+      if (content) {
+        loadDrawingData(content)
+      }
+    }
+    reader.onerror = () => {
+      console.error('Error reading file')
+    }
+    reader.readAsText(file)
+  }, [loadDrawingData])
+
+  // Load initial data if provided
+  useEffect(() => {
+    if (initialData && zwibblerCtx) {
+      // Add a small delay to ensure Zwibbler is fully initialized
+      const timer = setTimeout(() => {
+        loadDrawingData(initialData)
+      }, 100)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [initialData, zwibblerCtx, loadDrawingData])
 
   return (
     <div className={`drawing-pad ${className}`}>
@@ -523,32 +614,25 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
               <i className="fas fa-minus"></i>
             </button>
             <button 
+              className={`tool-button ${currentTool === 'text' ? 'active' : ''}`}
+              onClick={useTextTool}
+              title="Text"
+            >
+              <i className="fas fa-font"></i>
+            </button>
+            <button 
+              className="tool-button"
+              onClick={insertImage}
+              title="Insert image"
+            >
+              <i className="fas fa-image"></i>
+            </button>
+            <button 
               className={`tool-button ${currentTool === 'eraser' ? 'active' : ''}`}
               onClick={useEraser}
               title="Eraser"
             >
               <i className="fas fa-eraser"></i>
-            </button>
-            <button 
-              className="tool-button"
-              onClick={resetZoom}
-              title="Reset zoom"
-            >
-              <i className="fas fa-expand"></i>
-            </button>
-            <button 
-              className="tool-button"
-              onClick={download}
-              title="Export"
-            >
-              <i className="fas fa-download"></i>
-            </button>
-            <button 
-              className="tool-button"
-              onClick={save}
-              title="Save"
-            >
-              <i className="fas fa-save"></i>
             </button>
             <button 
               className="tool-button"
@@ -559,7 +643,12 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
             </button>
             <button 
               className={`tool-button ${currentTool === 'pick' ? 'active' : ''}`}
-              onClick={usePickTool}
+              onClick={() => {
+                if (zwibblerCtx && typeof zwibblerCtx.usePickTool === 'function') {
+                  zwibblerCtx.usePickTool()
+                  setCurrentTool('pick')
+                }
+              }}
               title="Select"
             >
               <i className="fas fa-mouse-pointer"></i>
@@ -577,13 +666,6 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
               title="Redo"
             >
               <i className="fas fa-redo"></i>
-            </button>
-            <button 
-              className="tool-button"
-              onClick={insertImage}
-              title="Insert image"
-            >
-              <i className="fas fa-image"></i>
             </button>
             <button 
               className="tool-button"
@@ -607,11 +689,18 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
               <i className="fas fa-hand-paper"></i>
             </button>
             <button 
-              className={`tool-button ${currentTool === 'text' ? 'active' : ''}`}
-              onClick={useTextTool}
-              title="Text"
+              className="tool-button"
+              onClick={resetZoom}
+              title="Reset zoom"
             >
-              <i className="fas fa-font"></i>
+              <i className="fas fa-expand"></i>
+            </button>
+            <button 
+              className="tool-button"
+              onClick={download}
+              title="Export"
+            >
+              <i className="fas fa-download"></i>
             </button>
           </div>
         </div>
@@ -639,4 +728,4 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
   )
 }
 
-export default DrawingPad 
+export default DrawingPad
