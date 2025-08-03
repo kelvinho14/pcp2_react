@@ -7,7 +7,7 @@ import './TestPage.css'
 const TestPage: FC = () => {
   const [canvasSize, setCanvasSize] = useState({
     width: window.innerWidth < 768 ? 600 : 800,
-    height: window.innerWidth < 768 ? 400 : 600
+    height: window.innerWidth < 768 ? 1400 : 600
   })
 
   useEffect(() => {

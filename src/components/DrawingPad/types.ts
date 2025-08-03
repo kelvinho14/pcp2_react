@@ -10,4 +10,5 @@ export interface DrawingPadProps {
   height?: number
   onExport?: (format: 'png' | 'jpg' | 'pdf') => void
   className?: string
+  filename?: string
 } 

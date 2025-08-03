@@ -13,7 +13,8 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
   width = 800,
   height = 600,
   onExport,
-  className = ''
+  className = '',
+  filename = 'LiveDrawing.pdf'
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null)
   const [zwibblerCtx, setZwibblerCtx] = useState<any>(null)
@@ -22,7 +23,7 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
   const [showThicknessPicker, setShowThicknessPicker] = useState(false)
   const [currentColor, setCurrentColor] = useState('#000000')
   const [currentThickness, setCurrentThickness] = useState(4)
-  const [currentTool, setCurrentTool] = useState<'pen' | 'highlighter' | 'eraser' | 'line' | 'pick' | 'pan'>('pen')
+  const [currentTool, setCurrentTool] = useState<'pen' | 'highlighter' | 'eraser' | 'line' | 'pick' | 'pan' | 'text'>('pen')
 
   // Click outside handler
   useEffect(() => {
@@ -84,7 +85,7 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
 
         // Set page placement and zoom like in the HTML reference
         ctx.setConfig('pagePlacement', 'centre')
-        ctx.setZoom(0.6)
+        ctx.setZoom('page')
         console.log('Page placement and zoom set')
 
         // Set up colors like in the HTML reference
@@ -245,6 +246,15 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
     }
   }, [zwibblerCtx])
 
+  const useTextTool = useCallback(() => {
+    console.log('useTextTool called')
+    setCurrentTool('text')
+    if (zwibblerCtx) {
+      zwibblerCtx.useTextTool()
+      console.log('Text tool activated')
+    }
+  }, [zwibblerCtx])
+
   // Function to clear background
   const clearBackground = useCallback(() => {
     console.log('clearBackground called, zwibblerCtx:', zwibblerCtx)
@@ -379,21 +389,32 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
   const download = useCallback(() => {
     console.log('download called, zwibblerCtx:', zwibblerCtx)
     if (zwibblerCtx && typeof zwibblerCtx.download === 'function') {
-      zwibblerCtx.download('pdf', 'LiveDrawing.pdf')
+      zwibblerCtx.download('pdf', filename)
       console.log('Using Zwibbler download')
     } else {
       console.log('Zwibbler download not available')
+    }
+  }, [zwibblerCtx, filename])
+
+  const save = useCallback(() => {
+    console.log('save called, zwibblerCtx:', zwibblerCtx)
+    if (zwibblerCtx && typeof zwibblerCtx.save === 'function') {
+      console.log(zwibblerCtx.save('zwibbler3'))
+      console.log('Drawing saved as zwibbler3 format')
+    } else {
+      console.log('Zwibbler save not available')
     }
   }, [zwibblerCtx])
 
   // Reset zoom
   const resetZoom = useCallback(() => {
     console.log('resetZoom called, zwibblerCtx:', zwibblerCtx)
-    if (zwibblerCtx && typeof zwibblerCtx.resetZoom === 'function') {
-      zwibblerCtx.resetZoom()
-      console.log('Using Zwibbler reset zoom')
+    
+    if (zwibblerCtx && typeof zwibblerCtx.setZoom === 'function') {
+      zwibblerCtx.setZoom('page')
+      console.log('Reset zoom to fit page')
     } else {
-      console.log('Zwibbler reset zoom not available')
+      console.log('Zwibbler setZoom not available')
     }
   }, [zwibblerCtx])
 
@@ -405,20 +426,19 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
           <div className="toolbar-section">
             {/* Pen tools */}
             <button 
-              className={`tool-button ${currentTool === 'highlighter' ? 'active highlighter' : ''}`}
-              onClick={() => usePen(currentThickness, currentColor, 2)}
-              title="Highlighter"
-            >
-              <i className="fas fa-pen-to-square"></i>
-            </button>
-            <button 
               className={`tool-button ${currentTool === 'pen' ? 'active' : ''}`}
               onClick={() => usePen(currentThickness, currentColor, 1)}
               title="Pen"
             >
               <i className="fas fa-pencil-alt"></i>
             </button>
-            
+            <button 
+              className={`tool-button ${currentTool === 'highlighter' ? 'active highlighter' : ''}`}
+              onClick={() => usePen(currentThickness, currentColor, 2)}
+              title="Highlighter"
+            >
+              <i className="fas fa-pen-to-square"></i>
+            </button>
             {/* Color picker with dropdown */}
             <div style={{ position: 'relative' }}>
               <button 
@@ -525,6 +545,13 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
             </button>
             <button 
               className="tool-button"
+              onClick={save}
+              title="Save"
+            >
+              <i className="fas fa-save"></i>
+            </button>
+            <button 
+              className="tool-button"
               onClick={clear}
               title="Clear"
             >
@@ -578,6 +605,13 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
               title="Pan & zoom"
             >
               <i className="fas fa-hand-paper"></i>
+            </button>
+            <button 
+              className={`tool-button ${currentTool === 'text' ? 'active' : ''}`}
+              onClick={useTextTool}
+              title="Text"
+            >
+              <i className="fas fa-font"></i>
             </button>
           </div>
         </div>
