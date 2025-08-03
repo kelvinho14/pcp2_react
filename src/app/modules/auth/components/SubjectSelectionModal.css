@@ -28,7 +28,7 @@ body.modal-open {
 .modal-backdrop.show {
   background-color: #000 !important;
   opacity: 0.95 !important;
-}
+} 
 
 /* Subject item hover effects */
 .subject-item {

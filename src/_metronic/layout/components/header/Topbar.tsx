@@ -7,7 +7,7 @@ import {useAuth} from '../../../../app/modules/auth'
 
 const Topbar: FC = () => {
   const {currentUser} = useAuth()
-  
+
   return (
   <div className='d-flex flex-shrink-0'>
     {/* begin::Invite user */}
@@ -93,7 +93,7 @@ const Topbar: FC = () => {
         <HeaderUserMenu />
     </div>
   </div>
-  )
+)
 }
 
 export {Topbar}

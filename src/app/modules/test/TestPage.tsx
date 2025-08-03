@@ -1,12 +1,35 @@
-import {FC} from 'react'
+import {FC, useState, useEffect} from 'react'
 import {PageTitle} from '../../../_metronic/layout/core'
 import TinyMCEEditor from '../../../components/Editor/TinyMCEEditor'
+import {DrawingPad} from '../../../components/DrawingPad'
 
 const TestPage: FC = () => {
+  const [canvasSize, setCanvasSize] = useState({
+    width: window.innerWidth < 768 ? 600 : 800,
+    height: window.innerWidth < 768 ? 1400 : 600
+  })
+
+  useEffect(() => {
+    const handleResize = () => {
+      setCanvasSize({
+        width: window.innerWidth < 768 ? 600 : 800,
+        height: window.innerWidth < 768 ? 400 : 600
+      })
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   return (
     <>
       <PageTitle breadcrumbs={[]}>Test Page</PageTitle>
-      <div className='card'>
+      
+      {/* TinyMCE Editor Section */}
+      <div className='card mb-8'>
+        <div className='card-header'>
+          <h3 className='card-title'>TinyMCE Editor</h3>
+        </div>
         <div className='card-body'>
           <TinyMCEEditor
             initialValue='<p>This is a test page with TinyMCE editor</p>'
@@ -15,6 +38,38 @@ const TestPage: FC = () => {
             }}
             height={400}
             placeholder='Start writing your content...'
+          />
+        </div>
+      </div>
+
+      {/* DrawingPad Component Section */}
+      <div className='card'>
+        <div className='card-header'>
+          <h3 className='card-title'>DrawingPad Component</h3>
+          <div className='card-toolbar'>
+            <span className='badge badge-light-primary fs-7'>React Component</span>
+          </div>
+        </div>
+        <div className='card-body'>
+          <div className='alert alert-info mb-6'>
+            <div className='d-flex align-items-center'>
+              <i className='fas fa-info-circle fs-2 me-3'></i>
+              <div>
+                <h6 className='alert-heading mb-1'>Interactive Drawing Tool</h6>
+                <p className='mb-0'>
+                  Use the toolbar to draw, erase, and create artwork. Features include multiple drawing tools, 
+                  color palette, line width selection, and export functionality (PDF, PNG, JPG).
+                </p>
+              </div>
+            </div>
+          </div>
+          <DrawingPad
+            width={canvasSize.width}
+            height={canvasSize.height}
+            onExport={(format: 'pdf' | 'png' | 'jpg') => {
+              console.log(`Exporting drawing as ${format}`)
+            }}
+            className="test-drawing-pad"
           />
         </div>
       </div>
