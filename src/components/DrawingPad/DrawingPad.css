@@ -19,7 +19,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
   background: #fff;
 }
 
@@ -318,10 +317,6 @@
 @media (max-width: 768px) {
   .drawing-pad {
     border-radius: 4px;
-  }
-  
-  .drawing-pad-main {
-    padding: 10px;
   }
   
   .drawing-pad-canvas {

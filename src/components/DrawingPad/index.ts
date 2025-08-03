@@ -1,7 +1,2 @@
 export { default as DrawingPad } from './DrawingPad'
-export { default as DrawingPadToolbar } from './DrawingPadToolbar'
-export { default as DrawingPadCanvas } from './DrawingPadCanvas'
-export { default as ColourPalette } from './ColourPalette'
-export { default as LineWidthSelector } from './LineWidthSelector'
-export { default as DrawingPadExample } from './DrawingPadExample'
 export * from './types' 

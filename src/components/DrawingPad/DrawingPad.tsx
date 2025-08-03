@@ -319,14 +319,27 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
     }
   }, [zwibblerCtx])
 
-  // Clear
+  // Clear everything
   const clear = useCallback(() => {
     console.log('clear called, zwibblerCtx:', zwibblerCtx)
-    if (zwibblerCtx && typeof zwibblerCtx.clearEverything === 'function') {
-      zwibblerCtx.clearEverything()
-      console.log('Using Zwibbler clear')
-    } else {
-      console.log('Zwibbler clear not available')
+    
+    if (zwibblerCtx && confirm("Clear entire drawing?")) {
+      zwibblerCtx.begin()
+      let numPages = zwibblerCtx.getPageCount()
+      for(let i = numPages-1; i >= 0; i--) {
+        zwibblerCtx.deletePage(i)
+      }
+      zwibblerCtx.commit()
+      
+      // Recreate the background function exactly like in initialization
+      zwibblerCtx.useSinglelineBackground = () => {
+        zwibblerCtx.setConfig('background', 'image')
+        zwibblerCtx.setConfig('backgroundImage', 'https://app.myplp.io/chem/theme/assets/singleline_paper_2.jpg')
+      }
+      
+      // Call the background function
+      zwibblerCtx.useSinglelineBackground()
+      console.log('Background restored after clear')
     }
   }, [zwibblerCtx])
 
