@@ -2,7 +2,6 @@ import {FC, useState, useEffect} from 'react'
 import {PageTitle} from '../../../_metronic/layout/core'
 import TinyMCEEditor from '../../../components/Editor/TinyMCEEditor'
 import {DrawingPad} from '../../../components/DrawingPad'
-import './TestPage.css'
 
 const TestPage: FC = () => {
   const [canvasSize, setCanvasSize] = useState({
