@@ -1143,7 +1143,7 @@ const TeacherVideoListPage: FC = () => {
                                 <div className='ms-4 mt-2'>
                                   {fetchingVimeoVideos[folder.uri] ? (
                                     <div className='text-center py-2'>
-                                      <div className='spinner-border spinner-border-sm text-primary' role='status'>
+                                      <div className='spinner-border spinner-border-sm text-primary me-2' role='status'>
                                         <span className='visually-hidden'>Loading...</span>
                                       </div>
                                       <small>Loading videos...</small>
