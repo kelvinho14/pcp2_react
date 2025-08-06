@@ -34,7 +34,7 @@ const intl = useIntl()
               fontIcon='fa-solid fa-xmark'
               textAlign='end'
           />
-          <AsideMenuItem to='/videos/list' title='Video List' fontIcon='fas fa-magnifying-glass me-2'/>
+          <AsideMenuItem to='/videos/list' title='Videos' fontIcon='fas fa-video me-2'/>
           <AsideMenuItem to='/videos/assignedlist' title='Assigned Video' fontIcon='fas fa-video me-2'/>
         </div>
       </div>
