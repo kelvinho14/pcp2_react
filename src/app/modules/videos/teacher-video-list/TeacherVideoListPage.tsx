@@ -28,6 +28,7 @@ import {fetchTags} from '../../../../store/tags/tagsSlice'
 import VideoTagInput, {VideoTagData} from '../../../../components/Video/VideoTagInput'
 import {KTIcon} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
+import {ConfirmationDialog} from '../../../../_metronic/helpers/ConfirmationDialog'
 import VideoDetailModal from '../../../../components/Video/VideoDetailModal'
 import './TeacherVideoListPage.css'
 
@@ -62,6 +63,7 @@ const TeacherVideoListPage: FC = () => {
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [platformFilter, setPlatformFilter] = useState<'youtube' | 'vimeo' | ''>('')
+  const [statusFilter, setStatusFilter] = useState<1 | 2 | ''>('') // 1 = private, 2 = public
 
   // State for modal
   const [showModal, setShowModal] = useState(false)
@@ -89,6 +91,10 @@ const TeacherVideoListPage: FC = () => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
   const [selectedVimeoVideos, setSelectedVimeoVideos] = useState<Set<string>>(new Set())
 
+  // State for delete confirmation
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [videoToDelete, setVideoToDelete] = useState<string | null>(null)
+
   // Fetch videos on component mount and when filters change
   useEffect(() => {
     dispatch(fetchTeacherVideos({
@@ -98,8 +104,9 @@ const TeacherVideoListPage: FC = () => {
       order: sortOrder,
       search: searchTerm || undefined,
       source: getSourceFromPlatform(platformFilter),
+      status: statusFilter || undefined,
     }))
-  }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder, searchTerm, platformFilter])
+  }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder, searchTerm, platformFilter, statusFilter])
 
   // Fetch tags on component mount
   useEffect(() => {
@@ -216,6 +223,7 @@ const TeacherVideoListPage: FC = () => {
         order: sortOrder,
         search: searchTerm || undefined,
         source: getSourceFromPlatform(platformFilter),
+        status: statusFilter || undefined,
       }))
       
       setShowModal(false)
@@ -297,6 +305,7 @@ const TeacherVideoListPage: FC = () => {
         order: sortOrder,
         search: searchTerm || undefined,
         source: getSourceFromPlatform(platformFilter),
+        status: statusFilter || undefined,
       }))
       
       setShowModal(false)
@@ -346,14 +355,32 @@ const TeacherVideoListPage: FC = () => {
   }
 
   // Handle delete video
-  const handleDelete = async (videoId: string) => {
-    if (window.confirm('Are you sure you want to delete this video?')) {
-      try {
-        await dispatch(deleteVideo(videoId)).unwrap()
-      } catch (error) {
-        // Error is handled by the thunk
-      }
+  const handleDelete = async () => {
+    if (!videoToDelete) return
+    
+    try {
+      await dispatch(deleteVideo(videoToDelete)).unwrap()
+      setShowDeleteDialog(false)
+      setVideoToDelete(null)
+      // Refresh the video list to show the latest data
+      dispatch(fetchTeacherVideos({
+        page: currentPage,
+        items_per_page: itemsPerPage,
+        sort: sortBy,
+        order: sortOrder,
+        search: searchTerm || undefined,
+        source: getSourceFromPlatform(platformFilter),
+        status: statusFilter || undefined,
+      }))
+    } catch (error) {
+      // Error is handled by the thunk
     }
+  }
+
+  // Handle delete click
+  const handleDeleteClick = (videoId: string) => {
+    setVideoToDelete(videoId)
+    setShowDeleteDialog(true)
   }
 
   // Handle view video
@@ -371,6 +398,12 @@ const TeacherVideoListPage: FC = () => {
   // Handle platform filter
   const handlePlatformFilter = (platform: 'youtube' | 'vimeo' | '') => {
     setPlatformFilter(platform)
+    setCurrentPage(1)
+  }
+
+  // Handle status filter
+  const handleStatusFilter = (status: '1' | '2' | '') => {
+    setStatusFilter(status === '' ? '' : parseInt(status) as 1 | 2)
     setCurrentPage(1)
   }
 
@@ -445,6 +478,18 @@ const TeacherVideoListPage: FC = () => {
                   <option value=''>All Platforms</option>
                   <option value='youtube'>YouTube</option>
                   <option value='vimeo'>Vimeo</option>
+                </select>
+              </div>
+              
+              <div className='me-3'>
+                <select
+                  className='form-select form-select-solid'
+                  value={statusFilter}
+                  onChange={(e) => handleStatusFilter(e.target.value as '1' | '2' | '')}
+                >
+                  <option value=''>All Videos</option>
+                  <option value='1'>Private</option>
+                  <option value='2'>Public</option>
                 </select>
               </div>
               
@@ -561,7 +606,7 @@ const TeacherVideoListPage: FC = () => {
                               <button
                                 type='button'
                                 className='btn btn-outline-danger'
-                                onClick={() => handleDelete(video.video_id)}
+                                onClick={() => handleDeleteClick(video.video_id)}
                                 title='Delete'
                                 disabled={deleting}
                               >
@@ -1257,6 +1302,21 @@ const TeacherVideoListPage: FC = () => {
           setShowDetailModal(false)
           setSelectedVideo(null)
         }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        show={showDeleteDialog}
+        onHide={() => {
+          setShowDeleteDialog(false)
+          setVideoToDelete(null)
+        }}
+        onConfirm={handleDelete}
+        title="Confirm Delete"
+        message="Are you sure you want to delete this video? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
       />
     </>
   )

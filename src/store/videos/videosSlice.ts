@@ -253,19 +253,21 @@ export const deleteVideo = createAsyncThunk(
 
 export const fetchTeacherVideos = createAsyncThunk(
   'videos/fetchTeacherVideos',
-  async ({ page, items_per_page, sort, order, search, source }: {
+  async ({ page, items_per_page, sort, order, search, source, status }: {
     page: number
     items_per_page: number
     sort?: string
     order?: 'asc' | 'desc'
     search?: string
     source?: number
+    status?: number
   }) => {
     const params: any = { page, items_per_page }
     if (sort) params.sort = sort
     if (order) params.order = order
     if (search) params.search = search
     if (source) params.source = source
+    if (status) params.status = status
 
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/videos`)
