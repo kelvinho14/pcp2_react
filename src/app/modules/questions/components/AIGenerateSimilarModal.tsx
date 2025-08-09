@@ -1,4 +1,5 @@
 import {FC, useState} from 'react'
+import {Modal, Button} from 'react-bootstrap'
 import {KTIcon} from '../../../../_metronic/helpers'
 
 interface AIGenerateSimilarModalProps {
@@ -27,19 +28,19 @@ const AIGenerateSimilarModal: FC<AIGenerateSimilarModalProps> = ({
   if (!show) return null
 
   return (
-    <div className='modal fade show d-block' style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-      <div className='modal-dialog modal-dialog-centered modal-lg'>
-        <div className='modal-content'>
-          <div className='modal-header'>
-            <h5 className='modal-title'>Generate Similar Questions</h5>
-            <button 
-              type='button' 
-              className='btn-close' 
-              onClick={onHide}
-              disabled={isLoading}
-            ></button>
-          </div>
-          <div className='modal-body'>
+    <Modal
+      show={show}
+      onHide={onHide}
+      size="lg"
+      centered
+      backdrop={true}
+      keyboard={true}
+      dialogClassName="ai-generate-similar-modal"
+    >
+      <Modal.Header closeButton={!isLoading}>
+        <Modal.Title>Generate Similar Questions</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
             {/* Question Type Selection */}
             <div className='mb-4'>
               <h6 className='mb-3'>Choose the type of questions you want to generate:</h6>
@@ -153,35 +154,32 @@ const AIGenerateSimilarModal: FC<AIGenerateSimilarModalProps> = ({
                 </div>
               </div>
             </div>
-          </div>
-          <div className='modal-footer'>
-            <button 
-              type='button' 
-              className='btn btn-secondary' 
-              onClick={onHide}
-              disabled={isLoading}
-            >
-              Cancel
-            </button>
-            <button 
-              type='button' 
-              className={`btn btn-primary ${isLoading ? 'btn-loading' : ''}`}
-              onClick={handleGenerate}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <span className='spinner-border spinner-border-sm me-2' role='status' aria-hidden='true'></span>
-                  Generating...
-                </>
-              ) : (
-                'Generate'
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button 
+          variant="secondary"
+          onClick={onHide}
+          disabled={isLoading}
+        >
+          Cancel
+        </Button>
+        <Button 
+          variant="primary"
+          className={isLoading ? 'btn-loading' : ''}
+          onClick={handleGenerate}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <span className='spinner-border spinner-border-sm me-2' role='status' aria-hidden='true'></span>
+              Generating...
+            </>
+          ) : (
+            'Generate'
+          )}
+        </Button>
+      </Modal.Footer>
+    </Modal>
   )
 }
 

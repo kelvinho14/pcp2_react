@@ -2,10 +2,12 @@ import {FC, useEffect, useState} from 'react'
 import {PageTitle} from '../../../../_metronic/layout/core'
 import {useIntl} from 'react-intl'
 import {useDispatch, useSelector} from 'react-redux'
-import {AppDispatch, RootState} from '../../../../store'
+import {AppDispatch, RootState, store} from '../../../../store'
 import {useNavigate} from 'react-router-dom'
 import {useAuth} from '../../../../app/modules/auth'
 import {isTeachingStaff} from '../../../../app/constants/roles'
+import axios from 'axios'
+import {getHeadersWithSchoolSubject} from '../../../../_metronic/helpers/axios'
 import {
   fetchTeacherVideos,
   createVideo,
@@ -30,6 +32,9 @@ import {KTIcon} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
 import {ConfirmationDialog} from '../../../../_metronic/helpers/ConfirmationDialog'
 import VideoDetailModal from '../../../../components/Video/VideoDetailModal'
+import {StudentSelectionTable} from '../../../../app/modules/exercises/exercise-list/components/header/StudentSelectionTable'
+import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
+import {DatePicker} from '../../../../_metronic/helpers/components/DatePicker'
 import './TeacherVideoListPage.css'
 
 const TeacherVideoListPage: FC = () => {
@@ -94,6 +99,23 @@ const TeacherVideoListPage: FC = () => {
   // State for delete confirmation
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [videoToDelete, setVideoToDelete] = useState<string | null>(null)
+
+  // State for video assignment
+  const [showAssignModal, setShowAssignModal] = useState(false)
+  const [videoToAssign, setVideoToAssign] = useState<Video | null>(null)
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([])
+  const [assignmentDueDate, setAssignmentDueDate] = useState<Date | null>(null)
+  const [assignmentMessage, setAssignmentMessage] = useState<string>('')
+
+  // State for bulk video assignment
+  const [showBulkAssignModal, setShowBulkAssignModal] = useState(false)
+  const [bulkSelectedStudents, setBulkSelectedStudents] = useState<string[]>([])
+  const [bulkAssignmentDueDate, setBulkAssignmentDueDate] = useState<Date | null>(null)
+  const [bulkAssignmentMessage, setBulkAssignmentMessage] = useState<string>('')
+  const [videoSearchTerm, setVideoSearchTerm] = useState('')
+  const [availableVideos, setAvailableVideos] = useState<Video[]>([])
+  const [selectedVideos, setSelectedVideos] = useState<string[]>([])
+  const [searchingVideos, setSearchingVideos] = useState(false)
 
   // Fetch videos on component mount and when filters change
   useEffect(() => {
@@ -383,10 +405,170 @@ const TeacherVideoListPage: FC = () => {
     setShowDeleteDialog(true)
   }
 
+  // Handle assign click
+  const handleAssignClick = (video: Video) => {
+    setVideoToAssign(video)
+    setSelectedStudents([])
+    setAssignmentDueDate(null)
+    setAssignmentMessage('')
+    setShowAssignModal(true)
+  }
+
+  // Handle student selection
+  const handleStudentSelection = (studentId: string) => {
+    setSelectedStudents(prev => 
+      prev.includes(studentId) 
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    )
+  }
+
+  // Handle video assignment
+  const handleAssignVideo = async () => {
+    if (selectedStudents.length === 0) {
+      toast.warning('Please select at least one student', 'Warning')
+      return
+    }
+
+    if (!videoToAssign) return
+
+    try {
+      const API_URL = import.meta.env.VITE_APP_API_URL
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/videos/assign`)
+      
+      const assignmentData = {
+        student_ids: selectedStudents,
+        video_id: videoToAssign.video_id,
+        due_date: assignmentDueDate ? new Date(assignmentDueDate.getFullYear(), assignmentDueDate.getMonth(), assignmentDueDate.getDate(), 23, 59, 59).toISOString() : undefined,
+        message_for_student: assignmentMessage.trim() || undefined,
+      }
+
+      await axios.post(`${API_URL}/videos/assign`, assignmentData, {
+        headers,
+        withCredentials: true
+      })
+
+      toast.success('Video assigned successfully!', 'Success')
+      setShowAssignModal(false)
+      setVideoToAssign(null)
+      setSelectedStudents([])
+      setAssignmentDueDate(null)
+      setAssignmentMessage('')
+    } catch (error: any) {
+      console.error('Error assigning video:', error)
+      const errorMessage = error.response?.data?.message || 'Failed to assign video'
+      toast.error(errorMessage, 'Error')
+    }
+  }
+
   // Handle view video
   const handleViewVideo = (video: Video) => {
     setSelectedVideo(video)
     setShowDetailModal(true)
+  }
+
+  // Handle bulk assign modal open
+  const handleBulkAssignModalOpen = () => {
+    setShowBulkAssignModal(true)
+    setBulkSelectedStudents([])
+    setBulkAssignmentDueDate(null)
+    setBulkAssignmentMessage('')
+    setVideoSearchTerm('')
+    setAvailableVideos([])
+    setSelectedVideos([])
+  }
+
+  // Handle bulk student selection
+  const handleBulkStudentSelection = (studentId: string) => {
+    setBulkSelectedStudents(prev => 
+      prev.includes(studentId) 
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    )
+  }
+
+  // Handle video selection for bulk assign
+  const handleVideoSelection = (videoId: string) => {
+    setSelectedVideos(prev => 
+      prev.includes(videoId) 
+        ? prev.filter(id => id !== videoId)
+        : [...prev, videoId]
+    )
+  }
+
+  // Search videos for bulk assign
+  const handleVideoSearch = async (searchTerm: string) => {
+    setVideoSearchTerm(searchTerm)
+    if (searchTerm.trim()) {
+      setSearchingVideos(true)
+      try {
+        const API_URL = import.meta.env.VITE_APP_API_URL
+        const headers = getHeadersWithSchoolSubject(`${API_URL}/videos`)
+        
+        const response = await axios.get(`${API_URL}/videos`, {
+          params: {
+            page: 1,
+            items_per_page: 50,
+            search: searchTerm,
+          },
+          headers,
+          withCredentials: true
+        })
+        
+        setAvailableVideos(response.data.data || [])
+      } catch (error) {
+        console.error('Error searching videos:', error)
+        setAvailableVideos([])
+      } finally {
+        setSearchingVideos(false)
+      }
+    } else {
+      setAvailableVideos([])
+    }
+  }
+
+  // Handle bulk video assignment
+  const handleBulkAssignVideos = async () => {
+    if (bulkSelectedStudents.length === 0) {
+      toast.warning('Please select at least one student', 'Warning')
+      return
+    }
+
+    if (selectedVideos.length === 0) {
+      toast.warning('Please select at least one video', 'Warning')
+      return
+    }
+
+    try {
+      const API_URL = import.meta.env.VITE_APP_API_URL
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/videos/assign`)
+      
+      // Assign all videos to selected students in a single API call
+      const assignmentData = {
+        student_ids: bulkSelectedStudents,
+        video_ids: selectedVideos,
+        due_date: bulkAssignmentDueDate ? new Date(bulkAssignmentDueDate.getFullYear(), bulkAssignmentDueDate.getMonth(), bulkAssignmentDueDate.getDate(), 23, 59, 59).toISOString() : undefined,
+        message_for_student: bulkAssignmentMessage.trim() || undefined,
+      }
+
+      await axios.post(`${API_URL}/videos/assign`, assignmentData, {
+        headers,
+        withCredentials: true
+      })
+
+      toast.success('Videos assigned successfully!', 'Success')
+      setShowBulkAssignModal(false)
+      setBulkSelectedStudents([])
+      setBulkAssignmentDueDate(null)
+      setBulkAssignmentMessage('')
+      setVideoSearchTerm('')
+      setAvailableVideos([])
+      setSelectedVideos([])
+    } catch (error: any) {
+      console.error('Error assigning videos:', error)
+      const errorMessage = error.response?.data?.message || 'Failed to assign videos'
+      toast.error(errorMessage, 'Error')
+    }
   }
 
   // Handle search
@@ -432,6 +614,13 @@ const TeacherVideoListPage: FC = () => {
       return 'fab fa-vimeo-v text-primary'
     }
     return 'fas fa-video'
+  }
+
+  // Format duration
+  const formatDuration = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
 
   return (
@@ -494,17 +683,27 @@ const TeacherVideoListPage: FC = () => {
               </div>
               
               {isTeachingStaff(currentUser?.role?.role_type) && (
-                <button
-                  type='button'
-                  className='btn btn-primary'
-                  onClick={() => {
-                    resetModal()
-                    setShowModal(true)
-                  }}
-                >
-                  <KTIcon iconName='plus' className='fs-2' />
-                  Add Video
-                </button>
+                <>
+                  <button
+                    type='button'
+                    className='btn btn-success me-2'
+                    onClick={handleBulkAssignModalOpen}
+                  >
+                    <i className='fas fa-user-plus me-2'></i>
+                    Assign Video
+                  </button>
+                  <button
+                    type='button'
+                    className='btn btn-primary'
+                    onClick={() => {
+                      resetModal()
+                      setShowModal(true)
+                    }}
+                  >
+                    <KTIcon iconName='plus' className='fs-2' />
+                    Add Video
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -594,10 +793,18 @@ const TeacherVideoListPage: FC = () => {
                           </div>
                           
                           {isTeachingStaff(currentUser?.role?.role_type) && (
-                            <div className='btn-group btn-group-sm'>
+                            <div className='d-flex gap-4'>
                               <button
                                 type='button'
-                                className='btn btn-outline-secondary'
+                                className='btn  btn-sm'
+                                onClick={() => handleAssignClick(video)}
+                                title='Assign to Students'
+                              >
+                                <i className='fas fa-user-plus'></i>
+                              </button>
+                              <button
+                                type='button'
+                                className='btn  btn-sm'
                                 onClick={() => handleEdit(video)}
                                 title='Edit'
                               >
@@ -605,7 +812,7 @@ const TeacherVideoListPage: FC = () => {
                               </button>
                               <button
                                 type='button'
-                                className='btn btn-outline-danger'
+                                className='btn btn-sm'
                                 onClick={() => handleDeleteClick(video.video_id)}
                                 title='Delete'
                                 disabled={deleting}
@@ -1318,6 +1525,222 @@ const TeacherVideoListPage: FC = () => {
         cancelText="Cancel"
         variant="danger"
       />
+
+      {/* Video Assignment Modal */}
+      {showAssignModal && videoToAssign && (
+        <div className='modal fade show d-block' style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog modal-lg" role="document">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Assign Video to Students</h5>
+                <button type="button" className="btn-close" onClick={() => setShowAssignModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <div className='mb-4'>
+                  <h6>Selected Video: {videoToAssign.title}</h6>
+                  <p className='text-muted'>Choose students to assign this video to:</p>
+                </div>
+
+                <div className='mb-4'>
+                  <label className='form-label fw-bold'>Select Students</label>
+                  <div style={{position: 'relative', zIndex: 2000}}>
+                    <StudentSelectionTable 
+                      exerciseIds={[videoToAssign.video_id]} // Pass video ID as exercise ID for compatibility
+                      search="" 
+                      selectedUsers={selectedStudents}
+                      onUserSelectionChange={handleStudentSelection}
+                    />
+                  </div>
+                </div>
+
+                <div className='mb-4'>
+                  <label className='form-label fw-bold'>Due Date (Optional)</label>
+                  <div style={{position: 'relative', zIndex: 1000}}>
+                    <DatePicker
+                      selected={assignmentDueDate}
+                      onChange={(date: Date | null) => setAssignmentDueDate(date)}
+                      placeholderText="Select due date"
+                      minDate={new Date()}
+                      isClearable={true}
+                      dayClassName={(date) => 
+                        date.getTime() === assignmentDueDate?.getTime() ? 'bg-primary text-white' : ''
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className='mb-4'>
+                  <label className='form-label fw-bold'>Message for Students (Optional)</label>
+                  <div style={{position: 'relative', zIndex: 1}}>
+                    <TinyMCEEditor
+                      value={assignmentMessage}
+                      onChange={setAssignmentMessage}
+                      placeholder='Enter a message for your students...'
+                      height={200}
+                    />
+                  </div>
+                  <div className='form-text'>This message will be shown to students when they access the video</div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => {
+                  setShowAssignModal(false)
+                  setVideoToAssign(null)
+                  setSelectedStudents([])
+                  setAssignmentDueDate(null)
+                  setAssignmentMessage('')
+                }}>
+                  Cancel
+                </button>
+                <button type="button" className="btn btn-primary" onClick={handleAssignVideo}>
+                  Assign Video
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Video Assignment Modal */}
+      {showBulkAssignModal && (
+        <div className='modal fade show d-block' style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog modal-xl" role="document">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Assign Videos to Students</h5>
+                <button type="button" className="btn-close" onClick={() => setShowBulkAssignModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <div className='row'>
+                  {/* Video Selection */}
+                  <div className='col-md-6'>
+                    <div className='mb-4'>
+                      <label className='form-label fw-bold'>Search and Select Videos</label>
+                      <div className='input-group mb-3'>
+                        <input
+                          type='text'
+                          className='form-control'
+                          placeholder='Search videos...'
+                          value={videoSearchTerm}
+                          onChange={(e) => handleVideoSearch(e.target.value)}
+                        />
+                        <button
+                          className='btn btn-outline-secondary'
+                          type='button'
+                          onClick={() => handleVideoSearch(videoSearchTerm)}
+                          disabled={searchingVideos}
+                        >
+                          {searchingVideos ? (
+                            <span className='spinner-border spinner-border-sm' role='status'></span>
+                          ) : (
+                            <i className='fas fa-search'></i>
+                          )}
+                        </button>
+                      </div>
+                      
+                      {availableVideos.length > 0 && (
+                        <div className='border rounded p-3' style={{maxHeight: '300px', overflowY: 'auto'}}>
+                          <h6 className='mb-3'>Available Videos</h6>
+                          {availableVideos.map((video) => (
+                            <div key={video.video_id} className='d-flex align-items-center mb-2 p-2 border rounded'>
+                              <input
+                                type='checkbox'
+                                className='form-check-input me-2'
+                                checked={selectedVideos.includes(video.video_id)}
+                                onChange={() => handleVideoSelection(video.video_id)}
+                              />
+                              <div className='me-3' style={{width: '80px', height: '45px', flexShrink: 0}}>
+                                <img
+                                  src={video.thumbnail || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iNDUiIHZpZXdCb3g9IjAgMCA4MCA0NSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjQ1IiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik00MCAyM0M0MCAyMyA0MCAyMyA0MCAyM0M0MCAyMyA0MCAyMyA0MCAyM1oiIGZpbGw9IiNDQ0NDQ0MiLz4KPHRleHQgeD0iNDAiIHk9IjI1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTAiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
+                                  alt={video.title}
+                                  className='img-fluid rounded'
+                                  style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                                />
+                              </div>
+                              <div className='flex-grow-1'>
+                                <div className='fw-bold small'>{video.title}</div>
+                                <div className='text-muted small'>
+                                  {video.source === 1 ? 'YouTube' : 'Vimeo'} • {video.duration ? formatDuration(video.duration) : 'Unknown duration'}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {selectedVideos.length > 0 && (
+                        <div className='mt-3'>
+                          <h6 className='text-success'>Selected Videos: {selectedVideos.length}</h6>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Student Selection */}
+                  <div className='col-md-6'>
+                    <div className='mb-4'>
+                      <label className='form-label fw-bold'>Select Students</label>
+                      <div style={{position: 'relative', zIndex: 2000}}>
+                        <StudentSelectionTable 
+                          exerciseIds={selectedVideos} // Pass selected video IDs as exercise IDs for compatibility
+                          search="" 
+                          selectedUsers={bulkSelectedStudents}
+                          onUserSelectionChange={handleBulkStudentSelection}
+                        />
+                      </div>
+                    </div>
+
+                    <div className='mb-4'>
+                      <label className='form-label fw-bold'>Due Date (Optional)</label>
+                      <div style={{position: 'relative', zIndex: 1000}}>
+                        <DatePicker
+                          selected={bulkAssignmentDueDate}
+                          onChange={(date: Date | null) => setBulkAssignmentDueDate(date)}
+                          placeholderText="Select due date"
+                          minDate={new Date()}
+                          isClearable={true}
+                          dayClassName={(date) => 
+                            date.getTime() === bulkAssignmentDueDate?.getTime() ? 'bg-primary text-white' : ''
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className='mb-4'>
+                      <label className='form-label fw-bold'>Message for Students (Optional)</label>
+                      <div style={{position: 'relative', zIndex: 1}}>
+                        <TinyMCEEditor
+                          value={bulkAssignmentMessage}
+                          onChange={setBulkAssignmentMessage}
+                          placeholder='Enter a message for your students...'
+                          height={200}
+                        />
+                      </div>
+                      <div className='form-text'>This message will be shown to students when they access the videos</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => {
+                  setShowBulkAssignModal(false)
+                  setBulkSelectedStudents([])
+                  setBulkAssignmentDueDate(null)
+                  setBulkAssignmentMessage('')
+                  setVideoSearchTerm('')
+                  setAvailableVideos([])
+                  setSelectedVideos([])
+                }}>
+                  Cancel
+                </button>
+                <button type="button" className="btn btn-primary" onClick={handleBulkAssignVideos}>
+                  Assign Videos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -10,6 +10,7 @@ import assignedExercisesReducer from './exercises/assignedExercisesSlice'
 import studentExercisesReducer from './exercises/studentExercisesSlice'
 import groupsReducer from './groups/groupsSlice'
 import videosReducer from './videos/videosSlice'
+import assignedVideosReducer from './videos/assignedVideosSlice'
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +25,7 @@ export const store = configureStore({
     studentExercises: studentExercisesReducer,
     groups: groupsReducer,
     videos: videosReducer,
+    assignedVideos: assignedVideosReducer,
   },
 })
 

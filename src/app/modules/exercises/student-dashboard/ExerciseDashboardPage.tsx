@@ -7,6 +7,7 @@ import {AppDispatch, RootState} from '../../../../store'
 import {fetchStudentExercises, setPage, setFilters, setLoadingFilters, clearCache} from '../../../../store/exercises/studentExercisesSlice'
 import {DatePicker} from '../../../../_metronic/helpers/components/DatePicker'
 import Select from 'react-select'
+import {Modal, Button} from 'react-bootstrap'
 import {ASSIGNMENT_STATUS, getStatusLabel, getStatusColor, getStatusIcon, getStatusHexColor, getStatusBackgroundColor, AssignmentStatus} from '../../../constants/assignmentStatus'
 import './ExerciseDashboardPage.scss'
 
@@ -963,97 +964,91 @@ const ExerciseDashboardPage: FC = () => {
       )}
       
       {/* Teacher Message Modal */}
-      {showMessageModal && selectedMessage && (
-        <div className='modal fade show d-block' style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-          <div className='modal-dialog modal-dialog-centered'>
-            <div className='modal-content'>
-              <div className='modal-header'>
-                <h5 className='modal-title'>
-                  <i className='fas fa-comment-dots text-info me-2'></i>
-                  Teacher's Note
-                </h5>
-                <button 
-                  type='button' 
-                  className='btn-close' 
-                  onClick={handleCloseMessageModal}
-                ></button>
+      <Modal
+        show={showMessageModal && !!selectedMessage}
+        onHide={handleCloseMessageModal}
+        size="lg"
+        centered
+        backdrop={true}
+        keyboard={true}
+        dialogClassName="teacher-message-modal"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className='fas fa-comment-dots text-info me-2'></i>
+            Teacher's Note
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedMessage && (
+            <>
+              <div className='mb-3'>
+                <strong className='text-muted'>Exercise:</strong>
+                <div className='mt-1'>{selectedMessage.title}</div>
               </div>
-              <div className='modal-body'>
-                <div className='mb-3'>
-                  <strong className='text-muted'>Exercise:</strong>
-                  <div className='mt-1'>{selectedMessage.title}</div>
+              <div>
+                <strong className='text-muted'>Message:</strong>
+                <div className='mt-2 p-3 bg-light rounded'>
+                  {selectedMessage.message}
                 </div>
-                <div>
-                  <strong className='text-muted'>Message:</strong>
-                  <div className='mt-2 p-3 bg-light rounded'>
-                    {selectedMessage.message}
-                  </div>
-                </div>
               </div>
-              <div className='modal-footer'>
-                <button 
-                  type='button' 
-                  className='btn btn-secondary' 
-                  onClick={handleCloseMessageModal}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary"
+            onClick={handleCloseMessageModal}
+          >
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Start Exercise Confirmation Modal */}
-      {showStartConfirm && selectedExercise && (
-        <div className='modal fade show d-block' style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-          <div className='modal-dialog modal-dialog-centered modal-lg modal-bounce'>
-            <div className='modal-content' style={{ minHeight: 520 }}>
-              <div className='modal-header'>
-                <h5 className='modal-title'>
-                  {selectedExercise.title}
-                </h5>
-                <button 
-                  type='button' 
-                  className='btn-close' 
-                  onClick={handleCancelStart}
-                ></button>
+      <Modal
+        show={showStartConfirm && !!selectedExercise}
+        onHide={handleCancelStart}
+        size="lg"
+        centered
+        backdrop={true}
+        keyboard={true}
+        dialogClassName="start-exercise-modal modal-bounce"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {selectedExercise?.title}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ minHeight: 400 }}>
+          {selectedExercise?.teacherMessage && (
+            <div className='teacher-message-section mb-3'>
+              <div className='message-header'>
+                <i className='fas fa-comment-dots text-info'></i>
+                <span className='message-label'>Teacher's Message</span>
               </div>
-              <div className='modal-body'>
-                {/* Yellow Note box and larger modal */}
-                {selectedExercise.teacherMessage && (
-                  <div className='teacher-message-section mb-3'>
-                    <div className='message-header'>
-                      <i className='fas fa-comment-dots text-info'></i>
-                      <span className='message-label'>Teacher's Message</span>
-                    </div>
-                    <div className='message-content' style={{ whiteSpace: 'pre-line', maxHeight: 320, overflowY: 'auto' }}>
-                      {selectedExercise.teacherMessage}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className='modal-footer'>
-                <button 
-                  type='button' 
-                  className='btn btn-secondary' 
-                  onClick={handleCancelStart}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type='button' 
-                  className='btn btn-primary' 
-                  onClick={handleConfirmStart}
-                >
-                  <i className='fas fa-play me-1'></i>
-                  Start
-                </button>
+              <div className='message-content' style={{ whiteSpace: 'pre-line', maxHeight: 320, overflowY: 'auto' }}>
+                {selectedExercise.teacherMessage}
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary"
+            onClick={handleCancelStart}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="primary"
+            onClick={handleConfirmStart}
+          >
+            <i className='fas fa-play me-1'></i>
+            Start
+          </Button>
+        </Modal.Footer>
+      </Modal>
         </>
       )}
     </div>

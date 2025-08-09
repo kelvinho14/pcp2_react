@@ -34,8 +34,8 @@ const intl = useIntl()
               fontIcon='fa-solid fa-xmark'
               textAlign='end'
           />
-          <AsideMenuItem to='/crafted/account/overview' title='Search Video' fontIcon='fas fa-magnifying-glass me-2'/>
-          <AsideMenuItem to='/crafted/account/overview' title='Video assigned' fontIcon='fas fa-video me-2'/>
+          <AsideMenuItem to='/videos/list' title='Videos' fontIcon='fas fa-video me-2'/>
+          <AsideMenuItem to='/videos/student-assigned' title='Assigned videos' fontIcon='fas fa-video me-2'/>
         </div>
       </div>
     </div>

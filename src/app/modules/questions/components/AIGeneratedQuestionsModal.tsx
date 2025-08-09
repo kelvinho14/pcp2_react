@@ -1,4 +1,5 @@
 import {FC, useState, useEffect} from 'react'
+import {Modal, Button} from 'react-bootstrap'
 import {KTIcon} from '../../../../_metronic/helpers'
 import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
 
@@ -145,27 +146,28 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
   if (!show) return null
 
   return (
-    <div className='modal fade show d-block' style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-      <div className='modal-dialog modal-dialog-centered modal-xl' style={{ maxWidth: '90vw' }}>
-        <div className='modal-content'>
-          <div className='modal-header'>
-            <h5 className='modal-title'>
-              <KTIcon iconName='magic' className='fs-2 me-2' />
-              Review Generated Questions
-              {totalQuestions > 0 && (
-                <small className='text-muted ms-2'>
-                  ({handledQuestions}/{totalQuestions} handled)
-                </small>
-              )}
-            </h5>
-            <button 
-              type='button' 
-              className='btn-close' 
-              onClick={onHide}
-              disabled={isLoading}
-            ></button>
-          </div>
-          <div className='modal-body' style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+    <Modal
+      show={show}
+      onHide={onHide}
+      size="xl"
+      centered
+      backdrop={true}
+      keyboard={true}
+      dialogClassName="ai-generated-questions-modal"
+      style={{ maxWidth: '90vw' }}
+    >
+      <Modal.Header closeButton={!isLoading}>
+        <Modal.Title>
+          <KTIcon iconName='magic' className='fs-2 me-2' />
+          Review Generated Questions
+          {totalQuestions > 0 && (
+            <small className='text-muted ms-2'>
+              ({handledQuestions}/{totalQuestions} handled)
+            </small>
+          )}
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
             {isLoading ? (
               <div className='d-flex justify-content-center align-items-center' style={{ minHeight: '200px' }}>
                 <div className='spinner-border text-primary' role='status'>
@@ -353,43 +355,40 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
                 )}
               </div>
             )}
-          </div>
-          <div className='modal-footer'>
-            <div className='d-flex justify-content-end w-100'>
-              <div className='d-flex gap-2'>
-                <button 
-                  type='button' 
-                  className='btn btn-secondary' 
-                  onClick={handleDismissAll}
-                  disabled={isLoading || !hasVisibleQuestions}
-                >
-                  <KTIcon iconName='cross' className='fs-6 me-1' />
-                  Dismiss All
-                </button>
-                <button 
-                  type='button' 
-                  className={`btn btn-success ${isLoading ? 'btn-loading' : ''}`}
-                  onClick={handleAcceptAll}
-                  disabled={isLoading || !hasVisibleQuestions}
-                >
-                  {isLoading ? (
-                    <>
-                      <span className='spinner-border spinner-border-sm me-2' role='status' aria-hidden='true'></span>
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <KTIcon iconName='check' className='fs-6 me-1' />
-                      Accept All
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+      </Modal.Body>
+      <Modal.Footer>
+        <div className='d-flex justify-content-end w-100'>
+          <div className='d-flex gap-2'>
+            <Button 
+              variant="secondary"
+              onClick={handleDismissAll}
+              disabled={isLoading || !hasVisibleQuestions}
+            >
+              <KTIcon iconName='cross' className='fs-6 me-1' />
+              Dismiss All
+            </Button>
+            <Button 
+              variant="success"
+              className={isLoading ? 'btn-loading' : ''}
+              onClick={handleAcceptAll}
+              disabled={isLoading || !hasVisibleQuestions}
+            >
+              {isLoading ? (
+                <>
+                  <span className='spinner-border spinner-border-sm me-2' role='status' aria-hidden='true'></span>
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <KTIcon iconName='check' className='fs-6 me-1' />
+                  Accept All
+                </>
+              )}
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </Modal.Footer>
+    </Modal>
   )
 }
 

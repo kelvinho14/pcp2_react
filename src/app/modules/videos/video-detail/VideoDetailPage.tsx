@@ -2,7 +2,7 @@ import {FC, useEffect, useState} from 'react'
 import {useParams, useNavigate} from 'react-router-dom'
 import {useDispatch, useSelector} from 'react-redux'
 import {AppDispatch, RootState} from '../../../../store'
-import {fetchVideoById, Video} from '../../../../store/videos/videosSlice'
+import {fetchVideoById, Video, updateVideo, VideoFormData} from '../../../../store/videos/videosSlice'
 import {PageTitle} from '../../../../_metronic/layout/core'
 import {KTIcon} from '../../../../_metronic/helpers'
 import VideoPreview from '../../../../components/Video/VideoPreview'
@@ -10,6 +10,9 @@ import {useAuth} from '../../../../app/modules/auth'
 import {isTeachingStaff} from '../../../../app/constants/roles'
 import axios from 'axios'
 import {getHeadersWithSchoolSubject} from '../../../../_metronic/helpers/axios'
+import {fetchTags} from '../../../../store/tags/tagsSlice'
+import VideoTagInput, {VideoTagData} from '../../../../components/Video/VideoTagInput'
+import {toast} from '../../../../_metronic/helpers/toast'
 import './VideoDetailPage.css'
 
 const VideoDetailPage: FC = () => {
@@ -18,8 +21,19 @@ const VideoDetailPage: FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const {currentUser} = useAuth()
   
-  const {currentVideo, loading, error} = useSelector((state: RootState) => state.videos)
+  const {currentVideo, loading, error, updating} = useSelector((state: RootState) => state.videos)
+  const {tags} = useSelector((state: RootState) => state.tags)
   const [video, setVideo] = useState<Video | null>(null)
+
+  // State for edit modal
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [formData, setFormData] = useState<VideoFormData>({
+    source: 1,
+    tags: [],
+    youtube_urls: [],
+    vimeo_ids: [],
+    status: 1,
+  })
 
   const API_URL = import.meta.env.VITE_APP_API_URL
 
@@ -43,6 +57,11 @@ const VideoDetailPage: FC = () => {
       recordVideoClick(videoId)
     }
   }, [dispatch, videoId])
+
+  // Fetch tags on component mount
+  useEffect(() => {
+    dispatch(fetchTags())
+  }, [dispatch])
 
   useEffect(() => {
     if (currentVideo) {
@@ -86,6 +105,46 @@ const VideoDetailPage: FC = () => {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+  }
+
+  // Handle edit click
+  const handleEditClick = (video: Video) => {
+    setFormData({
+      source: video.source,
+      tags: video.tags?.map(tag => ({ tag_id: tag.tag_id })) || [],
+      youtube_urls: video.source === 1 ? [`https://www.youtube.com/watch?v=${video.video_id_external}`] : [],
+      vimeo_ids: video.source === 2 ? [video.video_id_external] : [],
+      status: video.status,
+    })
+    setShowEditModal(true)
+  }
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!video) return
+
+    try {
+      await dispatch(updateVideo({
+        videoId: video.video_id,
+        videoData: formData,
+      })).unwrap()
+      
+      setShowEditModal(false)
+      setFormData({
+        source: 1,
+        tags: [],
+        youtube_urls: [],
+        vimeo_ids: [],
+        status: 1,
+      })
+      
+      // Refresh the video data
+      dispatch(fetchVideoById(video.video_id))
+    } catch (error) {
+      // Error is handled by the thunk
+    }
   }
 
   if (loading) {
@@ -239,7 +298,7 @@ const VideoDetailPage: FC = () => {
                   <button
                     type='button'
                     className='btn btn-outline-secondary'
-                    onClick={() => navigate(`/videos/edit/${video.video_id}`)}
+                    onClick={() => handleEditClick(video)}
                   >
                     <i className='fas fa-edit me-2'></i>
                     Edit Video
@@ -250,6 +309,158 @@ const VideoDetailPage: FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Video Modal */}
+      {showEditModal && video && (
+        <div className='modal fade show d-block' style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog modal-lg" role="document">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Edit Video</h5>
+                <button type="button" className="btn-close" onClick={() => setShowEditModal(false)}></button>
+              </div>
+              <form onSubmit={handleSubmit}>
+                <div className="modal-body">
+                  {/* Video Preview */}
+                  <div className='mb-4 p-3 bg-light rounded'>
+                    <div className='row align-items-center'>
+                      <div className='col-md-3'>
+                        <div className='position-relative'>
+                          <img
+                            src={video.thumbnail || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBaIiBmaWxsPSIjQ0NDQ0NDIi8+Cjx0ZXh0IHg9IjE2MCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
+                            alt={video.title}
+                            className='img-fluid rounded'
+                            style={{width: '100%', maxWidth: '150px'}}
+                          />
+                        </div>
+                      </div>
+                      <div className='col-md-9'>
+                        <h6 className='fw-bold mb-1 text-truncate' title={video.title}>{video.title}</h6>
+                        <div className='d-flex align-items-center gap-2 flex-wrap'>
+                          <span className={`badge badge-light-${video.source === 1 ? 'danger' : 'primary'} badge-sm`}>
+                            <i className={`${getPlatformIcon(video.source)} me-1`}></i>
+                            {video.source === 1 ? 'YouTube' : 'Vimeo'}
+                          </span>
+                          {video.duration && (
+                            <span className='text-muted small'>
+                              <i className='fas fa-clock me-1'></i>
+                              {formatDuration(video.duration)}
+                            </span>
+                          )}
+                          <span className='text-muted small'>
+                            <i className='fas fa-eye me-1'></i>
+                            {video.click_count || 0} views
+                          </span>
+                          {video.status === 1 && (
+                            <span className='badge badge-light-warning badge-sm'>
+                              <i className='fas fa-lock me-1'></i>
+                              Private
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Video URL (only for YouTube) */}
+                  {video.source === 1 && (
+                    <div className='mb-4'>
+                      <label className='form-label'>Video URL *</label>
+                      <input
+                        type='url'
+                        className='form-control'
+                        placeholder='https://www.youtube.com/watch?v=...'
+                        value={formData.youtube_urls?.[0] || ''}
+                        onChange={(e) => {
+                          const url = e.target.value
+                          setFormData({...formData, youtube_urls: [url], vimeo_ids: []})
+                        }}
+                        required
+                      />
+                      <div className='form-text'>
+                        YouTube video URL
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tags Section */}
+                  <div className='mb-4 p-3 bg-light rounded'>
+                    <h6 className='fw-bold mb-3 text-primary'>
+                      <i className='fas fa-tags me-2'></i>
+                      Tags
+                    </h6>
+                    <VideoTagInput
+                      options={tags}
+                      selectedTags={formData.tags?.map(tag => ({id: tag.tag_id || '', name: tag.name || tags.find(t => t.id === tag.tag_id)?.name || ''})) || []}
+                      onChange={(selectedTags) => setFormData({
+                        ...formData, 
+                        tags: selectedTags.map(tag => {
+                          if (tag.isNew || tag.id.startsWith('new-')) { return { name: tag.name } }
+                          else { return { tag_id: tag.id } }
+                        })
+                      })}
+                      placeholder='Search and select tags or create new ones'
+                    />
+                  </div>
+
+                  {/* Video Access Section */}
+                  <div className='mb-4 p-3 bg-light rounded'>
+                    <h6 className='fw-bold mb-3 text-primary'>
+                      <i className='fas fa-users me-2'></i>
+                      Video Access
+                    </h6>
+                    <div className='form-check mb-3'>
+                      <input
+                        className='form-check-input'
+                        type='radio'
+                        name='videoStatus'
+                        id='assignOnly'
+                        value='1'
+                        checked={formData.status === 1}
+                        onChange={(e) => setFormData({...formData, status: parseInt(e.target.value) as 1 | 2})}
+                      />
+                      <label className='form-check-label' htmlFor='assignOnly'>
+                        <i className='fas fa-lock me-1'></i>
+                        Assign Only (Private)
+                      </label>
+                    </div>
+                    <div className='form-check'>
+                      <input
+                        className='form-check-input'
+                        type='radio'
+                        name='videoStatus'
+                        id='openToStudents'
+                        value='2'
+                        checked={formData.status === 2}
+                        onChange={(e) => setFormData({...formData, status: parseInt(e.target.value) as 1 | 2})}
+                      />
+                      <label className='form-check-label' htmlFor='openToStudents'>
+                        <i className='fas fa-globe me-1'></i>
+                        Open to Students
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={updating}>
+                    {updating ? (
+                      <>
+                        <span className='spinner-border spinner-border-sm me-2' role='status'></span>
+                        Updating...
+                      </>
+                    ) : (
+                      'Update Video'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

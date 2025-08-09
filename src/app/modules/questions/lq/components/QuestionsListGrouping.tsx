@@ -2,6 +2,7 @@ import {FC, useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
 import {AppDispatch, RootState} from '../../../../../store'
 import {generateSimilarQuestions, bulkDeleteQuestions} from '../../../../../store/questions/questionsSlice'
+import {Modal, Button} from 'react-bootstrap'
 import AIGenerateSimilarModal from '../../components/AIGenerateSimilarModal'
 import {useListView} from '../questions-list/core/ListViewProvider'
 
@@ -35,39 +36,36 @@ const QuestionsListGrouping: FC<Props> = ({list}) => {
   return (
     <>
       {/* Delete Confirmation Modal */}
-      <div className={`modal fade ${showDeleteConfirm ? 'show d-block' : ''}`} style={{ backgroundColor: showDeleteConfirm ? 'rgba(0, 0, 0, 0.5)' : 'transparent' }}>
-        <div className='modal-dialog modal-dialog-centered'>
-          <div className='modal-content'>
-            <div className='modal-header'>
-              <h5 className='modal-title'>Confirm Delete</h5>
-              <button 
-                type='button' 
-                className='btn-close' 
-                onClick={() => setShowDeleteConfirm(false)}
-              ></button>
-            </div>
-            <div className='modal-body'>
-              <p>Are you sure you want to delete {selected.length} selected question{selected.length > 1 ? 's' : ''}?</p>
-            </div>
-            <div className='modal-footer'>
-              <button 
-                type='button' 
-                className='btn btn-secondary' 
-                onClick={() => setShowDeleteConfirm(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                type='button' 
-                className='btn btn-danger' 
-                onClick={handleDelete}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Modal
+        show={showDeleteConfirm}
+        onHide={() => setShowDeleteConfirm(false)}
+        size="sm"
+        centered
+        backdrop={true}
+        keyboard={true}
+        dialogClassName="delete-confirmation-modal"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Delete</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Are you sure you want to delete {selected.length} selected question{selected.length > 1 ? 's' : ''}?</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary"
+            onClick={() => setShowDeleteConfirm(false)}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="danger"
+            onClick={handleDelete}
+          >
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* AI Generate Similar Questions Modal */}
       <AIGenerateSimilarModal
