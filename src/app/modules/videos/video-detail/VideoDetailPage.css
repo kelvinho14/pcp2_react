@@ -1,0 +1,110 @@
+.video-player-container {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.video-player-container iframe {
+  border: none;
+  width: 100%;
+  height: 100%;
+}
+
+.video-player-container .d-flex {
+  background: #f8f9fa;
+  border-radius: 0.375rem;
+}
+
+/* Video Details Section Styling */
+.video-details-section {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.video-details-section .bg-white {
+  transition: all 0.2s ease-in-out;
+  border: 1px solid #e9ecef;
+}
+
+.video-details-section .bg-white:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border-color: #007bff;
+}
+
+/* Info Cards Styling */
+.info-card {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease-in-out;
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: #007bff;
+}
+
+/* Section Headers */
+.section-header {
+  color: #495057;
+  font-weight: 600;
+  
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+/* Tags Styling */
+.video-details-section .badge {
+  font-size: 0.875rem;
+  border-radius: 20px;
+  transition: all 0.2s ease-in-out;
+}
+
+.video-details-section .badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Description Section */
+.description-section {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-left: 4px solid #007bff;
+  padding-left: 16px;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .video-details-section .row {
+    margin: 0;
+  }
+  
+  .video-details-section .col-md-3 {
+    margin-bottom: 1rem;
+  }
+  
+  .info-card {
+    padding: 10px;
+  }
+  
+  .video-details-section .badge {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+}
+
+/* Card header enhancements */
+.card-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 2px solid #e9ecef;
+}
+
+/* Smooth transitions for all interactive elements */
+.card, .info-card, .badge {
+  transition: all 0.2s ease-in-out;
+} 

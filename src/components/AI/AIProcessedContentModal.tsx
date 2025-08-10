@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState, AppDispatch } from '../../store'
 import { acceptProcessedContent, rejectProcessedContent } from '../../store/ai/aiSlice'
+import {Modal, Button} from 'react-bootstrap'
 import TinyMCEEditor from '../Editor/TinyMCEEditor'
 
 interface AIProcessedContentModalProps {
@@ -36,23 +37,23 @@ const AIProcessedContentModal: React.FC<AIProcessedContentModalProps> = ({ onAcc
   }
 
   return (
-    <div className='modal fade show d-block' style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-      <div className='modal-dialog modal-lg modal-dialog-centered'>
-        <div className='modal-content'>
-          <div className='modal-header'>
-            <h5 className='modal-title'>
-              <i className='fas fa-robot me-2'></i>
-              AI Processed Content
-            </h5>
-            <button
-              type='button'
-              className='btn-close'
-              onClick={handleReject}
-              aria-label='Close'
-            ></button>
-          </div>
-          
-          <div className='modal-body'>
+    <Modal
+      show={showModal}
+      onHide={handleReject}
+      size="lg"
+      centered
+      backdrop={true}
+      keyboard={true}
+      dialogClassName="ai-processed-content-modal"
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>
+          <i className='fas fa-robot me-2'></i>
+          AI Processed Content
+        </Modal.Title>
+      </Modal.Header>
+      
+      <Modal.Body>
             <div className='mb-3'>
               <label className='form-label fw-bold'>
                 Processed content for {targetField === 'question' ? 'Question' : 'Answer'}:
@@ -74,29 +75,25 @@ const AIProcessedContentModal: React.FC<AIProcessedContentModalProps> = ({ onAcc
                 You can edit the processed content above. Click "Accept" to use this content in your {targetField}, or "Reject" to dismiss.
               </small>
             </div>
-          </div>
-          
-          <div className='modal-footer'>
-            <button
-              type='button'
-              className='btn btn-secondary'
-              onClick={handleReject}
-            >
-              <i className='fas fa-times me-1'></i>
-              Reject
-            </button>
-            <button
-              type='button'
-              className='btn btn-primary'
-              onClick={handleAccept}
-            >
-              <i className='fas fa-check me-1'></i>
-              Accept
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      </Modal.Body>
+      
+      <Modal.Footer>
+        <Button
+          variant="secondary"
+          onClick={handleReject}
+        >
+          <i className='fas fa-times me-1'></i>
+          Reject
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleAccept}
+        >
+          <i className='fas fa-check me-1'></i>
+          Accept
+        </Button>
+      </Modal.Footer>
+    </Modal>
   )
 }
 

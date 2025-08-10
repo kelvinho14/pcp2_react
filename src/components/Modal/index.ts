@@ -1,0 +1,5 @@
+export {default as BaseModal} from './BaseModal'
+export {default as ImageModal} from './ImageModal'
+export {default as FormModal} from './FormModal'
+export {default as ContentModal} from './ContentModal'
+export {default as VideoModal} from '../Video/VideoModal' 
