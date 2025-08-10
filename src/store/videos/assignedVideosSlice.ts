@@ -6,43 +6,41 @@ import {toast} from '../../_metronic/helpers/toast'
 const API_URL = import.meta.env.VITE_APP_API_URL
 
 export interface AssignedVideo {
-  id: string
+  assignment_id: string
+  package_id: string
+  student_id: string
+  student_name: string
   video_id: string
   video_title: string
-  video_description?: string
   video_thumbnail?: string
-  video_duration?: number
-  video_source: 1 | 2 // 1 for YouTube, 2 for Vimeo
-  video_play_url?: string
   assigned_by: string
-  assigned_by_name: string
-  assigned_to: string
-  assigned_to_name: string
-  assigned_to_email: string
+  assigned_at: string
   due_date?: string
   message_for_student?: string
-  status: 'not_started' | 'in_progress' | 'completed' | 'overdue'
-  progress_percentage: number
-  watched_duration?: number
-  total_duration?: number
+}
+
+export interface VideoPackage {
+  package_id: string
+  assignments: AssignedVideo[]
+  total_assignments: number
+  unique_students: number
+  unique_videos: number
   assigned_at: string
-  completed_at?: string
-  last_watched_at?: string
+  due_date?: string
+  message_for_student?: string
 }
 
 export interface AssignedVideosSummary {
   total: number
-  not_started: number
-  in_progress: number
-  completed: number
-  overdue: number
+  total_packages: number
+  total_assignments: number
+  unique_students: number
+  unique_videos: number
 }
 
 export interface AssignedVideosFilters {
   search?: string
-  status?: string
-  assigned_by?: string
-  assigned_to?: string
+  student_ids?: string  // Changed from assigned_to to student_ids for multi-select
   due_date_from?: string
   due_date_to?: string
   assigned_date_from?: string
@@ -57,7 +55,7 @@ export interface AssignedVideosPagination {
 }
 
 interface AssignedVideosState {
-  videos: AssignedVideo[]
+  packages: VideoPackage[]
   summary: AssignedVideosSummary
   pagination: AssignedVideosPagination
   loading: boolean
@@ -68,13 +66,13 @@ interface AssignedVideosState {
 }
 
 const initialState: AssignedVideosState = {
-  videos: [],
+  packages: [],
   summary: {
     total: 0,
-    not_started: 0,
-    in_progress: 0,
-    completed: 0,
-    overdue: 0,
+    total_packages: 0,
+    total_assignments: 0,
+    unique_students: 0,
+    unique_videos: 0,
   },
   pagination: {
     page: 1,
@@ -108,17 +106,28 @@ export const fetchAssignedVideos = createAsyncThunk(
         })
       }
 
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/videos/assigned`)
-      const response = await axios.get(`${API_URL}/videos/assigned`, { 
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/videos/assignments`)
+      const response = await axios.get(`${API_URL}/videos/assignments`, { 
         params, 
         headers,
         withCredentials: true 
       })
       
       return {
-        videos: response.data.data || [],
-        summary: response.data.summary || initialState.summary,
-        pagination: response.data.pagination || initialState.pagination,
+        packages: response.data.data?.assignments || [],
+        summary: {
+          total: response.data.payload?.pagination?.total || 0,
+          total_packages: response.data.data?.assignments?.length || 0,
+          total_assignments: response.data.summary?.total_assignment || 0,
+          unique_students: response.data.summary?.unique_students || 0,
+          unique_videos: response.data.summary?.unique_videos || 0,
+        },
+        pagination: {
+          page: response.data.payload?.pagination?.page || 1,
+          items_per_page: parseInt(response.data.payload?.pagination?.items_per_page) || 10,
+          total: response.data.payload?.pagination?.total || 0,
+          total_pages: response.data.payload?.pagination?.last_page || 1,
+        },
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to fetch assigned videos'
@@ -136,13 +145,13 @@ const assignedVideosSlice = createSlice({
       state.pagination.page = action.payload
     },
     setFilters: (state, action) => {
-      state.filters = { ...state.filters, ...action.payload }
+      state.filters = action.payload
     },
     setLoadingFilters: (state, action) => {
       state.loadingFilters = action.payload
     },
     clearCache: (state) => {
-      state.videos = []
+      state.packages = []
       state.lastFetchTime = null
     },
     clearError: (state) => {
@@ -157,13 +166,15 @@ const assignedVideosSlice = createSlice({
       })
       .addCase(fetchAssignedVideos.fulfilled, (state, action) => {
         state.loading = false
-        state.videos = action.payload.videos
+        state.loadingFilters = false
+        state.packages = action.payload.packages
         state.summary = action.payload.summary
         state.pagination = action.payload.pagination
         state.lastFetchTime = Date.now()
       })
       .addCase(fetchAssignedVideos.rejected, (state, action) => {
         state.loading = false
+        state.loadingFilters = false
         state.error = action.error.message || 'Failed to fetch assigned videos'
       })
   },

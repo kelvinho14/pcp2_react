@@ -9,6 +9,7 @@ const VideoListPage = lazy(() => import('./video-list/VideoListPage'))
 const VideoAssignedListPage = lazy(() => import('./video-assigned-list/VideoAssignedListPage'))
 const TeacherVideoListPage = lazy(() => import('./teacher-video-list/TeacherVideoListPage'))
 const VideoDetailPage = lazy(() => import('./video-detail/VideoDetailPage'))
+const StudentAssignedVideosPage = lazy(() => import('./student-assigned-videos/StudentAssignedVideosPage'))
 
 const VideoPage: FC = () => {
   return (
@@ -19,14 +20,28 @@ const VideoPage: FC = () => {
         </SuspensedView>
       } />
       <Route path='assignedlist' element={
+        <TeacherRouteGuard>
+          <SuspensedView>
+            <VideoAssignedListPage />
+          </SuspensedView>
+        </TeacherRouteGuard>
+      } />
+      <Route path='assigned' element={
         <SuspensedView>
-          <VideoAssignedListPage />
+          <StudentAssignedVideosPage />
+        </SuspensedView>
+      } />
+      <Route path='student-assigned' element={
+        <SuspensedView>
+          <StudentAssignedVideosPage />
         </SuspensedView>
       } />
       <Route path='list' element={
-        <SuspensedView>
-          <TeacherVideoListPage />
-        </SuspensedView>
+        
+          <SuspensedView>
+            <TeacherVideoListPage />
+          </SuspensedView>
+        
       } />
       <Route path=':videoId' element={
         <SuspensedView>

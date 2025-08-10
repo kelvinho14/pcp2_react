@@ -2,6 +2,7 @@ import {FC} from 'react'
 import {Video} from '../../store/videos/videosSlice'
 import VideoPreview from './VideoPreview'
 import {KTIcon} from '../../_metronic/helpers'
+import {formatApiTimestamp} from '../../_metronic/helpers/dateUtils'
 
 interface VideoDetailModalProps {
   video: Video | null
@@ -69,7 +70,7 @@ const VideoDetailModal: FC<VideoDetailModalProps> = ({video, isOpen, onClose}) =
                       
                       <div className='col-md-6'>
                         <p><strong>Teacher:</strong> {video.teacher_name}</p>
-                        <p><strong>Created:</strong> {new Date(video.created_at).toLocaleDateString()}</p>
+                        <p><strong>Created:</strong> {formatApiTimestamp(video.created_at, { format: 'date' })}</p>
                         {video.duration && (
                           <p><strong>Duration:</strong> {video.duration}</p>
                         )}

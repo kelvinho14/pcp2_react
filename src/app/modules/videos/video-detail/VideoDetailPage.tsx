@@ -11,8 +11,10 @@ import {isTeachingStaff} from '../../../../app/constants/roles'
 import axios from 'axios'
 import {getHeadersWithSchoolSubject} from '../../../../_metronic/helpers/axios'
 import {fetchTags} from '../../../../store/tags/tagsSlice'
+import {fetchStudentAssignedVideos} from '../../../../store/videos/studentAssignedVideosSlice'
 import VideoTagInput, {VideoTagData} from '../../../../components/Video/VideoTagInput'
 import {toast} from '../../../../_metronic/helpers/toast'
+import {formatApiTimestamp} from '../../../../_metronic/helpers/dateUtils'
 import './VideoDetailPage.css'
 
 const VideoDetailPage: FC = () => {
@@ -23,6 +25,7 @@ const VideoDetailPage: FC = () => {
   
   const {currentVideo, loading, error, updating} = useSelector((state: RootState) => state.videos)
   const {tags} = useSelector((state: RootState) => state.tags)
+  const {packages: assignedVideoPackages} = useSelector((state: RootState) => state.studentAssignedVideos)
   const [video, setVideo] = useState<Video | null>(null)
 
   // State for edit modal
@@ -36,6 +39,35 @@ const VideoDetailPage: FC = () => {
   })
 
   const API_URL = import.meta.env.VITE_APP_API_URL
+
+  // Helper function to check if the current video is assigned to the student
+  const isVideoAssignedToStudent = (videoId: string): boolean => {
+    if (!assignedVideoPackages || assignedVideoPackages.length === 0) {
+      return false
+    }
+    
+    return assignedVideoPackages.some(pkg => 
+      pkg.videos.some(video => video.video_id === videoId)
+    )
+  }
+
+  // Helper function to get appropriate privacy label for students
+  const getPrivacyLabel = (video: Video): { text: string; icon: string } => {
+    const isStudent = !isTeachingStaff(currentUser?.role?.role_type)
+    const isAssigned = isVideoAssignedToStudent(video.video_id)
+    
+    if (isStudent && isAssigned) {
+      return {
+        text: 'Assigned to You',
+        icon: 'fas fa-user-check'
+      }
+    }
+    
+    return {
+      text: 'Private',
+      icon: 'fas fa-lock'
+    }
+  }
 
   const recordVideoClick = async (videoId: string) => {
     try {
@@ -62,6 +94,14 @@ const VideoDetailPage: FC = () => {
   useEffect(() => {
     dispatch(fetchTags())
   }, [dispatch])
+
+  // Fetch assigned videos for students to check assignment status
+  useEffect(() => {
+    const isStudent = !isTeachingStaff(currentUser?.role?.role_type)
+    if (isStudent) {
+      dispatch(fetchStudentAssignedVideos())
+    }
+  }, [dispatch, currentUser?.role?.role_type])
 
   useEffect(() => {
     if (currentVideo) {
@@ -216,7 +256,18 @@ const VideoDetailPage: FC = () => {
         <div className='col-12'>
           <div className='card'>
             <div className='card-header'>
-              <h5 className='card-title mb-0'>{video.title}</h5>
+              <div className='d-flex align-items-center gap-3'>
+                <h5 className='card-title mb-0'>{video.title}</h5>
+                {video.status === 1 && (() => {
+                  const privacyLabel = getPrivacyLabel(video)
+                  return (
+                    <span className={`badge ${privacyLabel.text === 'Assigned to You' ? 'badge-light-success' : 'badge-light-warning'}`}>
+                      <i className={`${privacyLabel.icon} me-1`}></i>
+                      {privacyLabel.text}
+                    </span>
+                  )
+                })()}
+              </div>
             </div>
             <div className='card-body'>
               <div className='mb-3'>
@@ -257,19 +308,12 @@ const VideoDetailPage: FC = () => {
                   <div className='d-flex align-items-center'>
                     <i className='fas fa-calendar me-2'></i>
                     <span className='small'>
-                      {new Date(video.created_at).toLocaleDateString()}
+                      {formatApiTimestamp(video.created_at, { format: 'date' })}
                     </span>
                   </div>
                 </div>
 
-                {video.status === 1 && (
-                  <div className='col-12'>
-                    <span className='badge badge-light-warning'>
-                      <i className='fas fa-lock me-1'></i>
-                      Private
-                    </span>
-                  </div>
-                )}
+
               </div>
 
               {video.tags && video.tags.length > 0 && (
@@ -351,12 +395,15 @@ const VideoDetailPage: FC = () => {
                             <i className='fas fa-eye me-1'></i>
                             {video.click_count || 0} views
                           </span>
-                          {video.status === 1 && (
-                            <span className='badge badge-light-warning badge-sm'>
-                              <i className='fas fa-lock me-1'></i>
-                              Private
-                            </span>
-                          )}
+                          {video.status === 1 && (() => {
+                            const privacyLabel = getPrivacyLabel(video)
+                            return (
+                              <span className={`badge badge-sm ${privacyLabel.text === 'Assigned to You' ? 'badge-light-success' : 'badge-light-warning'}`}>
+                                <i className={`${privacyLabel.icon} me-1`}></i>
+                                {privacyLabel.text}
+                              </span>
+                            )
+                          })()}
                         </div>
                       </div>
                     </div>

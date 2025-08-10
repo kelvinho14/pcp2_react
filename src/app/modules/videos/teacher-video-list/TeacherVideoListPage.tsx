@@ -1,4 +1,4 @@
-import {FC, useEffect, useState} from 'react'
+import {FC, useEffect, useState, useCallback, useRef} from 'react'
 import {PageTitle} from '../../../../_metronic/layout/core'
 import {useIntl} from 'react-intl'
 import {useDispatch, useSelector} from 'react-redux'
@@ -27,9 +27,11 @@ import {
   extractVideoId,
 } from '../../../../store/videos/videosSlice'
 import {fetchTags} from '../../../../store/tags/tagsSlice'
+import {fetchStudentAssignedVideos} from '../../../../store/videos/studentAssignedVideosSlice'
 import VideoTagInput, {VideoTagData} from '../../../../components/Video/VideoTagInput'
 import {KTIcon} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
+import {formatApiTimestamp} from '../../../../_metronic/helpers/dateUtils'
 import {ConfirmationDialog} from '../../../../_metronic/helpers/ConfirmationDialog'
 import VideoDetailModal from '../../../../components/Video/VideoDetailModal'
 import {StudentSelectionTable} from '../../../../app/modules/exercises/exercise-list/components/header/StudentSelectionTable'
@@ -60,11 +62,13 @@ const TeacherVideoListPage: FC = () => {
   } = useSelector((state: RootState) => state.videos)
   
   const {tags} = useSelector((state: RootState) => state.tags)
+  const {packages: assignedVideoPackages} = useSelector((state: RootState) => state.studentAssignedVideos)
 
   // State for pagination and filtering
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(12)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [platformFilter, setPlatformFilter] = useState<'youtube' | 'vimeo' | ''>('')
@@ -124,11 +128,11 @@ const TeacherVideoListPage: FC = () => {
       items_per_page: itemsPerPage,
       sort: sortBy,
       order: sortOrder,
-      search: searchTerm || undefined,
+      search: debouncedSearchTerm || undefined,
       source: getSourceFromPlatform(platformFilter),
       status: statusFilter || undefined,
     }))
-  }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder, searchTerm, platformFilter, statusFilter])
+  }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder, debouncedSearchTerm, platformFilter, statusFilter])
 
   // Fetch tags on component mount
   useEffect(() => {
@@ -140,8 +144,32 @@ const TeacherVideoListPage: FC = () => {
     return () => {
       dispatch(clearMessages())
       dispatch(clearVimeoData())
+      
+      // Cleanup search timeout and abort controller
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+      if (searchAbortControllerRef.current) {
+        searchAbortControllerRef.current.abort()
+      }
     }
   }, [dispatch])
+
+  // Cleanup search timeout when component unmounts or dependencies change
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Fetch student assigned videos if user is a student
+  useEffect(() => {
+    if (!isTeachingStaff(currentUser?.role?.role_type)) {
+      dispatch(fetchStudentAssignedVideos())
+    }
+  }, [dispatch, currentUser?.role?.role_type])
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -496,11 +524,24 @@ const TeacherVideoListPage: FC = () => {
     )
   }
 
-  // Search videos for bulk assign
-  const handleVideoSearch = async (searchTerm: string) => {
-    setVideoSearchTerm(searchTerm)
+  // Refs for debouncing and canceling API calls
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const searchAbortControllerRef = useRef<AbortController | null>(null)
+
+  // Actual search function that makes the API call
+  const performVideoSearch = useCallback(async (searchTerm: string) => {
     if (searchTerm.trim()) {
       setSearchingVideos(true)
+      
+      // Cancel previous request if it exists
+      if (searchAbortControllerRef.current) {
+        searchAbortControllerRef.current.abort()
+      }
+      
+      // Create new abort controller for this request
+      const abortController = new AbortController()
+      searchAbortControllerRef.current = abortController
+      
       try {
         const API_URL = import.meta.env.VITE_APP_API_URL
         const headers = getHeadersWithSchoolSubject(`${API_URL}/videos`)
@@ -512,20 +553,45 @@ const TeacherVideoListPage: FC = () => {
             search: searchTerm,
           },
           headers,
-          withCredentials: true
+          withCredentials: true,
+          signal: abortController.signal
         })
         
         setAvailableVideos(response.data.data || [])
-      } catch (error) {
-        console.error('Error searching videos:', error)
-        setAvailableVideos([])
+      } catch (error: any) {
+        if (error.name !== 'CanceledError') {
+          console.error('Error searching videos:', error)
+          setAvailableVideos([])
+        }
       } finally {
         setSearchingVideos(false)
+        searchAbortControllerRef.current = null
       }
     } else {
       setAvailableVideos([])
+      setSearchingVideos(false)
     }
-  }
+  }, [])
+
+  // Debounced search function
+  const handleVideoSearch = useCallback((searchTerm: string) => {
+    setVideoSearchTerm(searchTerm)
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+    
+    // Cancel existing API request
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort()
+    }
+    
+    // Set new timeout for debounced search
+    searchTimeoutRef.current = setTimeout(() => {
+      performVideoSearch(searchTerm)
+    }, 500) // 500ms delay
+  }, [performVideoSearch])
 
   // Handle bulk video assignment
   const handleBulkAssignVideos = async () => {
@@ -571,10 +637,20 @@ const TeacherVideoListPage: FC = () => {
     }
   }
 
-  // Handle search
+  // Handle search with debouncing
   const handleSearch = (value: string) => {
     setSearchTerm(value)
     setCurrentPage(1)
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+    
+    // Set new timeout for debounced search - 1 second delay
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(value)
+    }, 1000)
   }
 
   // Handle platform filter
@@ -623,6 +699,34 @@ const TeacherVideoListPage: FC = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
 
+  // Check if video is assigned to current student
+  const isVideoAssignedToStudent = (videoId: string): boolean => {
+    if (!assignedVideoPackages || assignedVideoPackages.length === 0) return false
+    
+    return assignedVideoPackages.some(pkg => 
+      pkg.videos.some(video => video.video_id === videoId)
+    )
+  }
+
+  // Get privacy label for video
+  const getPrivacyLabel = (video: Video) => {
+    if (video.status === 2) return null // Public videos don't need a label
+    
+    if (!isTeachingStaff(currentUser?.role?.role_type) && isVideoAssignedToStudent(video.video_id)) {
+      return {
+        text: 'Assigned to You',
+        icon: 'fas fa-user-check',
+        badgeClass: 'badge-light-success'
+      }
+    }
+    
+    return {
+      text: 'Private',
+      icon: 'fas fa-lock',
+      badgeClass: 'badge-light-warning'
+    }
+  }
+
   return (
     <>
       <PageTitle breadcrumbs={[
@@ -639,6 +743,35 @@ const TeacherVideoListPage: FC = () => {
       ]}>
         {isTeachingStaff(currentUser?.role?.role_type) ? 'Video Management' : 'Videos'}
       </PageTitle>
+      
+      {/* Welcome Banner */}
+      <div className='welcome-section'>
+        <div className='welcome-content'>
+          <div className='welcome-text'>
+            <h2 className='welcome-title'>
+              {isTeachingStaff(currentUser?.role?.role_type) ? 'Video Management Hub! 🎬' : 'Explore Video Library! 🎬'}
+            </h2>
+            <p className='welcome-subtitle'>
+              {isTeachingStaff(currentUser?.role?.role_type) 
+                ? 'Create, manage, and assign educational videos to your students'
+                : 'Discover educational content and expand your knowledge'
+              }
+            </p>
+          </div>
+          {isTeachingStaff(currentUser?.role?.role_type) && (
+            <div className='welcome-actions'>
+              <button className='btn btn-light-primary me-3'>
+                <i className='fas fa-plus me-1'></i>
+                Add Video
+              </button>
+              <button className='btn btn-light-success'>
+                <i className='fas fa-user-plus me-1'></i>
+                Assign Videos
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
       
       <div className='card'>
         <div className='card-header border-0 pt-6'>
@@ -658,29 +791,33 @@ const TeacherVideoListPage: FC = () => {
           
           <div className='card-toolbar'>
             <div className='d-flex justify-content-end' data-kt-user-table-toolbar='base'>
-              <div className='me-3'>
-                <select
-                  className='form-select form-select-solid'
-                  value={platformFilter}
-                  onChange={(e) => handlePlatformFilter(e.target.value as 'youtube' | 'vimeo' | '')}
-                >
-                  <option value=''>All Platforms</option>
-                  <option value='youtube'>YouTube</option>
-                  <option value='vimeo'>Vimeo</option>
-                </select>
-              </div>
-              
-              <div className='me-3'>
-                <select
-                  className='form-select form-select-solid'
-                  value={statusFilter}
-                  onChange={(e) => handleStatusFilter(e.target.value as '1' | '2' | '')}
-                >
-                  <option value=''>All Videos</option>
-                  <option value='1'>Private</option>
-                  <option value='2'>Public</option>
-                </select>
-              </div>
+              {isTeachingStaff(currentUser?.role?.role_type) && (
+                <>
+                  <div className='me-3'>
+                    <select
+                      className='form-select form-select-solid'
+                      value={platformFilter}
+                      onChange={(e) => handlePlatformFilter(e.target.value as 'youtube' | 'vimeo' | '')}
+                    >
+                      <option value=''>All Platforms</option>
+                      <option value='youtube'>YouTube</option>
+                      <option value='vimeo'>Vimeo</option>
+                    </select>
+                  </div>
+                  
+                  <div className='me-3'>
+                    <select
+                      className='form-select form-select-solid'
+                      value={statusFilter}
+                      onChange={(e) => handleStatusFilter(e.target.value as '1' | '2' | '')}
+                    >
+                      <option value=''>All Videos</option>
+                      <option value='1'>Private</option>
+                      <option value='2'>Public</option>
+                    </select>
+                  </div>
+                </>
+              )}
               
               {isTeachingStaff(currentUser?.role?.role_type) && (
                 <>
@@ -718,7 +855,7 @@ const TeacherVideoListPage: FC = () => {
             </div>
           ) : (
             <div className='row g-4'>
-              {videos.map((video) => (
+              {videos.filter(video => video && video.video_id).map((video) => (
                 <div key={video.video_id} className='col-md-3 col-lg-3'>
                   <div className='card h-100 video-card'>
                     <div className='video-thumbnail' style={{cursor: 'pointer', position: 'relative'}} onClick={() => navigate(`/videos/${video.video_id}`)}>
@@ -727,25 +864,30 @@ const TeacherVideoListPage: FC = () => {
                         alt={video.title}
                         className='card-img-top'
                       />
-                      {video.status === 1 && (
-                        <div className='video-private-badge' style={{
-                          position: 'absolute',
-                          top: '8px',
-                          right: '8px',
-                          zIndex: 2
-                        }}>
-                          <span className='badge badge-light-warning'>
-                            <i className='fas fa-lock me-1'></i>
-                            Private
+                      {(() => {
+                        const privacyLabel = getPrivacyLabel(video)
+                        return privacyLabel ? (
+                          <div className='video-private-badge' style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            zIndex: 2
+                          }}>
+                            <span className={`badge ${privacyLabel.badgeClass}`}>
+                              <i className={`${privacyLabel.icon} me-1`}></i>
+                              {privacyLabel.text}
+                            </span>
+                          </div>
+                        ) : null
+                      })()}
+                      {isTeachingStaff(currentUser?.role?.role_type) && (
+                        <div className='video-platform-badge'>
+                          <span className={`badge badge-light-${video.source === 1 ? 'danger' : 'primary'}`}>
+                            <i className={`${getPlatformIcon(video.source)} me-1`}></i>
+                            {video.source === 1 ? 'YouTube' : 'Vimeo'}
                           </span>
                         </div>
                       )}
-                      <div className='video-platform-badge'>
-                        <span className={`badge badge-light-${video.source === 1 ? 'danger' : 'primary'}`}>
-                          <i className={`${getPlatformIcon(video.source)} me-1`}></i>
-                          {video.source === 1 ? 'YouTube' : 'Vimeo'}
-                        </span>
-                      </div>
                       {video.duration && (
                         <div className='video-duration'>
                           {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
@@ -788,7 +930,7 @@ const TeacherVideoListPage: FC = () => {
                               {video.click_count || 0} views
                             </small>
                             <small>
-                              {new Date(video.created_at).toLocaleDateString()}
+                              {formatApiTimestamp(video.created_at, { format: 'date' })}
                             </small>
                           </div>
                           

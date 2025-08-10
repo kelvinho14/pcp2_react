@@ -267,7 +267,7 @@ export const fetchTeacherVideos = createAsyncThunk(
     if (order) params.order = order
     if (search) params.search = search
     if (source) params.source = source
-    if (status) params.status = status
+    if (status) params.video_status = status
 
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/videos`)
@@ -511,7 +511,10 @@ const videosSlice = createSlice({
       })
       .addCase(createVideo.fulfilled, (state, action) => {
         state.creating = false
-        state.videos.unshift(action.payload)
+        // Only add the video if payload is valid
+        if (action.payload && action.payload.video_id) {
+          state.videos.unshift(action.payload)
+        }
         state.success = 'Video created successfully'
       })
       .addCase(createVideo.rejected, (state, action) => {

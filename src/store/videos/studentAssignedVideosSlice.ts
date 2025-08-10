@@ -59,9 +59,58 @@ export const fetchStudentAssignedVideos = createAsyncThunk(
         withCredentials: true
       })
 
+      // Transform the API response to match our expected structure
+      const assignments = response.data.data?.assignments || []
+      const pagination = response.data.payload?.pagination || {}
+      
+      // Helper function to generate user-friendly package names
+      const generatePackageName = (pkg: any) => {
+        const assignedDate = new Date(pkg.assigned_at).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
+        })
+        const videoCount = pkg.total_assignments || 1
+        const firstVideoTitle = pkg.assignments?.[0]?.video_title
+        
+        if (firstVideoTitle && videoCount === 1) {
+          return firstVideoTitle
+        } else if (firstVideoTitle && videoCount > 1) {
+          return `${firstVideoTitle} + ${videoCount - 1} more`
+        } else {
+          return `Video Assignment - ${assignedDate}`
+        }
+      }
+
+      // Transform each assignment package
+      const packages = assignments.map((pkg: any) => ({
+        package_id: pkg.package_id,
+        package_name: generatePackageName(pkg), // Generate a user-friendly name
+        videos: pkg.assignments.map((assignment: any) => ({
+          assignment_id: assignment.assignment_id,
+          package_id: assignment.package_id,
+          video_id: assignment.video_id,
+          video_title: assignment.video_title,
+          video_description: undefined, // API doesn't provide description
+          video_thumbnail: assignment.video_thumbnail,
+          video_duration: assignment.video_duration,
+          source: assignment.play_url?.includes('youtube') ? 1 : 2, // Determine source from play_url
+          video_id_external: assignment.video_id, // Using video_id as external ID
+          play_url: assignment.play_url,
+          assigned_by: assignment.assigned_by,
+          assigned_at: assignment.assigned_at,
+          due_date: assignment.due_date,
+          message_for_student: assignment.message_for_student,
+          status: 1 // Default status since API doesn't provide it
+        })),
+        total_videos: pkg.total_assignments,
+        assigned_at: pkg.assigned_at,
+        due_date: pkg.due_date,
+        message_for_student: pkg.message_for_student
+      }))
+
       return {
-        packages: response.data.data?.packages || [],
-        total: response.data.data?.total || 0,
+        packages,
+        total: pagination.total || assignments.length,
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to fetch assigned videos'
