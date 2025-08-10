@@ -410,6 +410,42 @@ export const extractVideoId = (url: string): { platform: 'youtube' | 'vimeo'; vi
   return null
 }
 
+// Assign videos to students
+export const assignVideosToStudents = createAsyncThunk(
+  'videos/assignVideosToStudents',
+  async ({ videoIds, studentIds, dueDate, messageForStudent }: { 
+    videoIds: string[]
+    studentIds: string[]
+    dueDate?: string
+    messageForStudent?: string
+  }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/videos/assign`)
+      const response = await axios.post(`${API_URL}/videos/assign`, {
+        video_ids: videoIds, // Always an array
+        student_ids: studentIds,
+        due_date: dueDate,
+        message_for_student: messageForStudent
+      }, { 
+        headers,
+        withCredentials: true 
+      })
+      
+      if (response.data.status === 'success') {
+        toast.success('Videos assigned to students successfully!', 'Success')
+      } else {
+        toast.error('Failed to assign videos to students. Please try again.', 'Error')
+      }
+      
+      return response.data
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to assign videos to students'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 // State interface
 interface VideosState {
   videos: Video[]
@@ -427,6 +463,7 @@ interface VideosState {
   fetchingVimeoVideos: Record<string, boolean>
   youtubeMetadata: YouTubeMetadata | null
   fetchingYouTubeMetadata: boolean
+  assigning: boolean
 }
 
 const initialState: VideosState = {
@@ -445,6 +482,7 @@ const initialState: VideosState = {
   fetchingVimeoVideos: {},
   youtubeMetadata: null,
   fetchingYouTubeMetadata: false,
+  assigning: false,
 }
 
 // Slice
@@ -641,6 +679,22 @@ const videosSlice = createSlice({
       .addCase(fetchYouTubeMetadata.rejected, (state, action) => {
         state.fetchingYouTubeMetadata = false
         state.error = action.error.message || 'Failed to fetch YouTube metadata'
+      })
+
+    // Assign videos to students
+    builder
+      .addCase(assignVideosToStudents.pending, (state) => {
+        state.assigning = true
+        state.error = null
+        state.success = null
+      })
+      .addCase(assignVideosToStudents.fulfilled, (state) => {
+        state.assigning = false
+        state.success = 'Videos assigned to students successfully'
+      })
+      .addCase(assignVideosToStudents.rejected, (state, action) => {
+        state.assigning = false
+        state.error = action.error.message || 'Failed to assign videos to students'
       })
   },
 })

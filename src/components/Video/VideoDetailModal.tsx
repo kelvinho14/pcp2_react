@@ -8,18 +8,28 @@ interface VideoDetailModalProps {
   video: Video | null
   isOpen: boolean
   onClose: () => void
+  isTeachingStaff?: boolean
 }
 
-const VideoDetailModal: FC<VideoDetailModalProps> = ({video, isOpen, onClose}) => {
+const VideoDetailModal: FC<VideoDetailModalProps> = ({video, isOpen, onClose, isTeachingStaff = true}) => {
   if (!video || !isOpen) return null
 
-  const getPlatformIcon = (platform: string) => {
-    if (platform === 'youtube') {
+  const getPlatformIcon = (source: number) => {
+    if (source === 1) {
       return 'fab fa-youtube text-danger'
-    } else if (platform === 'vimeo') {
+    } else if (source === 2) {
       return 'fab fa-vimeo-v text-primary'
     }
     return 'fas fa-video'
+  }
+
+  const getPlatformName = (source: number) => {
+    if (source === 1) {
+      return 'YouTube'
+    } else if (source === 2) {
+      return 'Vimeo'
+    }
+    return 'Unknown'
   }
 
   return (
@@ -28,7 +38,9 @@ const VideoDetailModal: FC<VideoDetailModalProps> = ({video, isOpen, onClose}) =
         <div className='modal-content'>
           <div className='modal-header'>
             <h5 className='modal-title d-flex align-items-center'>
-              <i className={`${getPlatformIcon(video.platform)} me-2`}></i>
+              {isTeachingStaff && (
+                <i className={`${getPlatformIcon(video.source)} me-2`}></i>
+              )}
               {video.title}
             </h5>
             <button
@@ -60,16 +72,17 @@ const VideoDetailModal: FC<VideoDetailModalProps> = ({video, isOpen, onClose}) =
                         {video.description && (
                           <p><strong>Description:</strong> {video.description}</p>
                         )}
-                        <p><strong>Platform:</strong> 
-                          <span className={`badge badge-light-${video.platform === 'youtube' ? 'danger' : 'primary'} ms-2`}>
-                            <i className={`${getPlatformIcon(video.platform)} me-1`}></i>
-                            {video.platform}
-                          </span>
-                        </p>
+                        {isTeachingStaff && (
+                          <p><strong>Platform:</strong> 
+                            <span className={`badge badge-light-${video.source === 1 ? 'danger' : 'primary'} ms-2`}>
+                              <i className={`${getPlatformIcon(video.source)} me-1`}></i>
+                              {getPlatformName(video.source)}
+                            </span>
+                          </p>
+                        )}
                       </div>
                       
                       <div className='col-md-6'>
-                        <p><strong>Teacher:</strong> {video.teacher_name}</p>
                         <p><strong>Created:</strong> {formatApiTimestamp(video.created_at, { format: 'date' })}</p>
                         {video.duration && (
                           <p><strong>Duration:</strong> {video.duration}</p>
@@ -80,7 +93,7 @@ const VideoDetailModal: FC<VideoDetailModalProps> = ({video, isOpen, onClose}) =
                             <div className='mt-1'>
                               {video.tags.map((tag, index) => (
                                 <span key={index} className='badge badge-light-info me-1'>
-                                  {tag}
+                                  {typeof tag === 'string' ? tag : tag.name || 'Unnamed Tag'}
                                 </span>
                               ))}
                             </div>

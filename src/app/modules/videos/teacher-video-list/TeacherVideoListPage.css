@@ -148,15 +148,54 @@
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
+  padding-top: 0.75rem;
 }
 
 .video-actions .btn {
   font-size: 12px;
-  padding: 0.375rem 0.75rem;
+  padding: 0.25rem 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.video-actions .btn:hover {
+  transform: translateY(-1px);
 }
 
 .video-actions .btn-group .btn {
   padding: 0.375rem 0.5rem;
+}
+
+/* Better spacing for metadata section */
+.video-actions .d-flex.align-items-center.gap-3 {
+  gap: 0.75rem !important;
+}
+
+.video-actions .d-flex.gap-1 {
+  gap: 0.25rem !important;
+}
+
+/* Compact action buttons - more specific to override Bootstrap */
+.video-actions .d-flex.gap-1 .btn,
+.video-actions .d-flex.gap-1 .btn.btn-sm {
+  padding: 0.2rem 0.4rem !important;
+  min-width: auto !important;
+  width: auto !important;
+  height: auto !important;
+  line-height: 1 !important;
+}
+
+/* Ultra-specific targeting for the action buttons */
+.video-actions .d-flex.gap-1 button[type="button"].btn.btn-sm {
+  padding: 0.15rem 0.35rem !important;
+  font-size: 11px !important;
+  border-radius: 4px !important;
+}
+
+/* Ensure consistent spacing for small text */
+.video-actions small {
+  color: #6c7293;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 /* Responsive adjustments */

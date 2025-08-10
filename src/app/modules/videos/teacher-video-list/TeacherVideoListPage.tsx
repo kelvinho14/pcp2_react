@@ -25,9 +25,12 @@ import {
   VimeoFolder,
   VimeoVideo,
   extractVideoId,
+  assignVideosToStudents,
+  fetchVideos,
 } from '../../../../store/videos/videosSlice'
 import {fetchTags} from '../../../../store/tags/tagsSlice'
 import {fetchStudentAssignedVideos} from '../../../../store/videos/studentAssignedVideosSlice'
+
 import VideoTagInput, {VideoTagData} from '../../../../components/Video/VideoTagInput'
 import {KTIcon} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
@@ -58,11 +61,13 @@ const TeacherVideoListPage: FC = () => {
     fetchingVimeoFolders,
     fetchingVimeoVideos,
     youtubeMetadata,
-    fetchingYouTubeMetadata
+    fetchingYouTubeMetadata,
+    assigning
   } = useSelector((state: RootState) => state.videos)
   
   const {tags} = useSelector((state: RootState) => state.tags)
-  const {packages: assignedVideoPackages} = useSelector((state: RootState) => state.studentAssignedVideos)
+  const {packages: studentAssignedVideos} = useSelector((state: RootState) => state.studentAssignedVideos)
+
 
   // State for pagination and filtering
   const [currentPage, setCurrentPage] = useState(1)
@@ -139,18 +144,22 @@ const TeacherVideoListPage: FC = () => {
     dispatch(fetchTags())
   }, [dispatch])
 
+  // Fetch student assigned videos if user is a student
+  useEffect(() => {
+    if (!isTeachingStaff(currentUser?.role?.role_type)) {
+      dispatch(fetchStudentAssignedVideos())
+    }
+  }, [dispatch, currentUser?.role?.role_type])
+
   // Clear messages when component unmounts
   useEffect(() => {
     return () => {
       dispatch(clearMessages())
       dispatch(clearVimeoData())
       
-      // Cleanup search timeout and abort controller
+      // Cleanup search timeout
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current)
-      }
-      if (searchAbortControllerRef.current) {
-        searchAbortControllerRef.current.abort()
       }
     }
   }, [dispatch])
@@ -164,12 +173,8 @@ const TeacherVideoListPage: FC = () => {
     }
   }, [])
 
-  // Fetch student assigned videos if user is a student
-  useEffect(() => {
-    if (!isTeachingStaff(currentUser?.role?.role_type)) {
-      dispatch(fetchStudentAssignedVideos())
-    }
-  }, [dispatch, currentUser?.role?.role_type])
+  // Note: This component is designed for teachers. Students should be redirected to a different page.
+  // The fetchStudentAssignedVideos call has been removed to prevent unnecessary API calls.
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -451,7 +456,25 @@ const TeacherVideoListPage: FC = () => {
     )
   }
 
-  // Handle video assignment
+  // Shared function for assigning videos
+  const assignVideos = async (videoIds: string[], studentIds: string[], dueDate: Date | null, message: string) => {
+    try {
+      await dispatch(assignVideosToStudents({
+        videoIds,
+        studentIds,
+        dueDate: dueDate ? new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate(), 23, 59, 59).toISOString() : undefined,
+        messageForStudent: message.trim() || undefined,
+      })).unwrap()
+      return true
+    } catch (error: any) {
+      console.error('Error assigning videos:', error)
+      const errorMessage = error.response?.data?.message || 'Failed to assign videos'
+      toast.error(errorMessage, 'Error')
+      return false
+    }
+  }
+
+  // Handle single video assignment
   const handleAssignVideo = async () => {
     if (selectedStudents.length === 0) {
       toast.warning('Please select at least one student', 'Warning')
@@ -460,32 +483,19 @@ const TeacherVideoListPage: FC = () => {
 
     if (!videoToAssign) return
 
-    try {
-      const API_URL = import.meta.env.VITE_APP_API_URL
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/videos/assign`)
-      
-      const assignmentData = {
-        student_ids: selectedStudents,
-        video_id: videoToAssign.video_id,
-        due_date: assignmentDueDate ? new Date(assignmentDueDate.getFullYear(), assignmentDueDate.getMonth(), assignmentDueDate.getDate(), 23, 59, 59).toISOString() : undefined,
-        message_for_student: assignmentMessage.trim() || undefined,
-      }
+    const success = await assignVideos(
+      [videoToAssign.video_id],
+      selectedStudents,
+      assignmentDueDate,
+      assignmentMessage
+    )
 
-      await axios.post(`${API_URL}/videos/assign`, assignmentData, {
-        headers,
-        withCredentials: true
-      })
-
-      toast.success('Video assigned successfully!', 'Success')
+    if (success) {
       setShowAssignModal(false)
       setVideoToAssign(null)
       setSelectedStudents([])
       setAssignmentDueDate(null)
       setAssignmentMessage('')
-    } catch (error: any) {
-      console.error('Error assigning video:', error)
-      const errorMessage = error.response?.data?.message || 'Failed to assign video'
-      toast.error(errorMessage, 'Error')
     }
   }
 
@@ -504,6 +514,10 @@ const TeacherVideoListPage: FC = () => {
     setVideoSearchTerm('')
     setAvailableVideos([])
     setSelectedVideos([])
+    // Clear any existing modal search timeout
+    if (modalSearchTimeoutRef.current) {
+      clearTimeout(modalSearchTimeoutRef.current)
+    }
   }
 
   // Handle bulk student selection
@@ -524,48 +538,36 @@ const TeacherVideoListPage: FC = () => {
     )
   }
 
-  // Refs for debouncing and canceling API calls
+  // Refs for debouncing - separate for main page and modal
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const searchAbortControllerRef = useRef<AbortController | null>(null)
+  const modalSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Actual search function that makes the API call
+  // Actual search function that makes the API call for modal - separate from main page
   const performVideoSearch = useCallback(async (searchTerm: string) => {
     if (searchTerm.trim()) {
       setSearchingVideos(true)
       
-      // Cancel previous request if it exists
-      if (searchAbortControllerRef.current) {
-        searchAbortControllerRef.current.abort()
-      }
-      
-      // Create new abort controller for this request
-      const abortController = new AbortController()
-      searchAbortControllerRef.current = abortController
-      
       try {
+        // Use the same API URL construction as the Redux slice but don't dispatch
         const API_URL = import.meta.env.VITE_APP_API_URL
-        const headers = getHeadersWithSchoolSubject(`${API_URL}/videos`)
-        
         const response = await axios.get(`${API_URL}/videos`, {
           params: {
             page: 1,
             items_per_page: 50,
             search: searchTerm,
           },
-          headers,
-          withCredentials: true,
-          signal: abortController.signal
+          headers: getHeadersWithSchoolSubject(`${API_URL}/videos`),
+          withCredentials: true
         })
         
-        setAvailableVideos(response.data.data || [])
+        // Extract data in the same format as the Redux thunk
+        const items = response.data.data || []
+        setAvailableVideos(items)
       } catch (error: any) {
-        if (error.name !== 'CanceledError') {
-          console.error('Error searching videos:', error)
-          setAvailableVideos([])
-        }
+        console.error('Error searching videos in modal:', error)
+        setAvailableVideos([])
       } finally {
         setSearchingVideos(false)
-        searchAbortControllerRef.current = null
       }
     } else {
       setAvailableVideos([])
@@ -573,24 +575,19 @@ const TeacherVideoListPage: FC = () => {
     }
   }, [])
 
-  // Debounced search function
+  // Debounced search function for modal - separate from main page search
   const handleVideoSearch = useCallback((searchTerm: string) => {
     setVideoSearchTerm(searchTerm)
     
-    // Clear existing timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current)
+    // Clear existing modal search timeout
+    if (modalSearchTimeoutRef.current) {
+      clearTimeout(modalSearchTimeoutRef.current)
     }
     
-    // Cancel existing API request
-    if (searchAbortControllerRef.current) {
-      searchAbortControllerRef.current.abort()
-    }
-    
-    // Set new timeout for debounced search
-    searchTimeoutRef.current = setTimeout(() => {
+    // Set new timeout for debounced modal search
+    modalSearchTimeoutRef.current = setTimeout(() => {
       performVideoSearch(searchTerm)
-    }, 500) // 500ms delay
+    }, 500)
   }, [performVideoSearch])
 
   // Handle bulk video assignment
@@ -605,24 +602,14 @@ const TeacherVideoListPage: FC = () => {
       return
     }
 
-    try {
-      const API_URL = import.meta.env.VITE_APP_API_URL
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/videos/assign`)
-      
-      // Assign all videos to selected students in a single API call
-      const assignmentData = {
-        student_ids: bulkSelectedStudents,
-        video_ids: selectedVideos,
-        due_date: bulkAssignmentDueDate ? new Date(bulkAssignmentDueDate.getFullYear(), bulkAssignmentDueDate.getMonth(), bulkAssignmentDueDate.getDate(), 23, 59, 59).toISOString() : undefined,
-        message_for_student: bulkAssignmentMessage.trim() || undefined,
-      }
+    const success = await assignVideos(
+      selectedVideos,
+      bulkSelectedStudents,
+      bulkAssignmentDueDate,
+      bulkAssignmentMessage
+    )
 
-      await axios.post(`${API_URL}/videos/assign`, assignmentData, {
-        headers,
-        withCredentials: true
-      })
-
-      toast.success('Videos assigned successfully!', 'Success')
+    if (success) {
       setShowBulkAssignModal(false)
       setBulkSelectedStudents([])
       setBulkAssignmentDueDate(null)
@@ -630,10 +617,10 @@ const TeacherVideoListPage: FC = () => {
       setVideoSearchTerm('')
       setAvailableVideos([])
       setSelectedVideos([])
-    } catch (error: any) {
-      console.error('Error assigning videos:', error)
-      const errorMessage = error.response?.data?.message || 'Failed to assign videos'
-      toast.error(errorMessage, 'Error')
+      // Clear modal search timeout
+      if (modalSearchTimeoutRef.current) {
+        clearTimeout(modalSearchTimeoutRef.current)
+      }
     }
   }
 
@@ -699,27 +686,28 @@ const TeacherVideoListPage: FC = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
 
-  // Check if video is assigned to current student
-  const isVideoAssignedToStudent = (videoId: string): boolean => {
-    if (!assignedVideoPackages || assignedVideoPackages.length === 0) return false
-    
-    return assignedVideoPackages.some(pkg => 
-      pkg.videos.some(video => video.video_id === videoId)
-    )
-  }
-
-  // Get privacy label for video
+  // Get privacy label for video (different for teachers vs students)
   const getPrivacyLabel = (video: Video) => {
-    if (video.status === 2) return null // Public videos don't need a label
-    
-    if (!isTeachingStaff(currentUser?.role?.role_type) && isVideoAssignedToStudent(video.video_id)) {
-      return {
-        text: 'Assigned to You',
-        icon: 'fas fa-user-check',
-        badgeClass: 'badge-light-success'
+    // If user is a student, check if video is assigned to them first
+    if (!isTeachingStaff(currentUser?.role?.role_type)) {
+      // Check if this video is assigned to the current student
+      const isAssignedToStudent = studentAssignedVideos.some(pkg => 
+        pkg.videos.some(assignedVideo => assignedVideo.video_id === video.video_id)
+      )
+      
+      if (isAssignedToStudent) {
+        return {
+          text: 'Assigned to you',
+          icon: 'fas fa-check-circle',
+          badgeClass: 'badge-light-success'
+        }
       }
     }
     
+    // For public videos that are not assigned to students, show no label
+    if (video.status === 2) return null
+    
+    // For private videos (teachers or unassigned videos for students), show private
     return {
       text: 'Private',
       icon: 'fas fa-lock',
@@ -753,18 +741,27 @@ const TeacherVideoListPage: FC = () => {
             </h2>
             <p className='welcome-subtitle'>
               {isTeachingStaff(currentUser?.role?.role_type) 
-                ? 'Create, manage, and assign educational videos to your students'
-                : 'Discover educational content and expand your knowledge'
+                ? 'Create, manage, and assign videos to your students'
+                : 'Discover content and expand your knowledge'
               }
             </p>
           </div>
           {isTeachingStaff(currentUser?.role?.role_type) && (
             <div className='welcome-actions'>
-              <button className='btn btn-light-primary me-3'>
+              <button 
+                className='btn btn-light-primary me-3'
+                onClick={() => {
+                  resetModal()
+                  setShowModal(true)
+                }}
+              >
                 <i className='fas fa-plus me-1'></i>
                 Add Video
               </button>
-              <button className='btn btn-light-success'>
+              <button 
+                className='btn btn-light-success'
+                onClick={handleBulkAssignModalOpen}
+              >
                 <i className='fas fa-user-plus me-1'></i>
                 Assign Videos
               </button>
@@ -819,29 +816,7 @@ const TeacherVideoListPage: FC = () => {
                 </>
               )}
               
-              {isTeachingStaff(currentUser?.role?.role_type) && (
-                <>
-                  <button
-                    type='button'
-                    className='btn btn-success me-2'
-                    onClick={handleBulkAssignModalOpen}
-                  >
-                    <i className='fas fa-user-plus me-2'></i>
-                    Assign Video
-                  </button>
-                  <button
-                    type='button'
-                    className='btn btn-primary'
-                    onClick={() => {
-                      resetModal()
-                      setShowModal(true)
-                    }}
-                  >
-                    <KTIcon iconName='plus' className='fs-2' />
-                    Add Video
-                  </button>
-                </>
-              )}
+
             </div>
           </div>
         </div>
@@ -924,7 +899,7 @@ const TeacherVideoListPage: FC = () => {
                         )}
                         
                         <div className='video-actions d-flex justify-content-between align-items-center'>
-                          <div className='d-flex align-items-center gap-2'>
+                          <div className='d-flex align-items-center gap-3'>
                             <small>
                               <i className='fas fa-eye me-1'></i>
                               {video.click_count || 0} views
@@ -935,7 +910,7 @@ const TeacherVideoListPage: FC = () => {
                           </div>
                           
                           {isTeachingStaff(currentUser?.role?.role_type) && (
-                            <div className='d-flex gap-4'>
+                            <div className='d-flex gap-1'>
                               <button
                                 type='button'
                                 className='btn  btn-sm'
@@ -1125,10 +1100,12 @@ const TeacherVideoListPage: FC = () => {
                           <div className='col-md-9'>
                             <h6 className='fw-bold mb-1 text-truncate' title={editingVideo.title}>{editingVideo.title}</h6>
                             <div className='d-flex align-items-center gap-2 flex-wrap'>
-                              <span className={`badge badge-light-${editingVideo.source === 1 ? 'danger' : 'primary'} badge-sm`}>
-                                <i className={`${getPlatformIcon(editingVideo.source)} me-1`}></i>
-                                {editingVideo.source === 1 ? 'YouTube' : 'Vimeo'}
-                              </span>
+                              {isTeachingStaff(currentUser?.role?.role_type) && (
+                                <span className={`badge badge-light-${editingVideo.source === 1 ? 'danger' : 'primary'} badge-sm`}>
+                                  <i className={`${getPlatformIcon(editingVideo.source)} me-1`}></i>
+                                  {editingVideo.source === 1 ? 'YouTube' : 'Vimeo'}
+                                </span>
+                              )}
                               {editingVideo.duration && (
                                 <span className='text-muted small'>
                                   <i className='fas fa-clock me-1'></i>
@@ -1651,6 +1628,7 @@ const TeacherVideoListPage: FC = () => {
           setShowDetailModal(false)
           setSelectedVideo(null)
         }}
+        isTeachingStaff={isTeachingStaff(currentUser?.role?.role_type)}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -1734,8 +1712,15 @@ const TeacherVideoListPage: FC = () => {
                 }}>
                   Cancel
                 </button>
-                <button type="button" className="btn btn-primary" onClick={handleAssignVideo}>
-                  Assign Video
+                <button type="button" className="btn btn-primary" onClick={handleAssignVideo} disabled={assigning}>
+                  {assigning ? (
+                    <>
+                      <span className='spinner-border spinner-border-sm me-2' role='status'></span>
+                      Assigning...
+                    </>
+                  ) : (
+                    'Assign Video'
+                  )}
                 </button>
               </div>
             </div>
@@ -1750,7 +1735,13 @@ const TeacherVideoListPage: FC = () => {
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Assign Videos to Students</h5>
-                <button type="button" className="btn-close" onClick={() => setShowBulkAssignModal(false)}></button>
+                <button type="button" className="btn-close" onClick={() => {
+                  setShowBulkAssignModal(false)
+                  // Clear modal search timeout when closing
+                  if (modalSearchTimeoutRef.current) {
+                    clearTimeout(modalSearchTimeoutRef.current)
+                  }
+                }}></button>
               </div>
               <div className="modal-body">
                 <div className='row'>
@@ -1802,7 +1793,12 @@ const TeacherVideoListPage: FC = () => {
                               <div className='flex-grow-1'>
                                 <div className='fw-bold small'>{video.title}</div>
                                 <div className='text-muted small'>
-                                  {video.source === 1 ? 'YouTube' : 'Vimeo'} • {video.duration ? formatDuration(video.duration) : 'Unknown duration'}
+                                  {isTeachingStaff(currentUser?.role?.role_type) && (
+                                    <>
+                                      {video.source === 1 ? 'YouTube' : 'Vimeo'} • 
+                                    </>
+                                  )}
+                                  {video.duration ? formatDuration(video.duration) : 'Unknown duration'}
                                 </div>
                               </div>
                             </div>
@@ -1872,11 +1868,22 @@ const TeacherVideoListPage: FC = () => {
                   setVideoSearchTerm('')
                   setAvailableVideos([])
                   setSelectedVideos([])
+                  // Clear modal search timeout when canceling
+                  if (modalSearchTimeoutRef.current) {
+                    clearTimeout(modalSearchTimeoutRef.current)
+                  }
                 }}>
                   Cancel
                 </button>
-                <button type="button" className="btn btn-primary" onClick={handleBulkAssignVideos}>
-                  Assign Videos
+                <button type="button" className="btn btn-primary" onClick={handleBulkAssignVideos} disabled={assigning}>
+                  {assigning ? (
+                    <>
+                      <span className='spinner-border spinner-border-sm me-2' role='status'></span>
+                      Assigning...
+                    </>
+                  ) : (
+                    'Assign Videos'
+                  )}
                 </button>
               </div>
             </div>

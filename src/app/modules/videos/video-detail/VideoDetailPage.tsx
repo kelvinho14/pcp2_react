@@ -270,58 +270,75 @@ const VideoDetailPage: FC = () => {
               </div>
             </div>
             <div className='card-body'>
-              <div className='mb-3'>
-                {video.description && (
-                  <p className='text-muted small'>{video.description}</p>
-                )}
+                            {/* Video Description */}
+              {video.description && (
+                <div className='mb-4 description-section p-3'>
+                  <h6 className='fw-bold mb-2 text-primary section-header'>
+                    <i className='fas fa-align-left me-2'></i>
+                    Description
+                  </h6>
+                  <p className='text-muted mb-0'>{video.description}</p>
+                </div>
+              )}
+
+              {/* Video Details Section */}
+              <div className='mb-4 video-details-section p-4 rounded'>
+                <h6 className='fw-bold mb-3 text-primary section-header'>
+                  <i className='fas fa-info-circle me-2'></i>
+                  Video Details
+                </h6>
+                <div className='row g-3'>
+                  {isTeachingStaff(currentUser?.role?.role_type) && (
+                    <div className='col-md-3 col-sm-6'>
+                      <div className='info-card d-flex align-items-center'>
+                        <i className={`${getPlatformIcon(video.source)} me-2 text-primary`}></i>
+                        <span className='small fw-medium'>
+                          {video.source === 1 ? 'YouTube' : 'Vimeo'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className='col-md-3 col-sm-6'>
+                    <div className='info-card d-flex align-items-center'>
+                      <i className='fas fa-clock me-2 text-warning'></i>
+                      <span className='small fw-medium'>
+                        {video.duration ? formatDuration(video.duration) : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className='col-md-3 col-sm-6'>
+                    <div className='info-card d-flex align-items-center'>
+                      <i className='fas fa-calendar me-2 text-info'></i>
+                      <span className='small fw-medium'>
+                        {formatApiTimestamp(video.created_at, { format: 'date' })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className='col-md-3 col-sm-6'>
+                    <div className='info-card d-flex align-items-center'>
+                      <i className='fas fa-eye me-2 text-success'></i>
+                      <span className='small fw-medium'>
+                        {video.click_count || 0} views
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className='row g-3'>
-                <div className='col-md-3 col-sm-6'>
-                  <div className='d-flex align-items-center'>
-                    <i className={`${getPlatformIcon(video.source)} me-2`}></i>
-                    <span className='small'>
-                      {video.source === 1 ? 'YouTube' : 'Vimeo'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className='col-md-3 col-sm-6'>
-                  <div className='d-flex align-items-center'>
-                    <i className='fas fa-clock me-2'></i>
-                    <span className='small'>
-                      {video.duration ? formatDuration(video.duration) : 'N/A'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className='col-md-3 col-sm-6'>
-                  <div className='d-flex align-items-center'>
-                    <i className='fas fa-eye me-2'></i>
-                    <span className='small'>
-                      {video.click_count || 0} views
-                    </span>
-                  </div>
-                </div>
-
-                <div className='col-md-3 col-sm-6'>
-                  <div className='d-flex align-items-center'>
-                    <i className='fas fa-calendar me-2'></i>
-                    <span className='small'>
-                      {formatApiTimestamp(video.created_at, { format: 'date' })}
-                    </span>
-                  </div>
-                </div>
-
-
-              </div>
-
+              {/* Tags Section */}
               {video.tags && video.tags.length > 0 && (
-                <div className='mt-3'>
-                  <h6 className='fw-bold mb-2'>Tags</h6>
-                  <div className='d-flex flex-wrap gap-1'>
+                <div className='mb-4 video-details-section p-4 rounded'>
+                  <h6 className='fw-bold mb-3 text-primary section-header'>
+                    <i className='fas fa-tags me-2'></i>
+                    Tags
+                  </h6>
+                  <div className='d-flex flex-wrap gap-2'>
                     {video.tags.map((tag, index) => (
-                      <span key={index} className='badge badge-light-info'>
+                      <span key={index} className='badge badge-light-info badge-lg px-3 py-2'>
+                        <i className='fas fa-tag me-1'></i>
                         {tag.name}
                       </span>
                     ))}
@@ -381,10 +398,12 @@ const VideoDetailPage: FC = () => {
                       <div className='col-md-9'>
                         <h6 className='fw-bold mb-1 text-truncate' title={video.title}>{video.title}</h6>
                         <div className='d-flex align-items-center gap-2 flex-wrap'>
-                          <span className={`badge badge-light-${video.source === 1 ? 'danger' : 'primary'} badge-sm`}>
-                            <i className={`${getPlatformIcon(video.source)} me-1`}></i>
-                            {video.source === 1 ? 'YouTube' : 'Vimeo'}
-                          </span>
+                          {isTeachingStaff(currentUser?.role?.role_type) && (
+                            <span className={`badge badge-light-${video.source === 1 ? 'danger' : 'primary'} badge-sm`}>
+                              <i className={`${getPlatformIcon(video.source)} me-1`}></i>
+                              {video.source === 1 ? 'YouTube' : 'Vimeo'}
+                            </span>
+                          )}
                           {video.duration && (
                             <span className='text-muted small'>
                               <i className='fas fa-clock me-1'></i>

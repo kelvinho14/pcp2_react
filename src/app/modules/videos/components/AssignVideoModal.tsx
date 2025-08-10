@@ -16,13 +16,6 @@ interface AssignVideoModalProps {
   onHide: () => void
 }
 
-interface VideoAssignmentData {
-  video_id: string
-  student_ids: string[]
-  due_date?: string
-  message_for_student?: string
-}
-
 const AssignVideoModal: FC<AssignVideoModalProps> = ({ show, onHide }) => {
   const dispatch = useDispatch<AppDispatch>()
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
@@ -120,30 +113,24 @@ const AssignVideoModal: FC<AssignVideoModalProps> = ({ show, onHide }) => {
   // Handle assignment submission
   const handleSubmit = async () => {
     if (!selectedVideo) {
-      toast.warning('Please select a video', 'Warning')
+      toast.error('Please select a video', 'Error')
       return
     }
 
     if (selectedStudents.length === 0) {
-      toast.warning('Please select at least one student', 'Warning')
+      toast.error('Please select at least one student', 'Error')
       return
     }
 
     setIsAssigning(true)
-
     try {
-      // Prepare assignment data
-      const assignment: VideoAssignmentData = {
-        video_id: selectedVideo.video_id,
-        student_ids: selectedStudents,
-        due_date: dueDate ? new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate(), 23, 59, 59).toISOString() : undefined,
-        message_for_student: messageToStudent.trim() || undefined,
-      }
-
       // Call the API to assign videos
-      await dispatch(assignVideosToStudents([assignment])).unwrap()
-      
-      toast.success(`Video assigned to ${selectedStudents.length} student(s) successfully!`, 'Success')
+      await dispatch(assignVideosToStudents({
+        videoIds: [selectedVideo.video_id], // Always an array
+        studentIds: selectedStudents,
+        dueDate: dueDate ? new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate(), 23, 59, 59).toISOString() : undefined,
+        messageForStudent: messageToStudent.trim() || undefined,
+      })).unwrap()
       
       onHide()
       resetForm()
