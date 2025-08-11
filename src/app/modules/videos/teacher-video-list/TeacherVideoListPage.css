@@ -143,6 +143,18 @@
   padding: 0.25rem 0.5rem;
 }
 
+.video-tags .badge.cursor-pointer {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.video-tags .badge.cursor-pointer:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  background-color: #e1f5fe !important;
+  color: #0277bd !important;
+}
+
 .video-actions {
   display: flex;
   justify-content: space-between;
@@ -248,4 +260,13 @@
 .video-empty-state p {
   color: #a1a5b7;
   margin-bottom: 1.5rem;
+}
+
+/* Tag filter dropdown z-index */
+.react-select__menu {
+  z-index: 9999 !important;
+}
+
+.react-select__menu-portal {
+  z-index: 9999 !important;
 } 

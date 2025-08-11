@@ -81,7 +81,7 @@ const AssignVideoModal: FC<AssignVideoModalProps> = ({ show, onHide }) => {
   const studentOptions = useMemo(() => {
     return filteredStudents.map(user => ({
       value: user.user_id,
-      label: `${user.name} (${user.email})`,
+      label: user.name,
       data: user
     }))
   }, [filteredStudents])

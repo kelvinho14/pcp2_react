@@ -64,4 +64,19 @@
       margin: 0 0.125rem;
     }
   }
+  
+  // Clickable video cards
+  .video-card-clickable {
+    transition: all 0.2s ease-in-out;
+    
+    &:hover {
+      background-color: #e9ecef !important;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+  }
 } 

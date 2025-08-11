@@ -41,7 +41,7 @@ const StudentSelectionTable = ({ exerciseIds, search, selectedUsers, onUserSelec
     
     return users.map(user => ({
       value: String(user.user_id || ''),
-      label: `${user.name} (${user.email})`,
+      label: user.name,
       user: user,
       isDisabled: false // All students are selectable since we're not checking assignment status
     }))
