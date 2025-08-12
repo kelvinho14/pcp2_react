@@ -39,6 +39,7 @@ interface StudentAssignedVideosState {
   loading: boolean
   error: string | null
   total: number
+  hasAttemptedFetch: boolean
 }
 
 const initialState: StudentAssignedVideosState = {
@@ -46,6 +47,7 @@ const initialState: StudentAssignedVideosState = {
   loading: false,
   error: null,
   total: 0,
+  hasAttemptedFetch: false,
 }
 
 // Async thunk to fetch student's assigned video packages

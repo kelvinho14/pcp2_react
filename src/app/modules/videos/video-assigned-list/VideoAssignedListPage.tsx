@@ -4,12 +4,14 @@ import {PageTitle} from '../../../../_metronic/layout/core'
 import {useIntl} from 'react-intl'
 import {AppDispatch, RootState, store} from '../../../../store'
 import {fetchAssignedVideos, setPage, setFilters, setLoadingFilters, clearCache, AssignedVideo, VideoPackage, type AssignedVideosFilters} from '../../../../store/videos/assignedVideosSlice'
+
 import {ASSIGNMENT_STATUS, getStatusLabel, getStatusColor, AssignmentStatus} from '../../../constants/assignmentStatus'
 import {useNavigate} from 'react-router-dom'
 import {KTIcon} from '../../../../_metronic/helpers'
 import {useAuth} from '../../../../app/modules/auth'
 import {isTeachingStaff} from '../../../constants/roles'
 import VideoPreview from '../../../../components/Video/VideoPreview'
+import VideoDetailModal from '../../../../components/Video/VideoDetailModal'
 import {DatePicker} from '../../../../_metronic/helpers/components/DatePicker'
 import Select from 'react-select'
 import {ROLES} from '../../../constants/roles'
@@ -188,7 +190,7 @@ const AssignedVideosFilters: FC<AssignedVideosFiltersProps> = ({ onClearFilters,
     
     return users.map(user => ({
       value: user.user_id,
-      label: `${user.name} (${user.email})`,
+      label: user.name,
       data: user
     }))
   }, [users])
@@ -284,6 +286,9 @@ const AssignedVideosFilters: FC<AssignedVideosFiltersProps> = ({ onClearFilters,
             )}
           </div>
 
+        </div>
+        
+        <div className='row g-3 mb-3'>
           <div className='col-md-3'>
             <label className='form-label'>Assigned Date From</label>
             <DatePicker
@@ -388,6 +393,10 @@ const VideoAssignedListPage: FC = () => {
   const [deleteStudentData, setDeleteStudentData] = useState<{packageId: string, studentId: string, studentName: string} | null>(null)
   const [deletePackageData, setDeletePackageData] = useState<{packageId: string} | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  
+  // Video modal state
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null)
+  const [showVideoModal, setShowVideoModal] = useState(false)
 
 
 
@@ -662,6 +671,12 @@ const VideoAssignedListPage: FC = () => {
     }
     setSortConfig({ key, direction })
   }
+  
+  // Handle video click to open modal
+  const handleVideoClick = (assignment: any) => {
+    setSelectedVideoId(assignment.video_id)
+    setShowVideoModal(true)
+  }
 
   const sortedPackages = useMemo(() => {
     if (!sortConfig) return packages
@@ -761,24 +776,24 @@ const VideoAssignedListPage: FC = () => {
 
       {/* Summary Cards */}
       <div className='row g-5 g-xl-8 mb-5'>
-        <div className='col-xl-3'>
-          <div className='card bg-light-primary'>
+        <div className='col-xl-4'>
+          <div className='card bg-light-success'>
             <div className='card-body'>
               <div className='d-flex align-items-center'>
                 <div className='symbol symbol-50px me-3'>
-                  <div className='symbol-label bg-primary'>
-                    <i className='fas fa-box text-white'></i>
+                  <div className='symbol-label bg-success'>
+                    <i className='fas fa-tasks text-white'></i>
                   </div>
                 </div>
                 <div>
-                  <div className='fs-6 text-muted fw-bold'>Total Packages</div>
-                  <div className='fs-2 fw-bold text-primary'>{summary.total_packages}</div>
+                  <div className='fs-6 text-muted fw-bold'>Total Assignments</div>
+                  <div className='fs-2 fw-bold text-success'>{summary.total_assignments}</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div className='col-xl-3'>
+        <div className='col-xl-4'>
           <div className='card bg-light-primary'>
             <div className='card-body'>
               <div className='d-flex align-items-center'>
@@ -795,7 +810,7 @@ const VideoAssignedListPage: FC = () => {
             </div>
           </div>
         </div>
-        <div className='col-xl-3'>
+        <div className='col-xl-4'>
           <div className='card bg-light-info'>
             <div className='card-body'>
               <div className='d-flex align-items-center'>
@@ -807,23 +822,6 @@ const VideoAssignedListPage: FC = () => {
                 <div>
                   <div className='fs-6 text-muted fw-bold'>Unique Videos</div>
                   <div className='fs-2 fw-bold text-info'>{summary.unique_videos}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className='col-xl-3'>
-          <div className='card bg-light-success'>
-            <div className='card-body'>
-              <div className='d-flex align-items-center'>
-                <div className='symbol symbol-50px me-3'>
-                  <div className='symbol-label bg-success'>
-                    <i className='fas fa-tasks text-white'></i>
-                  </div>
-                </div>
-                <div>
-                  <div className='fs-6 text-muted fw-bold'>Total Assignments</div>
-                  <div className='fs-2 fw-bold text-success'>{summary.total_assignments}</div>
                 </div>
               </div>
             </div>
@@ -955,7 +953,12 @@ const VideoAssignedListPage: FC = () => {
                               {Array.from(new Map(videoPackage.assignments.map(assignment => [assignment.video_id, assignment])).values()).slice(0, 3).map((assignment) => {
                                 const uniqueVideos = new Map(videoPackage.assignments.map(a => [a.video_id, a])).size
                                 return (
-                                  <div key={assignment.video_id} className='d-flex align-items-center p-2 bg-light rounded mb-2'>
+                                  <div 
+                                    key={assignment.video_id} 
+                                    className='d-flex align-items-center p-2 bg-light rounded mb-2 video-card-clickable'
+                                    onClick={() => handleVideoClick(assignment)}
+                                    style={{cursor: 'pointer'}}
+                                  >
                                     <img
                                       src={assignment.video_thumbnail || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBaIiBmaWxsPSIjQ0NDQ0NDIi8+Cjx0ZXh0IHg9IjE2MCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
                                       alt={assignment.video_title}
@@ -966,7 +969,6 @@ const VideoAssignedListPage: FC = () => {
                                       <div className='fw-semibold small text-truncate' title={assignment.video_title}>
                                         {assignment.video_title}
                                       </div>
-                                      <div className='text-muted smaller'>ID: {assignment.video_id}</div>
                                     </div>
                                     {uniqueVideos > 1 && isTeachingStaff(currentUser?.role?.role_type) && (
                                       <button
@@ -1130,6 +1132,17 @@ const VideoAssignedListPage: FC = () => {
         variant="danger"
         loading={isDeleting}
         loadingText="Deleting package..."
+      />
+
+      {/* Video Detail Modal */}
+      <VideoDetailModal
+        videoId={selectedVideoId}
+        isOpen={showVideoModal}
+        onClose={() => {
+          setShowVideoModal(false)
+          setSelectedVideoId(null)
+        }}
+        isTeachingStaff={isTeachingStaff(currentUser?.role?.role_type)}
       />
 
     </>

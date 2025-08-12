@@ -23,6 +23,12 @@ export interface Video {
   tag_count?: number
   tags?: VideoTag[]
   click_count?: number
+  // Assignment information from backend
+  is_assigned_to_current_user?: boolean
+  assignment_id?: string
+  assigned_at?: string
+  due_date?: string
+  message_for_student?: string
 }
 
 export interface VideoTag {
@@ -253,7 +259,7 @@ export const deleteVideo = createAsyncThunk(
 
 export const fetchTeacherVideos = createAsyncThunk(
   'videos/fetchTeacherVideos',
-  async ({ page, items_per_page, sort, order, search, source, status }: {
+  async ({ page, items_per_page, sort, order, search, source, status, tags }: {
     page: number
     items_per_page: number
     sort?: string
@@ -261,6 +267,7 @@ export const fetchTeacherVideos = createAsyncThunk(
     search?: string
     source?: number
     status?: number
+    tags?: string[]
   }) => {
     const params: any = { page, items_per_page }
     if (sort) params.sort = sort
@@ -268,6 +275,7 @@ export const fetchTeacherVideos = createAsyncThunk(
     if (search) params.search = search
     if (source) params.source = source
     if (status) params.video_status = status
+    if (tags && tags.length > 0) params.tags = tags.join(',')
 
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/videos`)
@@ -446,6 +454,26 @@ export const assignVideosToStudents = createAsyncThunk(
   }
 )
 
+// Fetch video tags for filtering
+export const fetchVideoTags = createAsyncThunk(
+  'videos/fetchVideoTags',
+  async () => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/videos/tags`)
+      const response = await axios.get(`${API_URL}/videos/tags`, { 
+        headers,
+        withCredentials: true 
+      })
+      
+      return response.data.data || []
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to fetch video tags'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 // State interface
 interface VideosState {
   videos: Video[]
@@ -464,6 +492,8 @@ interface VideosState {
   youtubeMetadata: YouTubeMetadata | null
   fetchingYouTubeMetadata: boolean
   assigning: boolean
+  videoTags: VideoTag[]
+  fetchingVideoTags: boolean
 }
 
 const initialState: VideosState = {
@@ -483,6 +513,8 @@ const initialState: VideosState = {
   youtubeMetadata: null,
   fetchingYouTubeMetadata: false,
   assigning: false,
+  videoTags: [],
+  fetchingVideoTags: false,
 }
 
 // Slice
@@ -695,6 +727,21 @@ const videosSlice = createSlice({
       .addCase(assignVideosToStudents.rejected, (state, action) => {
         state.assigning = false
         state.error = action.error.message || 'Failed to assign videos to students'
+      })
+
+    // Fetch video tags
+    builder
+      .addCase(fetchVideoTags.pending, (state) => {
+        state.fetchingVideoTags = true
+        state.error = null
+      })
+      .addCase(fetchVideoTags.fulfilled, (state, action) => {
+        state.fetchingVideoTags = false
+        state.videoTags = action.payload
+      })
+      .addCase(fetchVideoTags.rejected, (state, action) => {
+        state.fetchingVideoTags = false
+        state.error = action.error.message || 'Failed to fetch video tags'
       })
   },
 })

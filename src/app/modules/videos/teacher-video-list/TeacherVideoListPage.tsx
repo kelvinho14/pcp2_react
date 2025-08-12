@@ -27,13 +27,12 @@ import {
   extractVideoId,
   assignVideosToStudents,
   fetchVideos,
+  fetchVideoTags,
 } from '../../../../store/videos/videosSlice'
 import {fetchTags} from '../../../../store/tags/tagsSlice'
-import {fetchStudentAssignedVideos} from '../../../../store/videos/studentAssignedVideosSlice'
-
 import VideoTagInput, {VideoTagData} from '../../../../components/Video/VideoTagInput'
-import {KTIcon} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
+import {KTIcon} from '../../../../_metronic/helpers'
 import {formatApiTimestamp} from '../../../../_metronic/helpers/dateUtils'
 import {ConfirmationDialog} from '../../../../_metronic/helpers/ConfirmationDialog'
 import VideoDetailModal from '../../../../components/Video/VideoDetailModal'
@@ -41,6 +40,7 @@ import {StudentSelectionTable} from '../../../../app/modules/exercises/exercise-
 import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
 import {DatePicker} from '../../../../_metronic/helpers/components/DatePicker'
 import './TeacherVideoListPage.css'
+import Select from 'react-select'
 
 const TeacherVideoListPage: FC = () => {
   const intl = useIntl()
@@ -62,12 +62,12 @@ const TeacherVideoListPage: FC = () => {
     fetchingVimeoVideos,
     youtubeMetadata,
     fetchingYouTubeMetadata,
-    assigning
+    assigning,
+    videoTags,
+    fetchingVideoTags
   } = useSelector((state: RootState) => state.videos)
   
   const {tags} = useSelector((state: RootState) => state.tags)
-  const {packages: studentAssignedVideos} = useSelector((state: RootState) => state.studentAssignedVideos)
-
 
   // State for pagination and filtering
   const [currentPage, setCurrentPage] = useState(1)
@@ -78,6 +78,7 @@ const TeacherVideoListPage: FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [platformFilter, setPlatformFilter] = useState<'youtube' | 'vimeo' | ''>('')
   const [statusFilter, setStatusFilter] = useState<1 | 2 | ''>('') // 1 = private, 2 = public
+  const [tagFilter, setTagFilter] = useState<string[]>([])
 
   // State for modal
   const [showModal, setShowModal] = useState(false)
@@ -92,7 +93,7 @@ const TeacherVideoListPage: FC = () => {
   
   // State for video detail modal
   const [showDetailModal, setShowDetailModal] = useState(false)
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null)
   
   // State for step-by-step modal
   const [modalStep, setModalStep] = useState<'platform' | 'youtube' | 'vimeo'>('platform')
@@ -128,28 +129,23 @@ const TeacherVideoListPage: FC = () => {
 
   // Fetch videos on component mount and when filters change
   useEffect(() => {
-    dispatch(fetchTeacherVideos({
-      page: currentPage,
-      items_per_page: itemsPerPage,
-      sort: sortBy,
-      order: sortOrder,
-      search: debouncedSearchTerm || undefined,
-      source: getSourceFromPlatform(platformFilter),
-      status: statusFilter || undefined,
-    }))
-  }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder, debouncedSearchTerm, platformFilter, statusFilter])
+          dispatch(fetchTeacherVideos({
+        page: currentPage,
+        items_per_page: itemsPerPage,
+        sort: sortBy,
+        order: sortOrder,
+        search: debouncedSearchTerm || undefined,
+        source: getSourceFromPlatform(platformFilter),
+        status: statusFilter || undefined,
+        tags: tagFilter.length > 0 ? tagFilter : undefined,
+      }))
+  }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder, debouncedSearchTerm, platformFilter, statusFilter, tagFilter])
 
   // Fetch tags on component mount
   useEffect(() => {
     dispatch(fetchTags())
+    dispatch(fetchVideoTags())
   }, [dispatch])
-
-  // Fetch student assigned videos if user is a student
-  useEffect(() => {
-    if (!isTeachingStaff(currentUser?.role?.role_type)) {
-      dispatch(fetchStudentAssignedVideos())
-    }
-  }, [dispatch, currentUser?.role?.role_type])
 
   // Clear messages when component unmounts
   useEffect(() => {
@@ -172,9 +168,6 @@ const TeacherVideoListPage: FC = () => {
       }
     }
   }, [])
-
-  // Note: This component is designed for teachers. Students should be redirected to a different page.
-  // The fetchStudentAssignedVideos call has been removed to prevent unnecessary API calls.
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -279,6 +272,7 @@ const TeacherVideoListPage: FC = () => {
         search: searchTerm || undefined,
         source: getSourceFromPlatform(platformFilter),
         status: statusFilter || undefined,
+        tags: tagFilter.length > 0 ? tagFilter : undefined,
       }))
       
       setShowModal(false)
@@ -361,6 +355,7 @@ const TeacherVideoListPage: FC = () => {
         search: searchTerm || undefined,
         source: getSourceFromPlatform(platformFilter),
         status: statusFilter || undefined,
+        tags: tagFilter.length > 0 ? tagFilter : undefined,
       }))
       
       setShowModal(false)
@@ -426,6 +421,7 @@ const TeacherVideoListPage: FC = () => {
         search: searchTerm || undefined,
         source: getSourceFromPlatform(platformFilter),
         status: statusFilter || undefined,
+        tags: tagFilter.length > 0 ? tagFilter : undefined,
       }))
     } catch (error) {
       // Error is handled by the thunk
@@ -501,7 +497,7 @@ const TeacherVideoListPage: FC = () => {
 
   // Handle view video
   const handleViewVideo = (video: Video) => {
-    setSelectedVideo(video)
+    setSelectedVideoId(video.video_id)
     setShowDetailModal(true)
   }
 
@@ -652,6 +648,12 @@ const TeacherVideoListPage: FC = () => {
     setCurrentPage(1)
   }
 
+  // Handle tag filter
+  const handleTagFilter = (tagIds: string[]) => {
+    setTagFilter(tagIds)
+    setCurrentPage(1)
+  }
+
   // Convert platform filter to source value
   const getSourceFromPlatform = (platform: string): number | undefined => {
     if (platform === 'youtube') return 1
@@ -688,26 +690,31 @@ const TeacherVideoListPage: FC = () => {
 
   // Get privacy label for video (different for teachers vs students)
   const getPrivacyLabel = (video: Video) => {
-    // If user is a student, check if video is assigned to them first
+    console.log('TeacherVideoListPage getPrivacyLabel called with video:', {
+      video_id: video.video_id,
+      status: video.status,
+      user_role: currentUser?.role?.role_type,
+      isTeachingStaff: isTeachingStaff(currentUser?.role?.role_type)
+    })
+    
+    // For public videos, show no label regardless of user role
+    if (video.status === 2) {
+      console.log('Video is public, returning null')
+      return null
+    }
+    
+    // If user is a student, show "Assigned to You" for private videos
     if (!isTeachingStaff(currentUser?.role?.role_type)) {
-      // Check if this video is assigned to the current student
-      const isAssignedToStudent = studentAssignedVideos.some(pkg => 
-        pkg.videos.some(assignedVideo => assignedVideo.video_id === video.video_id)
-      )
-      
-      if (isAssignedToStudent) {
-        return {
-          text: 'Assigned to you',
-          icon: 'fas fa-check-circle',
-          badgeClass: 'badge-light-success'
-        }
+      console.log('User is a student, private video - returning "Assigned to You"')
+      return {
+        text: 'Assigned to You',
+        icon: 'fas fa-user-check',
+        badgeClass: 'badge-light-success'
       }
     }
     
-    // For public videos that are not assigned to students, show no label
-    if (video.status === 2) return null
-    
-    // For private videos (teachers or unassigned videos for students), show private
+    console.log('User is teaching staff, returning "Private"')
+    // For teachers, show private for private videos
     return {
       text: 'Private',
       icon: 'fas fa-lock',
@@ -788,6 +795,54 @@ const TeacherVideoListPage: FC = () => {
           
           <div className='card-toolbar'>
             <div className='d-flex justify-content-end' data-kt-user-table-toolbar='base'>
+              {/* Tag filter - available for all users */}
+              <div className='me-3'>
+                <div style={{minWidth: '250px'}}>
+                  <Select
+                    isMulti
+                    options={videoTags.map(tag => ({
+                      value: tag.tag_id,
+                      label: tag.name
+                    }))}
+                    value={tagFilter.map(tagId => {
+                      const tag = videoTags.find(t => t.tag_id === tagId)
+                      return tag ? { value: tag.tag_id, label: tag.name } : null
+                    }).filter(Boolean)}
+                    onChange={(selectedOptions) => {
+                      if (!selectedOptions) {
+                        handleTagFilter([])
+                      } else {
+                        const selectedIds = selectedOptions.map((option: any) => option.value)
+                        handleTagFilter(selectedIds)
+                      }
+                    }}
+                    placeholder="Filter by tags..."
+                    noOptionsMessage={() => "No tags available"}
+                    styles={{
+                      control: (provided) => ({
+                        ...provided,
+                        minHeight: '45px',
+                        border: '1px solid #e1e3ea',
+                        borderRadius: '6px',
+                      }),
+                      multiValue: (provided) => ({
+                        ...provided,
+                        backgroundColor: '#f1f3f4',
+                      }),
+                      option: (provided, state) => ({
+                        ...provided,
+                        backgroundColor: state.isSelected ? '#3699ff' : state.isFocused ? '#f8f9fa' : 'white',
+                        color: state.isSelected ? 'white' : '#3f4254',
+                        cursor: 'pointer',
+                      }),
+                    }}
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    menuPortalTarget={document.body}
+                  />
+                </div>
+              </div>
+
               {isTeachingStaff(currentUser?.role?.role_type) && (
                 <>
                   <div className='me-3'>
@@ -815,8 +870,6 @@ const TeacherVideoListPage: FC = () => {
                   </div>
                 </>
               )}
-              
-
             </div>
           </div>
         </div>
@@ -886,7 +939,18 @@ const TeacherVideoListPage: FC = () => {
                         {video.tags && video.tags.length > 0 && (
                           <div className='video-tags'>
                             {video.tags.slice(0, 3).map((tag, index) => (
-                              <span key={index} className='badge badge-light-info me-1'>
+                              <span 
+                                key={index} 
+                                className='badge badge-light-info me-1 cursor-pointer'
+                                style={{ cursor: 'pointer' }}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (tag.tag_id && !tagFilter.includes(tag.tag_id)) {
+                                    handleTagFilter([...tagFilter, tag.tag_id])
+                                  }
+                                }}
+                                title={`Click to add "${tag.name}" to filter`}
+                              >
                                 {tag.name}
                               </span>
                             ))}
@@ -1622,11 +1686,11 @@ const TeacherVideoListPage: FC = () => {
 
       {/* Video Detail Modal */}
       <VideoDetailModal
-        video={selectedVideo}
+        videoId={selectedVideoId}
         isOpen={showDetailModal}
         onClose={() => {
           setShowDetailModal(false)
-          setSelectedVideo(null)
+          setSelectedVideoId(null)
         }}
         isTeachingStaff={isTeachingStaff(currentUser?.role?.role_type)}
       />

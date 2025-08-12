@@ -6,12 +6,12 @@ import {fetchVideoById, Video, updateVideo, VideoFormData} from '../../../../sto
 import {PageTitle} from '../../../../_metronic/layout/core'
 import {KTIcon} from '../../../../_metronic/helpers'
 import VideoPreview from '../../../../components/Video/VideoPreview'
+import VideoInfoDisplay from '../../../../components/Video/VideoInfoDisplay'
 import {useAuth} from '../../../../app/modules/auth'
 import {isTeachingStaff} from '../../../../app/constants/roles'
 import axios from 'axios'
 import {getHeadersWithSchoolSubject} from '../../../../_metronic/helpers/axios'
 import {fetchTags} from '../../../../store/tags/tagsSlice'
-import {fetchStudentAssignedVideos} from '../../../../store/videos/studentAssignedVideosSlice'
 import VideoTagInput, {VideoTagData} from '../../../../components/Video/VideoTagInput'
 import {toast} from '../../../../_metronic/helpers/toast'
 import {formatApiTimestamp} from '../../../../_metronic/helpers/dateUtils'
@@ -25,7 +25,7 @@ const VideoDetailPage: FC = () => {
   
   const {currentVideo, loading, error, updating} = useSelector((state: RootState) => state.videos)
   const {tags} = useSelector((state: RootState) => state.tags)
-  const {packages: assignedVideoPackages} = useSelector((state: RootState) => state.studentAssignedVideos)
+  // Remove the assignedVideoPackages selector since we don't need it anymore
   const [video, setVideo] = useState<Video | null>(null)
 
   // State for edit modal
@@ -42,27 +42,38 @@ const VideoDetailPage: FC = () => {
 
   // Helper function to check if the current video is assigned to the student
   const isVideoAssignedToStudent = (videoId: string): boolean => {
-    if (!assignedVideoPackages || assignedVideoPackages.length === 0) {
-      return false
-    }
-    
-    return assignedVideoPackages.some(pkg => 
-      pkg.videos.some(video => video.video_id === videoId)
-    )
+    // Use the assignment information from the video response
+    return currentVideo?.is_assigned_to_current_user || false
   }
 
   // Helper function to get appropriate privacy label for students
-  const getPrivacyLabel = (video: Video): { text: string; icon: string } => {
-    const isStudent = !isTeachingStaff(currentUser?.role?.role_type)
-    const isAssigned = isVideoAssignedToStudent(video.video_id)
+  const getPrivacyLabel = (video: Video): { text: string; icon: string } | null => {
+    console.log('VideoDetailPage getPrivacyLabel called with video:', {
+      video_id: video.video_id,
+      status: video.status,
+      user_role: currentUser?.role?.role_type,
+      isTeachingStaff: isTeachingStaff(currentUser?.role?.role_type)
+    })
     
-    if (isStudent && isAssigned) {
+    // For public videos, show no label regardless of user role
+    if (video.status === 2) {
+      console.log('Video is public, returning null')
+      return null
+    }
+    
+    const isStudent = !isTeachingStaff(currentUser?.role?.role_type)
+    
+    if (isStudent) {
+      console.log('User is a student, private video - returning "Assigned to You"')
+      // For students, show "Assigned to You" for private videos
       return {
         text: 'Assigned to You',
         icon: 'fas fa-user-check'
       }
     }
     
+    console.log('User is teaching staff, returning "Private"')
+    // For teachers, show private for private videos
     return {
       text: 'Private',
       icon: 'fas fa-lock'
@@ -95,14 +106,6 @@ const VideoDetailPage: FC = () => {
     dispatch(fetchTags())
   }, [dispatch])
 
-  // Fetch assigned videos for students to check assignment status
-  useEffect(() => {
-    const isStudent = !isTeachingStaff(currentUser?.role?.role_type)
-    if (isStudent) {
-      dispatch(fetchStudentAssignedVideos())
-    }
-  }, [dispatch, currentUser?.role?.role_type])
-
   useEffect(() => {
     if (currentVideo) {
       setVideo(currentVideo)
@@ -132,20 +135,7 @@ const VideoDetailPage: FC = () => {
     return ''
   }
 
-  const getPlatformIcon = (source: number) => {
-    if (source === 1) {
-      return 'fab fa-youtube text-danger'
-    } else if (source === 2) {
-      return 'fab fa-vimeo-v text-primary'
-    }
-    return 'fas fa-video'
-  }
 
-  const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
-  }
 
   // Handle edit click
   const handleEditClick = (video: Video) => {
@@ -224,7 +214,7 @@ const VideoDetailPage: FC = () => {
           isActive: false,
         },
         {
-          title: 'Video Management',
+          title: isTeachingStaff(currentUser?.role?.role_type) ? 'Video Management' : 'Videos',
           path: '/videos/list',
           isActive: false,
         },
@@ -258,114 +248,26 @@ const VideoDetailPage: FC = () => {
             <div className='card-header'>
               <div className='d-flex align-items-center gap-3'>
                 <h5 className='card-title mb-0'>{video.title}</h5>
-                {video.status === 1 && (() => {
+                {(() => {
                   const privacyLabel = getPrivacyLabel(video)
-                  return (
+                  return privacyLabel ? (
                     <span className={`badge ${privacyLabel.text === 'Assigned to You' ? 'badge-light-success' : 'badge-light-warning'}`}>
                       <i className={`${privacyLabel.icon} me-1`}></i>
                       {privacyLabel.text}
                     </span>
-                  )
+                  ) : null
                 })()}
               </div>
             </div>
             <div className='card-body'>
-                            {/* Video Description */}
-              {video.description && (
-                <div className='mb-4 description-section p-3'>
-                  <h6 className='fw-bold mb-2 text-primary section-header'>
-                    <i className='fas fa-align-left me-2'></i>
-                    Description
-                  </h6>
-                  <p className='text-muted mb-0'>{video.description}</p>
-                </div>
-              )}
-
-              {/* Video Details Section */}
-              <div className='mb-4 video-details-section p-4 rounded'>
-                <h6 className='fw-bold mb-3 text-primary section-header'>
-                  <i className='fas fa-info-circle me-2'></i>
-                  Video Details
-                </h6>
-                <div className='row g-3'>
-                  {isTeachingStaff(currentUser?.role?.role_type) && (
-                    <div className='col-md-3 col-sm-6'>
-                      <div className='info-card d-flex align-items-center'>
-                        <i className={`${getPlatformIcon(video.source)} me-2 text-primary`}></i>
-                        <span className='small fw-medium'>
-                          {video.source === 1 ? 'YouTube' : 'Vimeo'}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className='col-md-3 col-sm-6'>
-                    <div className='info-card d-flex align-items-center'>
-                      <i className='fas fa-clock me-2 text-warning'></i>
-                      <span className='small fw-medium'>
-                        {video.duration ? formatDuration(video.duration) : 'N/A'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className='col-md-3 col-sm-6'>
-                    <div className='info-card d-flex align-items-center'>
-                      <i className='fas fa-calendar me-2 text-info'></i>
-                      <span className='small fw-medium'>
-                        {formatApiTimestamp(video.created_at, { format: 'date' })}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className='col-md-3 col-sm-6'>
-                    <div className='info-card d-flex align-items-center'>
-                      <i className='fas fa-eye me-2 text-success'></i>
-                      <span className='small fw-medium'>
-                        {video.click_count || 0} views
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tags Section */}
-              {video.tags && video.tags.length > 0 && (
-                <div className='mb-4 video-details-section p-4 rounded'>
-                  <h6 className='fw-bold mb-3 text-primary section-header'>
-                    <i className='fas fa-tags me-2'></i>
-                    Tags
-                  </h6>
-                  <div className='d-flex flex-wrap gap-2'>
-                    {video.tags.map((tag, index) => (
-                      <span key={index} className='badge badge-light-info badge-lg px-3 py-2'>
-                        <i className='fas fa-tag me-1'></i>
-                        {tag.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className='mt-4'>
-                <button
-                  type='button'
-                  className='btn btn-primary me-2'
-                  onClick={() => navigate('/videos/list')}
-                >
-                  <i className='fas fa-arrow-left me-2'></i>
-                  Back to Videos
-                </button>
-                {isTeachingStaff(currentUser?.role?.role_type) && (
-                  <button
-                    type='button'
-                    className='btn btn-outline-secondary'
-                    onClick={() => handleEditClick(video)}
-                  >
-                    <i className='fas fa-edit me-2'></i>
-                    Edit Video
-                  </button>
-                )}
-              </div>
+              <VideoInfoDisplay
+                video={video}
+                isTeachingStaff={isTeachingStaff(currentUser?.role?.role_type)}
+                showEditButton={true}
+                onEditClick={handleEditClick}
+                showBackButton={true}
+                onBackClick={() => navigate('/videos/list')}
+              />
             </div>
           </div>
         </div>
@@ -400,28 +302,28 @@ const VideoDetailPage: FC = () => {
                         <div className='d-flex align-items-center gap-2 flex-wrap'>
                           {isTeachingStaff(currentUser?.role?.role_type) && (
                             <span className={`badge badge-light-${video.source === 1 ? 'danger' : 'primary'} badge-sm`}>
-                              <i className={`${getPlatformIcon(video.source)} me-1`}></i>
+                              <i className={`${video.source === 1 ? 'fab fa-youtube text-danger' : 'fab fa-vimeo-v text-primary'} me-1`}></i>
                               {video.source === 1 ? 'YouTube' : 'Vimeo'}
                             </span>
                           )}
                           {video.duration && (
                             <span className='text-muted small'>
                               <i className='fas fa-clock me-1'></i>
-                              {formatDuration(video.duration)}
+                              {`${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}`}
                             </span>
                           )}
                           <span className='text-muted small'>
                             <i className='fas fa-eye me-1'></i>
                             {video.click_count || 0} views
                           </span>
-                          {video.status === 1 && (() => {
+                          {(() => {
                             const privacyLabel = getPrivacyLabel(video)
-                            return (
+                            return privacyLabel ? (
                               <span className={`badge badge-sm ${privacyLabel.text === 'Assigned to You' ? 'badge-light-success' : 'badge-light-warning'}`}>
                                 <i className={`${privacyLabel.icon} me-1`}></i>
                                 {privacyLabel.text}
                               </span>
-                            )
+                            ) : null
                           })()}
                         </div>
                       </div>
