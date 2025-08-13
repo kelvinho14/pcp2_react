@@ -144,6 +144,14 @@ const ExerciseDashboardPage: FC = () => {
     }
   }
 
+  // Get progress bar color based on percentage (not status)
+  const getProgressBarColor = (progress: number) => {
+    if (progress === 0) return 'secondary'
+    if (progress >= 50) return 'success'
+    if (progress >= 30) return 'warning'
+    return 'secondary'
+  }
+
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) {
       return '-'
@@ -369,7 +377,7 @@ const ExerciseDashboardPage: FC = () => {
                 <div className='progress-bar-container'>
                                   <div className='progress-bar'>
                   <div 
-                    className={`progress-fill bg-${getStatusColor(studentStatus)}`}
+                    className={`progress-fill bg-${getProgressBarColor(exercise.progress)}`}
                     style={{width: `${exercise.progress}%`}}
                   ></div>
                 </div>
@@ -383,41 +391,33 @@ const ExerciseDashboardPage: FC = () => {
                     <i className='fas fa-calendar-alt text-primary'></i>
                     <div className='due-details'>
                       <div className='due-label'>Due Date</div>
-                      <div className='due-value'>{formatDate(exercise.assignments[0].due_date)}</div>
-                    </div>
-                    <div className='time-left-info'>
-                      <div className='days-label'>Time Left</div>
-                      <div className={`days-value ${
-                        daysRemaining === null ? 'normal' :
-                        daysRemaining < 0 ? 'overdue' :
-                        daysRemaining === 0 ? 'due-today' :
-                        daysRemaining === 1 ? 'due-tomorrow' :
-                        'normal'
-                      }`}>
-                        {daysRemaining === null ? '-' :
-                         daysRemaining < 0 ? `${Math.abs(daysRemaining)} days overdue` :
-                         daysRemaining === 0 ? 'Due today!' :
-                         daysRemaining === 1 ? 'Due tomorrow!' :
-                         `${daysRemaining} days left`}
+                      <div className='due-value'>
+                        {formatDate(exercise.assignments[0].due_date)}
+                        {daysRemaining !== null && (
+                          <span className={`time-left-bracket ${
+                            daysRemaining < 0 ? 'overdue' :
+                            daysRemaining === 0 ? 'due-today' :
+                            daysRemaining === 1 ? 'due-tomorrow' :
+                            'normal'
+                          }`}>
+                            {daysRemaining < 0 ? ` (${Math.abs(daysRemaining)} days overdue)` :
+                             daysRemaining === 0 ? ' (Due today!)' :
+                             daysRemaining === 1 ? ' (Due tomorrow!)' :
+                             ` (${daysRemaining} days left)`}
+                          </span>
+                        )}
                       </div>
                     </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Teacher Message Section */}
-              {exercise.assignments.length > 0 && exercise.assignments[0].message_for_student && (
-                <div 
-                  className='teacher-message-section clickable'
-                  onClick={() => handleOpenMessageModal(exercise.title, exercise.assignments[0].message_for_student)}
-                >
-                  <div className='message-header'>
-                    <i className='fas fa-comment-dots text-info'></i>
-                    <span className='message-label'>Teacher's Message</span>
-                    <i className='fas fa-external-link-alt text-info ms-auto'></i>
-                  </div>
-                  <div className='message-content'>
-                    {exercise.assignments[0].message_for_student}
+                    {/* Teacher Message Icon */}
+                    {exercise.assignments[0].message_for_student && (
+                      <div 
+                        className='teacher-message-icon clickable'
+                        onClick={() => handleOpenMessageModal(exercise.title, exercise.assignments[0].message_for_student)}
+                        title="Click to view teacher's message"
+                      >
+                        <i className='fas fa-comment-dots text-info'></i>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -469,7 +469,7 @@ const ExerciseDashboardPage: FC = () => {
                   <span className='progress-text'>{exercise.progress}% Complete</span>
                   <div className='mini-progress'>
                     <div 
-                      className={`progress-fill bg-${getStatusColor(studentStatus)}`}
+                      className={`progress-fill bg-${getProgressBarColor(exercise.progress)}`}
                       style={{width: `${exercise.progress}%`}}
                     ></div>
                   </div>
@@ -479,20 +479,32 @@ const ExerciseDashboardPage: FC = () => {
             <div className='item-due-date'>
               {exercise.assignments.length > 0 && (
                 <div className='due-info'>
-                  <div className='due-date'>{formatDate(exercise.assignments[0].due_date)}</div>
-                  <div className={`days-left ${
-                    daysRemaining === null ? 'normal' :
-                    daysRemaining < 0 ? 'overdue' :
-                    daysRemaining === 0 ? 'due-today' :
-                    daysRemaining === 1 ? 'due-tomorrow' :
-                    'normal'
-                  }`}>
-                    {daysRemaining === null ? '-' :
-                     daysRemaining < 0 ? `${Math.abs(daysRemaining)} days overdue` :
-                     daysRemaining === 0 ? 'Due today!' :
-                     daysRemaining === 1 ? 'Due tomorrow!' :
-                     `${daysRemaining} days left`}
+                  <div className='due-date'>
+                    {formatDate(exercise.assignments[0].due_date)}
+                    {daysRemaining !== null && (
+                      <span className={`time-left-bracket ${
+                        daysRemaining < 0 ? 'overdue' :
+                        daysRemaining === 0 ? 'due-today' :
+                        daysRemaining === 1 ? 'due-tomorrow' :
+                        'normal'
+                      }`}>
+                        {daysRemaining < 0 ? ` (${Math.abs(daysRemaining)} days overdue)` :
+                         daysRemaining === 0 ? ' (Due today!)' :
+                         daysRemaining === 1 ? ' (Due tomorrow!)' :
+                         ` (${daysRemaining} days left)`}
+                      </span>
+                    )}
                   </div>
+                  {/* Teacher Message Icon */}
+                  {exercise.assignments[0].message_for_student && (
+                    <div 
+                      className='teacher-message-icon clickable'
+                      onClick={() => handleOpenMessageModal(exercise.title, exercise.assignments[0].message_for_student)}
+                      title="Click to view teacher's message"
+                    >
+                      <i className='fas fa-comment-dots text-info'></i>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -517,23 +529,6 @@ const ExerciseDashboardPage: FC = () => {
               </button>
             </div>
           </div>
-          
-          {/* Teacher Message Section for List View */}
-          {exercise.assignments.length > 0 && exercise.assignments[0].message_for_student && (
-            <div 
-              className='list-item-message clickable'
-              onClick={() => handleOpenMessageModal(exercise.title, exercise.assignments[0].message_for_student)}
-            >
-              <div className='message-header'>
-                <i className='fas fa-comment-dots text-info'></i>
-                <span className='message-label'>Teacher's Message</span>
-                <i className='fas fa-external-link-alt text-info ms-auto'></i>
-              </div>
-              <div className='message-content'>
-                {exercise.assignments[0].message_for_student}
-              </div>
-            </div>
-          )}
         </div>
       )
     })

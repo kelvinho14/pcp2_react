@@ -1,19 +1,20 @@
 import {FC, useEffect, useState} from 'react'
-import {useParams, useNavigate} from 'react-router-dom'
+import {useNavigate, useParams} from 'react-router-dom'
 import {useDispatch, useSelector} from 'react-redux'
 import {AppDispatch, RootState} from '../../../../store'
-import {fetchVideoById, Video, updateVideo, VideoFormData} from '../../../../store/videos/videosSlice'
+import {fetchVideoById, updateVideo, Video, VideoFormData} from '../../../../store/videos/videosSlice'
+import {fetchTags} from '../../../../store/tags/tagsSlice'
 import {PageTitle} from '../../../../_metronic/layout/core'
-import {KTIcon} from '../../../../_metronic/helpers'
-import VideoPreview from '../../../../components/Video/VideoPreview'
-import VideoInfoDisplay from '../../../../components/Video/VideoInfoDisplay'
+import {useIntl} from 'react-intl'
 import {useAuth} from '../../../../app/modules/auth'
 import {isTeachingStaff} from '../../../../app/constants/roles'
+import VideoPreview from '../../../../components/Video/VideoPreview'
+import VideoInfoDisplay from '../../../../components/Video/VideoInfoDisplay'
+import VideoTagInput from '../../../../components/Video/VideoTagInput'
+import {toast} from '../../../../_metronic/helpers/toast'
+import {Modal, Button} from 'react-bootstrap'
 import axios from 'axios'
 import {getHeadersWithSchoolSubject} from '../../../../_metronic/helpers/axios'
-import {fetchTags} from '../../../../store/tags/tagsSlice'
-import VideoTagInput, {VideoTagData} from '../../../../components/Video/VideoTagInput'
-import {toast} from '../../../../_metronic/helpers/toast'
 import {formatApiTimestamp} from '../../../../_metronic/helpers/dateUtils'
 import './VideoDetailPage.css'
 
@@ -275,159 +276,154 @@ const VideoDetailPage: FC = () => {
 
       {/* Edit Video Modal */}
       {showEditModal && video && (
-        <div className='modal fade show d-block' style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-          <div className="modal-dialog modal-lg" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Edit Video</h5>
-                <button type="button" className="btn-close" onClick={() => setShowEditModal(false)}></button>
-              </div>
-              <form onSubmit={handleSubmit}>
-                <div className="modal-body">
-                  {/* Video Preview */}
-                  <div className='mb-4 p-3 bg-light rounded'>
-                    <div className='row align-items-center'>
-                      <div className='col-md-3'>
-                        <div className='position-relative'>
-                          <img
-                            src={video.thumbnail || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBaIiBmaWxsPSIjQ0NDQ0NDIi8+Cjx0ZXh0IHg9IjE2MCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
-                            alt={video.title}
-                            className='img-fluid rounded'
-                            style={{width: '100%', maxWidth: '150px'}}
-                          />
-                        </div>
-                      </div>
-                      <div className='col-md-9'>
-                        <h6 className='fw-bold mb-1 text-truncate' title={video.title}>{video.title}</h6>
-                        <div className='d-flex align-items-center gap-2 flex-wrap'>
-                          {isTeachingStaff(currentUser?.role?.role_type) && (
-                            <span className={`badge badge-light-${video.source === 1 ? 'danger' : 'primary'} badge-sm`}>
-                              <i className={`${video.source === 1 ? 'fab fa-youtube text-danger' : 'fab fa-vimeo-v text-primary'} me-1`}></i>
-                              {video.source === 1 ? 'YouTube' : 'Vimeo'}
-                            </span>
-                          )}
-                          {video.duration && (
-                            <span className='text-muted small'>
-                              <i className='fas fa-clock me-1'></i>
-                              {`${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}`}
-                            </span>
-                          )}
-                          <span className='text-muted small'>
-                            <i className='fas fa-eye me-1'></i>
-                            {video.click_count || 0} views
+        <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered size="lg">
+          <form onSubmit={handleSubmit}>
+            <Modal.Header closeButton>
+              <Modal.Title>Edit Video</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {/* Video Preview */}
+              <div className='mb-4 p-3 bg-light rounded'>
+                <div className='row align-items-center'>
+                  <div className='col-md-3'>
+                    <div className='position-relative'>
+                      <img
+                        src={video.thumbnail || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBaIiBmaWxsPSIjQ0NDQ0NDIi8+Cjx0ZXh0IHg9IjE2MCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
+                        alt={video.title}
+                        className='img-fluid rounded'
+                        style={{width: '100%', maxWidth: '150px'}}
+                      />
+                    </div>
+                  </div>
+                  <div className='col-md-9'>
+                    <h6 className='fw-bold mb-1 text-truncate' title={video.title}>{video.title}</h6>
+                    <div className='d-flex align-items-center gap-2 flex-wrap'>
+                      {isTeachingStaff(currentUser?.role?.role_type) && (
+                        <span className={`badge badge-light-${video.source === 1 ? 'danger' : 'primary'} badge-sm`}>
+                          <i className={`${video.source === 1 ? 'fab fa-youtube text-danger' : 'fab fa-vimeo-v text-primary'} me-1`}></i>
+                          {video.source === 1 ? 'YouTube' : 'Vimeo'}
+                        </span>
+                      )}
+                      {video.duration && (
+                        <span className='text-muted small'>
+                          <i className='fas fa-clock me-1'></i>
+                          {`${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}`}
+                        </span>
+                      )}
+                      <span className='text-muted small'>
+                        <i className='fas fa-eye me-1'></i>
+                        {video.click_count || 0} views
+                      </span>
+                      {(() => {
+                        const privacyLabel = getPrivacyLabel(video)
+                        return privacyLabel ? (
+                          <span className={`badge badge-sm ${privacyLabel.text === 'Assigned to You' ? 'badge-light-success' : 'badge-light-warning'}`}>
+                            <i className={`${privacyLabel.icon} me-1`}></i>
+                            {privacyLabel.text}
                           </span>
-                          {(() => {
-                            const privacyLabel = getPrivacyLabel(video)
-                            return privacyLabel ? (
-                              <span className={`badge badge-sm ${privacyLabel.text === 'Assigned to You' ? 'badge-light-success' : 'badge-light-warning'}`}>
-                                <i className={`${privacyLabel.icon} me-1`}></i>
-                                {privacyLabel.text}
-                              </span>
-                            ) : null
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Video URL (only for YouTube) */}
-                  {video.source === 1 && (
-                    <div className='mb-4'>
-                      <label className='form-label'>Video URL *</label>
-                      <input
-                        type='url'
-                        className='form-control'
-                        placeholder='https://www.youtube.com/watch?v=...'
-                        value={formData.youtube_urls?.[0] || ''}
-                        onChange={(e) => {
-                          const url = e.target.value
-                          setFormData({...formData, youtube_urls: [url], vimeo_ids: []})
-                        }}
-                        required
-                      />
-                      <div className='form-text'>
-                        YouTube video URL
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tags Section */}
-                  <div className='mb-4 p-3 bg-light rounded'>
-                    <h6 className='fw-bold mb-3 text-primary'>
-                      <i className='fas fa-tags me-2'></i>
-                      Tags
-                    </h6>
-                    <VideoTagInput
-                      options={tags}
-                      selectedTags={formData.tags?.map(tag => ({id: tag.tag_id || '', name: tag.name || tags.find(t => t.id === tag.tag_id)?.name || ''})) || []}
-                      onChange={(selectedTags) => setFormData({
-                        ...formData, 
-                        tags: selectedTags.map(tag => {
-                          if (tag.isNew || tag.id.startsWith('new-')) { return { name: tag.name } }
-                          else { return { tag_id: tag.id } }
-                        })
-                      })}
-                      placeholder='Search and select tags or create new ones'
-                    />
-                  </div>
-
-                  {/* Video Access Section */}
-                  <div className='mb-4 p-3 bg-light rounded'>
-                    <h6 className='fw-bold mb-3 text-primary'>
-                      <i className='fas fa-users me-2'></i>
-                      Video Access
-                    </h6>
-                    <div className='form-check mb-3'>
-                      <input
-                        className='form-check-input'
-                        type='radio'
-                        name='videoStatus'
-                        id='assignOnly'
-                        value='1'
-                        checked={formData.status === 1}
-                        onChange={(e) => setFormData({...formData, status: parseInt(e.target.value) as 1 | 2})}
-                      />
-                      <label className='form-check-label' htmlFor='assignOnly'>
-                        <i className='fas fa-lock me-1'></i>
-                        Assign Only (Private)
-                      </label>
-                    </div>
-                    <div className='form-check'>
-                      <input
-                        className='form-check-input'
-                        type='radio'
-                        name='videoStatus'
-                        id='openToStudents'
-                        value='2'
-                        checked={formData.status === 2}
-                        onChange={(e) => setFormData({...formData, status: parseInt(e.target.value) as 1 | 2})}
-                      />
-                      <label className='form-check-label' htmlFor='openToStudents'>
-                        <i className='fas fa-globe me-1'></i>
-                        Open to Students
-                      </label>
+                        ) : null
+                      })()}
                     </div>
                   </div>
                 </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={updating}>
-                    {updating ? (
-                      <>
-                        <span className='spinner-border spinner-border-sm me-2' role='status'></span>
-                        Updating...
-                      </>
-                    ) : (
-                      'Update Video'
-                    )}
-                  </button>
+              </div>
+
+              {/* Video URL (only for YouTube) */}
+              {video.source === 1 && (
+                <div className='mb-4'>
+                  <label className='form-label'>Video URL *</label>
+                  <input
+                    type='url'
+                    className='form-control'
+                    placeholder='https://www.youtube.com/watch?v=...'
+                    value={formData.youtube_urls?.[0] || ''}
+                    onChange={(e) => {
+                      const url = e.target.value
+                      setFormData({...formData, youtube_urls: [url], vimeo_ids: []})
+                    }}
+                    required
+                  />
+                  <div className='form-text'>
+                    YouTube video URL
+                  </div>
                 </div>
-              </form>
-            </div>
-          </div>
-        </div>
+              )}
+
+              {/* Tags Section */}
+              <div className='mb-4 p-3 bg-light rounded'>
+                <h6 className='fw-bold mb-3 text-primary'>
+                  <i className='fas fa-tags me-2'></i>
+                  Tags
+                </h6>
+                <VideoTagInput
+                  options={tags}
+                  selectedTags={formData.tags?.map(tag => ({id: tag.tag_id || '', name: tag.name || tags.find(t => t.id === tag.tag_id)?.name || ''})) || []}
+                  onChange={(selectedTags) => setFormData({
+                    ...formData, 
+                    tags: selectedTags.map(tag => {
+                      if (tag.isNew || tag.id.startsWith('new-')) { return { name: tag.name } }
+                      else { return { tag_id: tag.id } }
+                    })
+                  })}
+                  placeholder='Search and select tags or create new ones'
+                />
+              </div>
+
+              {/* Video Access Section */}
+              <div className='mb-4 p-3 bg-light rounded'>
+                <h6 className='fw-bold mb-3 text-primary'>
+                  <i className='fas fa-users me-2'></i>
+                  Video Access
+                </h6>
+                <div className='form-check mb-3'>
+                  <input
+                    className='form-check-input'
+                    type='radio'
+                    name='videoStatus'
+                    id='assignOnly'
+                    value='1'
+                    checked={formData.status === 1}
+                    onChange={(e) => setFormData({...formData, status: parseInt(e.target.value) as 1 | 2})}
+                  />
+                  <label className='form-check-label' htmlFor='assignOnly'>
+                    <i className='fas fa-lock me-1'></i>
+                    Assign Only (Private)
+                  </label>
+                </div>
+                <div className='form-check'>
+                  <input
+                    className='form-check-input'
+                    type='radio'
+                    name='videoStatus'
+                    id='openToStudents'
+                    value='2'
+                    checked={formData.status === 2}
+                    onChange={(e) => setFormData({...formData, status: parseInt(e.target.value) as 1 | 2})}
+                  />
+                  <label className='form-check-label' htmlFor='openToStudents'>
+                    <i className='fas fa-globe me-1'></i>
+                    Open to Students
+                  </label>
+                </div>
+              </div>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant='secondary' onClick={() => setShowEditModal(false)}>
+                Cancel
+              </Button>
+              <Button type='submit' variant='primary' disabled={updating}>
+                {updating ? (
+                  <>
+                    <span className='spinner-border spinner-border-sm me-2' role='status'></span>
+                    Updating...
+                  </>
+                ) : (
+                  'Update Video'
+                )}
+              </Button>
+            </Modal.Footer>
+          </form>
+        </Modal>
       )}
     </>
   )

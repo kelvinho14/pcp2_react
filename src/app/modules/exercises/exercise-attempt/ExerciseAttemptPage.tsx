@@ -480,7 +480,7 @@ const ExerciseAttemptPage: FC = () => {
       
       <div className='exercise-attempt-page'>
         {/* Header */}
-        <div className='exercise-header mb-6'>
+        <div className='exercise-header mb-2'>
           <div className='d-flex justify-content-between align-items-center'>
             <div>
               <h2 className='mb-1'>{exercise.title}</h2>

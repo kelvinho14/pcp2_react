@@ -5,7 +5,7 @@
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 16px;
     padding: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     color: white;
     
     .welcome-content {
@@ -71,7 +71,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 1.5rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
     }
     
     .progress-card {
@@ -189,22 +189,18 @@
     // Status-based styling (takes precedence)
     &.status-completed {
       border-color: #28a745 !important;
-      .progress-fill { background: #28a745 !important; }
     }
     
     &.status-in_progress {
       border-color: #ffc107 !important;
-      .progress-fill { background: #ffc107 !important; }
     }
     
     &.status-not_started {
       border-color: #adb5bd !important;
-      .progress-fill { background: #adb5bd !important; }
     }
     
     &.status-overdue {
       border-color: #dc3545 !important;
-      .progress-fill { background: #dc3545 !important; }
     }
     
     // Days remaining color based on actual due date, not status
@@ -359,25 +355,54 @@
               margin-bottom: 0.25rem;
             }
             
-            .due-value {
-              font-size: 0.9rem;
-              font-weight: 600;
-              color: #181c32;
+                      .due-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #181c32;
+            
+            .time-left-bracket {
+              font-weight: 500;
+              margin-left: 0.5rem;
+              
+              &.overdue {
+                color: #dc3545;
+              }
+              
+              &.due-today {
+                color: #fd7e14;
+              }
+              
+              &.due-tomorrow {
+                color: #ffc107;
+              }
+              
+              &.normal {
+                color: #6c757d;
+              }
             }
           }
+          }
           
-          .time-left-info {
-            text-align: right;
+
+
+          .teacher-message-icon {
+            margin-left: auto;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
             
-            .days-label {
-              font-size: 0.8rem;
-              color: #6c7293;
-              margin-bottom: 0.25rem;
+            &.clickable {
+              cursor: pointer;
+              
+              &:hover {
+                background: rgba(54, 153, 255, 0.1);
+                transform: scale(1.1);
+              }
             }
             
-            .days-value {
-              font-size: 0.9rem;
-              font-weight: 600;
+            i {
+              font-size: 1rem;
+              color: #17a2b8;
             }
           }
         }
@@ -420,22 +445,18 @@
       // Status-based styling for list items (takes precedence)
       &.status-completed {
         border-left-color: #28a745 !important;
-        .progress-fill { background: #28a745 !important; }
       }
       
       &.status-in_progress {
         border-left-color: #ffc107 !important;
-        .progress-fill { background: #ffc107 !important; }
       }
       
       &.status-not_started {
         border-left-color: #adb5bd !important;
-        .progress-fill { background: #adb5bd !important; }
       }
       
       &.status-overdue {
         border-left-color: #dc3545 !important;
-        .progress-fill { background: #dc3545 !important; }
       }
       
               .list-item-header {
@@ -494,26 +515,49 @@
               font-size: 0.8rem;
               color: #6c7293;
               margin-bottom: 0.25rem;
+              
+              .time-left-bracket {
+                font-weight: 500;
+                margin-left: 0.25rem;
+                
+                &.overdue {
+                  color: #dc3545;
+                }
+                
+                &.due-today {
+                  color: #fd7e14;
+                }
+                
+                &.due-tomorrow {
+                  color: #ffc107;
+                }
+                
+                &.normal {
+                  color: #6c757d;
+                }
+              }
             }
             
-            .days-left {
-              font-size: 0.8rem;
-              font-weight: 600;
+
+
+            .teacher-message-icon {
+              margin-top: 0.5rem;
+              padding: 0.25rem;
+              border-radius: 50%;
+              transition: all 0.3s ease;
               
-              &.overdue {
-                color: #dc3545 !important;
+              &.clickable {
+                cursor: pointer;
+                
+                &:hover {
+                  background: rgba(54, 153, 255, 0.1);
+                  transform: scale(1.1);
+                }
               }
               
-              &.due-today {
-                color: #fd7e14 !important;
-              }
-              
-              &.due-tomorrow {
-                color: #ffc107 !important;
-              }
-              
-              &.normal {
-                color: #6c757d !important;
+              i {
+                font-size: 0.9rem;
+                color: #17a2b8;
               }
             }
           }
@@ -540,46 +584,7 @@
         }
       }
       
-      .list-item-message {
-        padding: 1rem 1.5rem;
-        background: rgba(54, 153, 255, 0.05);
-        border-top: 1px solid #e9ecef;
-        
-        &.clickable {
-          cursor: pointer;
-          transition: all 0.3s ease;
-          
-          &:hover {
-            background: rgba(54, 153, 255, 0.1);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(54, 153, 255, 0.2);
-          }
-        }
-        
-        .message-header {
-          display: flex;
-          align-items: center;
-          margin-bottom: 0.5rem;
-          
-          i {
-            font-size: 0.9rem;
-            margin-right: 0.5rem;
-          }
-          
-          .message-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #17a2b8;
-          }
-        }
-        
-        .message-content {
-          font-size: 0.85rem;
-          color: #495057;
-          line-height: 1.4;
-          font-style: italic;
-        }
-      }
+
     }
   }
 
@@ -824,8 +829,8 @@
 .teacher-message-section {
   background: rgba(54, 153, 255, 0.05);
   border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
   border-left: 3px solid #17a2b8;
   flex: 1;
   display: flex;
@@ -845,15 +850,11 @@
   .message-header {
     display: flex;
     align-items: center;
-    margin-bottom: 0.5rem;
+    justify-content: center;
+    margin-bottom: 0;
     flex-shrink: 0;
     i {
-      font-size: 1rem;
-      margin-right: 0.5rem;
-    }
-    .message-label {
-      font-size: 0.9rem;
-      font-weight: 600;
+      font-size: 1.5rem;
       color: #17a2b8;
     }
   }
@@ -881,4 +882,15 @@
       }
     }
   }
+} 
+
+// Override React Bootstrap modal backdrop to be lighter
+.modal-backdrop.show {
+  opacity: 0.5 !important;
+}
+
+// Alternative: Target specific modal classes if needed
+.teacher-message-modal + .modal-backdrop.show,
+.start-exercise-modal + .modal-backdrop.show {
+  opacity: 0.5 !important;
 } 

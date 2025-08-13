@@ -39,6 +39,7 @@ import VideoDetailModal from '../../../../components/Video/VideoDetailModal'
 import {StudentSelectionTable} from '../../../../app/modules/exercises/exercise-list/components/header/StudentSelectionTable'
 import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
 import {DatePicker} from '../../../../_metronic/helpers/components/DatePicker'
+import {Modal, Button} from 'react-bootstrap'
 import './TeacherVideoListPage.css'
 import Select from 'react-select'
 
@@ -1129,482 +1130,270 @@ const TeacherVideoListPage: FC = () => {
 
       {/* Add/Edit Video Modal */}
       {showModal && (
-        <div className='modal fade show d-block' style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-          <div className='modal-dialog modal-lg' style={{maxHeight: '90vh'}}>
-            <div className='modal-content' style={{maxHeight: '90vh', display: 'flex', flexDirection: 'column'}}>
-              <div className='modal-header'>
-                <h5 className='modal-title'>
-                  {editingVideo ? 'Edit Video' : 'Add New Video'}
-                </h5>
-                <button
-                  type='button'
-                  className='btn-close'
-                  onClick={resetModal}
-                ></button>
-              </div>
-              
-              {editingVideo ? (
-                // Edit mode - show original form
-                <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-                  <div className='modal-body' style={{overflowY: 'auto', flex: '1 1 auto'}}>
-                    {/* Video Preview */}
-                    {editingVideo && (
-                      <div className='mb-4 p-3 bg-light rounded'>
-                        <div className='row align-items-center'>
-                          <div className='col-md-3'>
-                            <div className='position-relative'>
-                              <img
-                                src={editingVideo.thumbnail || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBaIiBmaWxsPSIjQ0NDQ0NDIi8+Cjx0ZXh0IHg9IjE2MCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
-                                alt={editingVideo.title}
-                                className='img-fluid rounded'
-                                style={{width: '100%', maxWidth: '150px'}}
-                              />
-                            </div>
-                          </div>
-                          <div className='col-md-9'>
-                            <h6 className='fw-bold mb-1 text-truncate' title={editingVideo.title}>{editingVideo.title}</h6>
-                            <div className='d-flex align-items-center gap-2 flex-wrap'>
-                              {isTeachingStaff(currentUser?.role?.role_type) && (
-                                <span className={`badge badge-light-${editingVideo.source === 1 ? 'danger' : 'primary'} badge-sm`}>
-                                  <i className={`${getPlatformIcon(editingVideo.source)} me-1`}></i>
-                                  {editingVideo.source === 1 ? 'YouTube' : 'Vimeo'}
-                                </span>
-                              )}
-                              {editingVideo.duration && (
-                                <span className='text-muted small'>
-                                  <i className='fas fa-clock me-1'></i>
-                                  {Math.floor(editingVideo.duration / 60)}:{(editingVideo.duration % 60).toString().padStart(2, '0')}
-                                </span>
-                              )}
-                              <span className='text-muted small'>
-                                <i className='fas fa-eye me-1'></i>
-                                {editingVideo.click_count || 0} views
-                              </span>
-                              {editingVideo.status === 1 && (
-                                <span className='badge badge-light-warning badge-sm'>
-                                  <i className='fas fa-lock me-1'></i>
-                                  Private
-                                </span>
-                              )}
-                            </div>
+        <Modal 
+          show={showModal} 
+          onHide={resetModal}
+          size="lg"
+          centered
+          dialogClassName="video-modal-lg"
+          
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>{editingVideo ? 'Edit Video' : 'Add New Video'}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body >
+            {editingVideo ? (
+              // Edit mode - show original form
+              <form onSubmit={handleSubmit}>
+                {/* Video Preview */}
+                {editingVideo && (
+                  <div className='mb-4 p-3 bg-light rounded'>
+                    <div className='row align-items-center'>
+                      <div className='col-md-3'>
+                        <div className='position-relative'>
+                          <img
+                            src={editingVideo.thumbnail || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBaIiBmaWxsPSIjQ0NDQ0NDIi8+Cjx0ZXh0IHg9IjE2MCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
+                            alt={editingVideo.title}
+                            className='img-fluid rounded'
+                            style={{width: '100%', maxWidth: '150px'}}
+                          />
+                        </div>
+                      </div>
+                      <div className='col-md-9'>
+                        <h6 className='fw-bold mb-1 text-truncate' title={editingVideo.title}>{editingVideo.title}</h6>
+                        <div className='d-flex align-items-center gap-2 flex-wrap'>
+                          {isTeachingStaff(currentUser?.role?.role_type) && (
+                            <span className={`badge badge-light-${editingVideo.source === 1 ? 'danger' : 'primary'} badge-sm`}>
+                              <i className={`${getPlatformIcon(editingVideo.source)} me-1`}></i>
+                              {editingVideo.source === 1 ? 'YouTube' : 'Vimeo'}
+                            </span>
+                          )}
+                          {editingVideo.duration && (
+                            <span className='text-muted small'>
+                              <i className='fas fa-clock me-1'></i>
+                              {Math.floor(editingVideo.duration / 60)}:{(editingVideo.duration % 60).toString().padStart(2, '0')}
+                            </span>
+                          )}
+                          <span className='text-muted small'>
+                            <i className='fas fa-eye me-1'></i>
+                            {editingVideo.click_count || 0} views
+                          </span>
+                          {editingVideo.status === 1 && (
+                            <span className='badge badge-light-warning badge-sm'>
+                              <i className='fas fa-lock me-1'></i>
+                              Private
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {editingVideo?.source === 1 && (
+                  <div className='mb-4'>
+                    <label className='form-label fw-bold'>Video URL *</label>
+                    <input
+                      type='url'
+                      className='form-control'
+                      placeholder='https://www.youtube.com/watch?v=...'
+                      value={formData.youtube_urls?.[0] || ''}
+                      onChange={(e) => {
+                        const url = e.target.value
+                        setFormData({...formData, youtube_urls: [url], vimeo_ids: []})
+                      }}
+                      required
+                    />
+                    <div className='form-text'>
+                      YouTube video URL
+                    </div>
+                  </div>
+                )}
+                
+                {/* Tags Section */}
+                <div className='mb-4 p-3 bg-light rounded'>
+                  <h6 className='fw-bold mb-3 text-primary'>
+                    <i className='fas fa-tags me-2'></i>
+                    Tags
+                  </h6>
+                  <VideoTagInput
+                    options={tags}
+                    selectedTags={formData.tags?.map(tag => ({id: tag.tag_id || '', name: tag.name || tags.find(t => t.id === tag.tag_id)?.name || ''})) || []}
+                    onChange={(selectedTags) => setFormData({
+                      ...formData, 
+                      tags: selectedTags.map(tag => {
+                        // If tag has isNew flag or id starts with 'new-', it's a new tag
+                        if (tag.isNew || tag.id.startsWith('new-')) {
+                          return { name: tag.name }
+                        } else {
+                          return { tag_id: tag.id }
+                        }
+                      })
+                    })}
+                    placeholder='Search and select tags or create new ones'
+                  />
+                </div>
+                
+                {/* Video Access Section */}
+                <div className='mb-4 p-3 bg-light rounded'>
+                  <h6 className='fw-bold mb-3 text-primary'>
+                    <i className='fas fa-users me-2'></i>
+                    Video Access
+                  </h6>
+                  <div className='form-check mb-3'>
+                    <input
+                      className='form-check-input'
+                      type='radio'
+                      name='editStatus'
+                      id='editAssignOnly'
+                      value='1'
+                      checked={formData.status === 1}
+                      onChange={(e) => setFormData({...formData, status: parseInt(e.target.value)})}
+                    />
+                    <label className='form-check-label' htmlFor='editAssignOnly'>
+                      <strong>Assign Only (Private)</strong>
+                      <div className='form-text text-muted mt-1'>
+                        Video will only be available when assigned to students. Students cannot browse or search for this video.
+                      </div>
+                    </label>
+                  </div>
+                  <div className='form-check'>
+                    <input
+                      className='form-check-input'
+                      type='radio'
+                      name='editStatus'
+                      id='editOpenToStudents'
+                      value='2'
+                      checked={formData.status === 2}
+                      onChange={(e) => setFormData({...formData, status: parseInt(e.target.value)})}
+                    />
+                    <label className='form-check-label' htmlFor='editOpenToStudents'>
+                      <strong>Open to Students</strong>
+                      <div className='form-text text-muted mt-1'>
+                        Video will be visible to all students. They can browse, search, and watch this video freely.
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              // Add mode - show step-by-step interface
+              <>
+                {modalStep === 'platform' && (
+                  <div style={{overflowY: 'auto', flex: '1 1 auto'}}>
+                    <div className='text-center mb-4'>
+                      <h6 className='mb-3'>Choose a platform to add videos from:</h6>
+                    </div>
+                    
+                    <div className='row g-3'>
+                      <div className='col-6'>
+                        <div 
+                          className='card h-100 cursor-pointer border-2 border-hover-primary'
+                          onClick={() => handlePlatformSelect('youtube')}
+                          style={{cursor: 'pointer'}}
+                        >
+                          <div className='card-body text-center p-4'>
+                            <i className='fab fa-youtube text-danger fs-1 mb-3'></i>
+                            <h6 className='card-title'>YouTube</h6>
+                            <p className='card-text small text-muted'>
+                              Add a single video by entering its URL
+                            </p>
                           </div>
                         </div>
                       </div>
-                    )}
-                    
-                    {editingVideo?.source === 1 && (
-                      <div className='mb-4'>
-                        <label className='form-label fw-bold'>Video URL *</label>
+                      
+                      <div className='col-6'>
+                        <div 
+                          className='card h-100 cursor-pointer border-2 border-hover-primary'
+                          onClick={() => handlePlatformSelect('vimeo')}
+                          style={{cursor: 'pointer'}}
+                        >
+                          <div className='card-body text-center p-4'>
+                            <i className='fab fa-vimeo-v text-primary fs-1 mb-3'></i>
+                            <h6 className='card-title'>Vimeo</h6>
+                            <p className='card-text small text-muted'>
+                              Browse your folders and select multiple videos
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {modalStep === 'youtube' && (
+                  <form onSubmit={handleYoutubeSubmit} style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+                    <div style={{overflowY: 'auto', flex: '1 1 auto'}}>
+                      <div className='mb-3'>
+                        <label className='form-label'>YouTube Video URL *</label>
                         <input
                           type='url'
                           className='form-control'
                           placeholder='https://www.youtube.com/watch?v=...'
-                          value={formData.youtube_urls?.[0] || ''}
-                          onChange={(e) => {
-                            const url = e.target.value
-                            setFormData({...formData, youtube_urls: [url], vimeo_ids: []})
-                          }}
+                          value={youtubeUrl}
+                          onChange={(e) => handleYoutubeUrlChange(e.target.value)}
                           required
                         />
                         <div className='form-text'>
-                          YouTube video URL
+                          Enter a valid YouTube video URL
                         </div>
-                      </div>
-                    )}
-                    
-                    {/* Tags Section */}
-                    <div className='mb-4 p-3 bg-light rounded'>
-                      <h6 className='fw-bold mb-3 text-primary'>
-                        <i className='fas fa-tags me-2'></i>
-                        Tags
-                      </h6>
-                      <VideoTagInput
-                        options={tags}
-                        selectedTags={formData.tags?.map(tag => ({id: tag.tag_id || '', name: tag.name || tags.find(t => t.id === tag.tag_id)?.name || ''})) || []}
-                        onChange={(selectedTags) => setFormData({
-                          ...formData, 
-                          tags: selectedTags.map(tag => {
-                            // If tag has isNew flag or id starts with 'new-', it's a new tag
-                            if (tag.isNew || tag.id.startsWith('new-')) {
-                              return { name: tag.name }
-                            } else {
-                              return { tag_id: tag.id }
-                            }
-                          })
-                        })}
-                        placeholder='Search and select tags or create new ones'
-                      />
-                    </div>
-                    
-                    {/* Video Access Section */}
-                    <div className='mb-4 p-3 bg-light rounded'>
-                      <h6 className='fw-bold mb-3 text-primary'>
-                        <i className='fas fa-users me-2'></i>
-                        Video Access
-                      </h6>
-                      <div className='form-check mb-3'>
-                        <input
-                          className='form-check-input'
-                          type='radio'
-                          name='editStatus'
-                          id='editAssignOnly'
-                          value='1'
-                          checked={formData.status === 1}
-                          onChange={(e) => setFormData({...formData, status: parseInt(e.target.value)})}
-                        />
-                        <label className='form-check-label' htmlFor='editAssignOnly'>
-                          <strong>Assign Only (Private)</strong>
-                          <div className='form-text text-muted mt-1'>
-                            Video will only be available when assigned to students. Students cannot browse or search for this video.
-                          </div>
-                        </label>
-                      </div>
-                      <div className='form-check'>
-                        <input
-                          className='form-check-input'
-                          type='radio'
-                          name='editStatus'
-                          id='editOpenToStudents'
-                          value='2'
-                          checked={formData.status === 2}
-                          onChange={(e) => setFormData({...formData, status: parseInt(e.target.value)})}
-                        />
-                        <label className='form-check-label' htmlFor='editOpenToStudents'>
-                          <strong>Open to Students</strong>
-                          <div className='form-text text-muted mt-1'>
-                            Video will be visible to all students. They can browse, search, and watch this video freely.
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className='modal-footer'>
-                    <button
-                      type='button'
-                      className='btn btn-secondary'
-                      onClick={resetModal}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type='submit'
-                      className='btn btn-primary'
-                      disabled={creating || updating}
-                    >
-                      {creating || updating ? (
-                        <>
-                          <span className='spinner-border spinner-border-sm me-2' role='status'></span>
-                          {creating ? 'Creating...' : 'Updating...'}
-                        </>
-                      ) : (
-                        'Update Video'
-                      )}
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                // Add mode - show step-by-step interface
-                <>
-                  {modalStep === 'platform' && (
-                    <div className='modal-body' style={{overflowY: 'auto', flex: '1 1 auto'}}>
-                      <div className='text-center mb-4'>
-                        <h6 className='mb-3'>Choose a platform to add videos from:</h6>
                       </div>
                       
-                      <div className='row g-3'>
-                        <div className='col-6'>
-                          <div 
-                            className='card h-100 cursor-pointer border-2 border-hover-primary'
-                            onClick={() => handlePlatformSelect('youtube')}
-                            style={{cursor: 'pointer'}}
-                          >
-                            <div className='card-body text-center p-4'>
-                              <i className='fab fa-youtube text-danger fs-1 mb-3'></i>
-                              <h6 className='card-title'>YouTube</h6>
-                              <p className='card-text small text-muted'>
-                                Add a single video by entering its URL
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className='col-6'>
-                          <div 
-                            className='card h-100 cursor-pointer border-2 border-hover-primary'
-                            onClick={() => handlePlatformSelect('vimeo')}
-                            style={{cursor: 'pointer'}}
-                          >
-                            <div className='card-body text-center p-4'>
-                              <i className='fab fa-vimeo-v text-primary fs-1 mb-3'></i>
-                              <h6 className='card-title'>Vimeo</h6>
-                              <p className='card-text small text-muted'>
-                                Browse your folders and select multiple videos
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {modalStep === 'youtube' && (
-                    <form onSubmit={handleYoutubeSubmit} style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-                      <div className='modal-body' style={{overflowY: 'auto', flex: '1 1 auto'}}>
+                      {/* YouTube Metadata Display */}
+                      {fetchingYouTubeMetadata && (
                         <div className='mb-3'>
-                          <label className='form-label'>YouTube Video URL *</label>
-                          <input
-                            type='url'
-                            className='form-control'
-                            placeholder='https://www.youtube.com/watch?v=...'
-                            value={youtubeUrl}
-                            onChange={(e) => handleYoutubeUrlChange(e.target.value)}
-                            required
-                          />
-                          <div className='form-text'>
-                            Enter a valid YouTube video URL
+                          <div className='d-flex align-items-center'>
+                            <div className='spinner-border spinner-border-sm me-2' role='status'>
+                              <span className='visually-hidden'>Loading...</span>
+                            </div>
+                            <span>Fetching video information...</span>
                           </div>
                         </div>
-                        
-                        {/* YouTube Metadata Display */}
-                        {fetchingYouTubeMetadata && (
-                          <div className='mb-3'>
-                            <div className='d-flex align-items-center'>
-                              <div className='spinner-border spinner-border-sm me-2' role='status'>
-                                <span className='visually-hidden'>Loading...</span>
-                              </div>
-                              <span>Fetching video information...</span>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {youtubeMetadata && !fetchingYouTubeMetadata && (
-                          <div className='mb-3'>
-                            <div className='card border'>
-                              <div className='card-body p-3'>
-                                <div className='row'>
-                                  <div className='col-md-3'>
-                                    <img
-                                      src={youtubeMetadata.thumbnail}
-                                      alt={youtubeMetadata.title}
-                                      className='img-fluid rounded'
-                                      style={{ width: '100%', height: 'auto' }}
-                                    />
-                                  </div>
-                                  <div className='col-md-9'>
-                                    <h6 className='card-title mb-2'>{youtubeMetadata.title}</h6>
-                                    <p className='card-text small text-muted mb-2'>
-                                      {youtubeMetadata.description.substring(0, 150)}...
-                                    </p>
-                                    <div className='d-flex align-items-center'>
-                                      <span className='badge badge-light-secondary me-2'>
-                                        <i className='fas fa-clock me-1'></i>
-                                        {youtubeMetadata.duration_formatted}
-                                      </span>
-                                      <span className='badge badge-light-danger'>
-                                        <i className='fab fa-youtube me-1'></i>
-                                        YouTube
-                                      </span>
-                                    </div>
+                      )}
+                      
+                      {youtubeMetadata && !fetchingYouTubeMetadata && (
+                        <div className='mb-3'>
+                          <div className='card border'>
+                            <div className='card-body p-3'>
+                              <div className='row'>
+                                <div className='col-md-3'>
+                                  <img
+                                    src={youtubeMetadata.thumbnail}
+                                    alt={youtubeMetadata.title}
+                                    className='img-fluid rounded'
+                                    style={{ width: '100%', height: 'auto' }}
+                                  />
+                                </div>
+                                <div className='col-md-9'>
+                                  <h6 className='card-title mb-2'>{youtubeMetadata.title}</h6>
+                                  <p className='card-text small text-muted mb-2'>
+                                    {youtubeMetadata.description.substring(0, 150)}...
+                                  </p>
+                                  <div className='d-flex align-items-center'>
+                                    <span className='badge badge-light-secondary me-2'>
+                                      <i className='fas fa-clock me-1'></i>
+                                      {youtubeMetadata.duration_formatted}
+                                    </span>
+                                    <span className='badge badge-light-danger'>
+                                      <i className='fab fa-youtube me-1'></i>
+                                      YouTube
+                                    </span>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        )}
-                        
-                        <div className='mb-3'>
-                          <label className='form-label'>Tags</label>
-                          <VideoTagInput
-                            options={tags}
-                            selectedTags={youtubeTags}
-                            onChange={setYoutubeTags}
-                            placeholder='Search and select tags or create new ones'
-                          />
-                        </div>
-                        
-                        <div className='mb-3'>
-                          <label className='form-label'>Video Access</label>
-                          <div className='d-flex gap-3'>
-                            <div className='form-check'>
-                              <input
-                                className='form-check-input'
-                                type='radio'
-                                name='youtubeStatus'
-                                id='youtubeAssignOnly'
-                                value='1'
-                                checked={youtubeStatus === 1}
-                                onChange={(e) => setYoutubeStatus(parseInt(e.target.value) as 1 | 2)}
-                              />
-                              <label className='form-check-label' htmlFor='youtubeAssignOnly'>
-                                <i className='fas fa-lock me-1'></i>
-                                Assign Only (Private)
-                              </label>
-                            </div>
-                            <div className='form-check'>
-                              <input
-                                className='form-check-input'
-                                type='radio'
-                                name='youtubeStatus'
-                                id='youtubeOpenToStudents'
-                                value='2'
-                                checked={youtubeStatus === 2}
-                                onChange={(e) => setYoutubeStatus(parseInt(e.target.value) as 1 | 2)}
-                              />
-                              <label className='form-check-label' htmlFor='youtubeOpenToStudents'>
-                                <i className='fas fa-globe me-1'></i>
-                                Open to Students
-                              </label>
-                            </div>
-                          </div>
-                          <div className='form-text'>
-                            {youtubeStatus === 1 
-                              ? 'Video will be private and only available when assigned to students'
-                              : 'Video will be visible to all students in your subject'
-                            }
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className='modal-footer'>
-                        <button
-                          type='button'
-                          className='btn btn-secondary'
-                          onClick={() => setModalStep('platform')}
-                        >
-                          Back
-                        </button>
-                        <button
-                          type='submit'
-                          className='btn btn-primary'
-                          disabled={creating}
-                        >
-                          {creating ? (
-                            <>
-                              <span className='spinner-border spinner-border-sm me-2' role='status'></span>
-                              Adding...
-                            </>
-                          ) : (
-                            'Add Video'
-                          )}
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                  
-                  {modalStep === 'vimeo' && (
-                    <div className='modal-body' style={{overflowY: 'auto', flex: '1 1 auto'}}>
-                      <div className='mb-3'>
-                        <h6>Select videos from your Vimeo projects:</h6>
-                        <p className='text-muted small'>
-                          Click on a project to expand and view its videos, then select the ones you want to add.
-                        </p>
-                      </div>
-                      
-                      {fetchingVimeoFolders ? (
-                        <div className='text-center py-4'>
-                          <div className='spinner-border text-primary' role='status'>
-                            <span className='visually-hidden'>Loading...</span>
-                          </div>
-                          <p className='mt-2'>Loading your Vimeo projects...</p>
-                        </div>
-                      ) : (
-                        <div className='vimeo-folders'>
-                          {(vimeoFolders || []).map((folder) => (
-                            <div key={folder.uri} className='mb-3'>
-                              <div 
-                                className='d-flex align-items-center justify-content-between p-3 border rounded cursor-pointer'
-                                onClick={() => handleFolderExpand(folder.uri)}
-                                style={{cursor: 'pointer'}}
-                              >
-                                <div>
-                                  <i className='fas fa-folder text-warning me-2'></i>
-                                  <strong>{folder.name}</strong>
-                                  {folder.description && (
-                                    <small className='text-muted d-block'>{folder.description}</small>
-                                  )}
-                                </div>
-                                <div>
-                                  <i className={`fas fa-chevron-${expandedFolders.has(folder.uri) ? 'up' : 'down'}`}></i>
-                                </div>
-                              </div>
-                              
-                              {expandedFolders.has(folder.uri) && (
-                                <div className='ms-4 mt-2'>
-                                  {fetchingVimeoVideos[folder.uri] ? (
-                                    <div className='text-center py-2'>
-                                      <div className='spinner-border spinner-border-sm text-primary me-2' role='status'>
-                                        <span className='visually-hidden'>Loading...</span>
-                                      </div>
-                                      <small>Loading videos...</small>
-                                    </div>
-                                  ) : (
-                                    <div className='row g-2'>
-                                      {vimeoFolderVideos[folder.uri]?.map((video) => (
-                                        <div key={video.uri} className='col-12'>
-                                          <div className='d-flex align-items-center p-2 border rounded'>
-                                            <div className='form-check me-3'>
-                                              <input
-                                                className='form-check-input'
-                                                type='checkbox'
-                                                checked={selectedVimeoVideos.has(video.uri)}
-                                                onChange={() => handleVimeoVideoSelect(video.uri)}
-                                              />
-                                            </div>
-                                            <div className='flex-grow-1'>
-                                              <div className='d-flex align-items-center'>
-                                                <img
-                                                  src={video.pictures.sizes[0]?.link || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBaIiBmaWxsPSIjQ0NDQ0NDIi8+Cjx0ZXh0IHg9IjE2MCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
-                                                  alt={video.name}
-                                                  className='rounded me-2'
-                                                  style={{width: '60px', height: '40px', objectFit: 'cover'}}
-                                                />
-                                                <div>
-                                                  <strong className='small'>{video.name}</strong>
-                                                  {video.description && (
-                                                    <small className='text-muted d-block'>{video.description}</small>
-                                                  )}
-                                                  <small className='text-muted'>
-                                                    {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
-                                                  </small>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                          
-                          {(vimeoFolders || []).length === 0 && !fetchingVimeoFolders && (
-                            <div className='text-center py-4'>
-                              <i className='fas fa-folder-open text-muted fs-1 mb-3'></i>
-                              <p className='text-muted'>No Vimeo projects found</p>
-                            </div>
-                          )}
                         </div>
                       )}
-                    </div>
-                  )}
-                  
-                  {/* Vimeo Tags Input - Outside scrollable area */}
-                  {modalStep === 'vimeo' && (
-                    <div className='modal-body' style={{borderTop: '1px solid #dee2e6'}}>
+                      
                       <div className='mb-3'>
-                        <label className='form-label'>Tags for Selected Videos</label>
+                        <label className='form-label'>Tags</label>
                         <VideoTagInput
                           options={tags}
-                          selectedTags={vimeoTags}
-                          onChange={setVimeoTags}
+                          selectedTags={youtubeTags}
+                          onChange={setYoutubeTags}
                           placeholder='Search and select tags or create new ones'
                         />
-                        <div className='form-text'>
-                          These tags will be applied to all selected videos
-                        </div>
                       </div>
                       
                       <div className='mb-3'>
@@ -1614,13 +1403,13 @@ const TeacherVideoListPage: FC = () => {
                             <input
                               className='form-check-input'
                               type='radio'
-                              name='vimeoStatus'
-                              id='vimeoAssignOnly'
+                              name='youtubeStatus'
+                              id='youtubeAssignOnly'
                               value='1'
-                              checked={vimeoStatus === 1}
-                              onChange={(e) => setVimeoStatus(parseInt(e.target.value) as 1 | 2)}
+                              checked={youtubeStatus === 1}
+                              onChange={(e) => setYoutubeStatus(parseInt(e.target.value) as 1 | 2)}
                             />
-                            <label className='form-check-label' htmlFor='vimeoAssignOnly'>
+                            <label className='form-check-label' htmlFor='youtubeAssignOnly'>
                               <i className='fas fa-lock me-1'></i>
                               Assign Only (Private)
                             </label>
@@ -1629,29 +1418,27 @@ const TeacherVideoListPage: FC = () => {
                             <input
                               className='form-check-input'
                               type='radio'
-                              name='vimeoStatus'
-                              id='vimeoOpenToStudents'
+                              name='youtubeStatus'
+                              id='youtubeOpenToStudents'
                               value='2'
-                              checked={vimeoStatus === 2}
-                              onChange={(e) => setVimeoStatus(parseInt(e.target.value) as 1 | 2)}
+                              checked={youtubeStatus === 2}
+                              onChange={(e) => setYoutubeStatus(parseInt(e.target.value) as 1 | 2)}
                             />
-                            <label className='form-check-label' htmlFor='vimeoOpenToStudents'>
+                            <label className='form-check-label' htmlFor='youtubeOpenToStudents'>
                               <i className='fas fa-globe me-1'></i>
                               Open to Students
                             </label>
                           </div>
                         </div>
                         <div className='form-text'>
-                          {vimeoStatus === 1 
-                            ? 'Videos will be private and only available when assigned to students'
-                            : 'Videos will be visible to all students in your subject'
+                          {youtubeStatus === 1 
+                            ? 'Video will be private and only available when assigned to students'
+                            : 'Video will be visible to all students in your subject'
                           }
                         </div>
                       </div>
                     </div>
-                  )}
-                  
-                  {modalStep === 'vimeo' && (
+                    
                     <div className='modal-footer'>
                       <button
                         type='button'
@@ -1661,39 +1448,254 @@ const TeacherVideoListPage: FC = () => {
                         Back
                       </button>
                       <button
-                        type='button'
+                        type='submit'
                         className='btn btn-primary'
-                        onClick={handleVimeoSubmit}
-                        disabled={creating || selectedVimeoVideos.size === 0}
+                        disabled={creating}
                       >
                         {creating ? (
                           <>
                             <span className='spinner-border spinner-border-sm me-2' role='status'></span>
-                            Adding {selectedVimeoVideos.size} videos...
+                            Adding...
                           </>
                         ) : (
-                          `Add ${selectedVimeoVideos.size} Selected Video${selectedVimeoVideos.size !== 1 ? 's' : ''}`
+                          'Add Video'
                         )}
                       </button>
                     </div>
-                  )}
+                  </form>
+                )}
+                
+                {modalStep === 'vimeo' && (
+                  <div style={{overflowY: 'auto', flex: '1 1 auto'}}>
+                    <div className='mb-3'>
+                      <h6>Select videos from your Vimeo projects:</h6>
+                      <p className='text-muted small'>
+                        Click on a project to expand and view its videos, then select the ones you want to add.
+                      </p>
+                    </div>
+                    
+                    {fetchingVimeoFolders ? (
+                      <div className='text-center py-4'>
+                        <div className='spinner-border text-primary' role='status'>
+                          <span className='visually-hidden'>Loading...</span>
+                        </div>
+                        <p className='mt-2'>Loading your Vimeo projects...</p>
+                      </div>
+                    ) : (
+                      <div className='vimeo-folders'>
+                        {(vimeoFolders || []).map((folder) => (
+                          <div key={folder.uri} className='mb-3'>
+                            <div 
+                              className='d-flex align-items-center justify-content-between p-3 border rounded cursor-pointer'
+                              onClick={() => handleFolderExpand(folder.uri)}
+                              style={{cursor: 'pointer'}}
+                            >
+                              <div>
+                                <i className='fas fa-folder text-warning me-2'></i>
+                                <strong>{folder.name}</strong>
+                                {folder.description && (
+                                  <small className='text-muted d-block'>{folder.description}</small>
+                                )}
+                              </div>
+                              <div>
+                                <i className={`fas fa-chevron-${expandedFolders.has(folder.uri) ? 'up' : 'down'}`}></i>
+                              </div>
+                            </div>
+                            
+                            {expandedFolders.has(folder.uri) && (
+                              <div className='ms-4 mt-2'>
+                                {fetchingVimeoVideos[folder.uri] ? (
+                                  <div className='text-center py-2'>
+                                    <div className='spinner-border spinner-border-sm text-primary me-2' role='status'>
+                                      <span className='visually-hidden'>Loading...</span>
+                                    </div>
+                                    <small>Loading videos...</small>
+                                  </div>
+                                ) : (
+                                  <div className='row g-2'>
+                                    {vimeoFolderVideos[folder.uri]?.map((video) => (
+                                      <div key={video.uri} className='col-12'>
+                                        <div className='d-flex align-items-center p-2 border rounded'>
+                                          <div className='form-check me-3'>
+                                            <input
+                                              className='form-check-input'
+                                              type='checkbox'
+                                              checked={selectedVimeoVideos.has(video.uri)}
+                                              onChange={() => handleVimeoVideoSelect(video.uri)}
+                                            />
+                                          </div>
+                                          <div className='flex-grow-1'>
+                                            <div className='d-flex align-items-center'>
+                                              <img
+                                                src={video.pictures.sizes[0]?.link || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBaIiBmaWxsPSIjQ0NDQ0NDIi8+Cjx0ZXh0IHg9IjE2MCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
+                                                alt={video.name}
+                                                className='rounded me-2'
+                                                style={{width: '60px', height: '40px', objectFit: 'cover'}}
+                                              />
+                                              <div>
+                                                <strong className='small'>{video.name}</strong>
+                                                {video.description && (
+                                                  <small className='text-muted d-block'>{video.description}</small>
+                                                )}
+                                                <small className='text-muted'>
+                                                  {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
+                                                </small>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        
+                        {(vimeoFolders || []).length === 0 && !fetchingVimeoFolders && (
+                          <div className='text-center py-4'>
+                            <i className='fas fa-folder-open text-muted fs-1 mb-3'></i>
+                            <p className='text-muted'>No Vimeo projects found</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Vimeo Tags Input - Outside scrollable area */}
+                {modalStep === 'vimeo' && (
+                  <div style={{borderTop: '1px solid #dee2e6'}}>
+                    <div className='mb-3'>
+                      <label className='form-label'>Tags for Selected Videos</label>
+                      <VideoTagInput
+                        options={tags}
+                        selectedTags={vimeoTags}
+                        onChange={setVimeoTags}
+                        placeholder='Search and select tags or create new ones'
+                      />
+                      <div className='form-text'>
+                        These tags will be applied to all selected videos
+                      </div>
+                    </div>
+                    
+                    <div className='mb-3'>
+                      <label className='form-label'>Video Access</label>
+                      <div className='d-flex gap-3'>
+                        <div className='form-check'>
+                          <input
+                            className='form-check-input'
+                            type='radio'
+                            name='vimeoStatus'
+                            id='vimeoAssignOnly'
+                            value='1'
+                            checked={vimeoStatus === 1}
+                            onChange={(e) => setVimeoStatus(parseInt(e.target.value) as 1 | 2)}
+                          />
+                          <label className='form-check-label' htmlFor='vimeoAssignOnly'>
+                            <i className='fas fa-lock me-1'></i>
+                            Assign Only (Private)
+                          </label>
+                        </div>
+                        <div className='form-check'>
+                          <input
+                            className='form-check-input'
+                            type='radio'
+                            name='vimeoStatus'
+                            id='vimeoOpenToStudents'
+                            value='2'
+                            checked={vimeoStatus === 2}
+                            onChange={(e) => setVimeoStatus(parseInt(e.target.value) as 1 | 2)}
+                          />
+                          <label className='form-check-label' htmlFor='vimeoOpenToStudents'>
+                            <i className='fas fa-globe me-1'></i>
+                            Open to Students
+                          </label>
+                        </div>
+                      </div>
+                      <div className='form-text'>
+                        {vimeoStatus === 1 
+                          ? 'Videos will be private and only available when assigned to students'
+                          : 'Videos will be visible to all students in your subject'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {modalStep === 'vimeo' && (
+                  <div className='modal-footer'>
+                    <button
+                      type='button'
+                      className='btn btn-secondary'
+                      onClick={() => setModalStep('platform')}
+                    >
+                      Back
+                    </button>
+                    <button
+                      type='button'
+                      className='btn btn-primary'
+                      onClick={handleVimeoSubmit}
+                      disabled={creating || selectedVimeoVideos.size === 0}
+                    >
+                      {creating ? (
+                        <>
+                          <span className='spinner-border spinner-border-sm me-2' role='status'></span>
+                          Adding {selectedVimeoVideos.size} videos...
+                        </>
+                      ) : (
+                        `Add ${selectedVimeoVideos.size} Selected Video${selectedVimeoVideos.size !== 1 ? 's' : ''}`
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={resetModal}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleSubmit} disabled={creating || updating}>
+              {creating || updating ? (
+                <>
+                  <span className='spinner-border spinner-border-sm me-2' role='status'></span>
+                  {creating ? 'Creating...' : 'Updating...'}
                 </>
+              ) : (
+                'Save Changes'
               )}
-            </div>
-          </div>
-        </div>
+            </Button>
+          </Modal.Footer>
+        </Modal>
       )}
 
       {/* Video Detail Modal */}
-      <VideoDetailModal
-        videoId={selectedVideoId}
-        isOpen={showDetailModal}
-        onClose={() => {
-          setShowDetailModal(false)
-          setSelectedVideoId(null)
-        }}
-        isTeachingStaff={isTeachingStaff(currentUser?.role?.role_type)}
-      />
+      <Modal show={showDetailModal} onHide={() => {
+        setShowDetailModal(false)
+        setSelectedVideoId(null)
+      }}>
+        <Modal.Header closeButton>
+          <Modal.Title>{selectedVideoId ? `Video: ${selectedVideoId}` : 'Video Detail'}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {/* Add your video detail content here */}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => {
+            setShowDetailModal(false)
+            setSelectedVideoId(null)
+          }}>
+            Close
+          </Button>
+          <Button variant="primary" onClick={() => {
+            // Add any additional actions you want to execute when viewing the video
+          }}>
+            View Video
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
@@ -1712,27 +1714,184 @@ const TeacherVideoListPage: FC = () => {
 
       {/* Video Assignment Modal */}
       {showAssignModal && videoToAssign && (
-        <div className='modal fade show d-block' style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-          <div className="modal-dialog modal-lg" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Assign Video to Students</h5>
-                <button type="button" className="btn-close" onClick={() => setShowAssignModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                <div className='mb-4'>
-                  <h6>Selected Video: {videoToAssign.title}</h6>
-                  <p className='text-muted'>Choose students to assign this video to:</p>
-                </div>
+        <Modal 
+          show={showAssignModal} 
+          onHide={() => setShowAssignModal(false)}
+          size="lg"
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Assign Video to Students</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div className='mb-4'>
+              <h6>Selected Video: {videoToAssign.title}</h6>
+              <p className='text-muted'>Choose students to assign this video to:</p>
+            </div>
 
+            <div className='mb-4'>
+              <label className='form-label fw-bold'>Select Students</label>
+              <div style={{position: 'relative', zIndex: 2000}}>
+                <StudentSelectionTable 
+                  exerciseIds={[videoToAssign.video_id]} // Pass video ID as exercise ID for compatibility
+                  search="" 
+                  selectedUsers={selectedStudents}
+                  onUserSelectionChange={handleStudentSelection}
+                />
+              </div>
+            </div>
+
+            <div className='mb-4'>
+              <label className='form-label fw-bold'>Due Date (Optional)</label>
+              <div style={{position: 'relative', zIndex: 1000}}>
+                <DatePicker
+                  selected={assignmentDueDate}
+                  onChange={(date: Date | null) => setAssignmentDueDate(date)}
+                  placeholderText="Select due date"
+                  minDate={new Date()}
+                  isClearable={true}
+                  dayClassName={(date) => 
+                    date.getTime() === assignmentDueDate?.getTime() ? 'bg-primary text-white' : ''
+                  }
+                />
+              </div>
+            </div>
+
+            <div className='mb-4'>
+              <label className='form-label fw-bold'>Message for Students (Optional)</label>
+              <div style={{position: 'relative', zIndex: 1}}>
+                <TinyMCEEditor
+                  value={assignmentMessage}
+                  onChange={setAssignmentMessage}
+                  placeholder='Enter a message for your students...'
+                  height={200}
+                />
+              </div>
+              <div className='form-text'>This message will be shown to students when they access the video</div>
+            </div>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => {
+              setShowAssignModal(false)
+              setVideoToAssign(null)
+              setSelectedStudents([])
+              setAssignmentDueDate(null)
+              setAssignmentMessage('')
+            }}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleAssignVideo} disabled={assigning}>
+              {assigning ? (
+                <>
+                  <span className='spinner-border spinner-border-sm me-2' role='status'></span>
+                  Assigning...
+                </>
+              ) : (
+                'Assign Video'
+              )}
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
+
+      {/* Bulk Video Assignment Modal */}
+      {showBulkAssignModal && (
+        <Modal 
+          show={showBulkAssignModal} 
+          onHide={() => {
+            setShowBulkAssignModal(false)
+            // Clear modal search timeout when closing
+            if (modalSearchTimeoutRef.current) {
+              clearTimeout(modalSearchTimeoutRef.current)
+            }
+          }}
+          size="xl"
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Assign Videos to Students</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div className='row'>
+              {/* Video Selection */}
+              <div className='col-md-6'>
+                <div className='mb-4'>
+                  <label className='form-label fw-bold'>Search and Select Videos</label>
+                  <div className='input-group mb-3'>
+                    <input
+                      type='text'
+                      className='form-control'
+                      placeholder='Search videos...'
+                      value={videoSearchTerm}
+                      onChange={(e) => handleVideoSearch(e.target.value)}
+                    />
+                    <button
+                      className='btn btn-outline-secondary'
+                      type='button'
+                      onClick={() => handleVideoSearch(videoSearchTerm)}
+                      disabled={searchingVideos}
+                    >
+                      {searchingVideos ? (
+                        <span className='spinner-border spinner-border-sm' role='status'></span>
+                      ) : (
+                        <i className='fas fa-search'></i>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {availableVideos.length > 0 && (
+                    <div className='border rounded p-3' style={{maxHeight: '300px', overflowY: 'auto'}}>
+                      <h6 className='mb-3'>Available Videos</h6>
+                      {availableVideos.map((video) => (
+                        <div key={video.video_id} className='d-flex align-items-center mb-2 p-2 border rounded'>
+                          <input
+                            type='checkbox'
+                            className='form-check-input me-2'
+                            checked={selectedVideos.includes(video.video_id)}
+                            onChange={() => handleVideoSelection(video.video_id)}
+                          />
+                          <div className='me-3' style={{width: '80px', height: '45px', flexShrink: 0}}>
+                            <img
+                              src={video.thumbnail || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iNDUiIHZpZXdCb3g9IjAgMCA4MCA0NSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjQ1IiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik00MCAyM0M0MCAyMyA0MCAyMyA0MCAyM0M0MCAyMyA0MCAyMyA0MCAyM1oiIGZpbGw9IiNDQ0NDQ0MiLz4KPHRleHQgeD0iNDAiIHk9IjI1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTAiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
+                              alt={video.title}
+                              className='img-fluid rounded'
+                              style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                            />
+                          </div>
+                          <div className='flex-grow-1'>
+                            <div className='fw-bold small'>{video.title}</div>
+                            <div className='text-muted small'>
+                              {isTeachingStaff(currentUser?.role?.role_type) && (
+                                <>
+                                  {video.source === 1 ? 'YouTube' : 'Vimeo'} • 
+                                </>
+                              )}
+                              {video.duration ? formatDuration(video.duration) : 'Unknown duration'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {selectedVideos.length > 0 && (
+                    <div className='mt-3'>
+                      <h6 className='text-success'>Selected Videos: {selectedVideos.length}</h6>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Student Selection */}
+              <div className='col-md-6'>
                 <div className='mb-4'>
                   <label className='form-label fw-bold'>Select Students</label>
                   <div style={{position: 'relative', zIndex: 2000}}>
                     <StudentSelectionTable 
-                      exerciseIds={[videoToAssign.video_id]} // Pass video ID as exercise ID for compatibility
+                      exerciseIds={selectedVideos} // Pass selected video IDs as exercise IDs for compatibility
                       search="" 
-                      selectedUsers={selectedStudents}
-                      onUserSelectionChange={handleStudentSelection}
+                      selectedUsers={bulkSelectedStudents}
+                      onUserSelectionChange={handleBulkStudentSelection}
                     />
                   </div>
                 </div>
@@ -1741,13 +1900,13 @@ const TeacherVideoListPage: FC = () => {
                   <label className='form-label fw-bold'>Due Date (Optional)</label>
                   <div style={{position: 'relative', zIndex: 1000}}>
                     <DatePicker
-                      selected={assignmentDueDate}
-                      onChange={(date: Date | null) => setAssignmentDueDate(date)}
+                      selected={bulkAssignmentDueDate}
+                      onChange={(date: Date | null) => setBulkAssignmentDueDate(date)}
                       placeholderText="Select due date"
                       minDate={new Date()}
                       isClearable={true}
                       dayClassName={(date) => 
-                        date.getTime() === assignmentDueDate?.getTime() ? 'bg-primary text-white' : ''
+                        date.getTime() === bulkAssignmentDueDate?.getTime() ? 'bg-primary text-white' : ''
                       }
                     />
                   </div>
@@ -1757,202 +1916,45 @@ const TeacherVideoListPage: FC = () => {
                   <label className='form-label fw-bold'>Message for Students (Optional)</label>
                   <div style={{position: 'relative', zIndex: 1}}>
                     <TinyMCEEditor
-                      value={assignmentMessage}
-                      onChange={setAssignmentMessage}
+                      value={bulkAssignmentMessage}
+                      onChange={setBulkAssignmentMessage}
                       placeholder='Enter a message for your students...'
                       height={200}
                     />
                   </div>
-                  <div className='form-text'>This message will be shown to students when they access the video</div>
+                  <div className='form-text'>This message will be shown to students when they access the videos</div>
                 </div>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => {
-                  setShowAssignModal(false)
-                  setVideoToAssign(null)
-                  setSelectedStudents([])
-                  setAssignmentDueDate(null)
-                  setAssignmentMessage('')
-                }}>
-                  Cancel
-                </button>
-                <button type="button" className="btn btn-primary" onClick={handleAssignVideo} disabled={assigning}>
-                  {assigning ? (
-                    <>
-                      <span className='spinner-border spinner-border-sm me-2' role='status'></span>
-                      Assigning...
-                    </>
-                  ) : (
-                    'Assign Video'
-                  )}
-                </button>
-              </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Video Assignment Modal */}
-      {showBulkAssignModal && (
-        <div className='modal fade show d-block' style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-          <div className="modal-dialog modal-xl" role="document">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Assign Videos to Students</h5>
-                <button type="button" className="btn-close" onClick={() => {
-                  setShowBulkAssignModal(false)
-                  // Clear modal search timeout when closing
-                  if (modalSearchTimeoutRef.current) {
-                    clearTimeout(modalSearchTimeoutRef.current)
-                  }
-                }}></button>
-              </div>
-              <div className="modal-body">
-                <div className='row'>
-                  {/* Video Selection */}
-                  <div className='col-md-6'>
-                    <div className='mb-4'>
-                      <label className='form-label fw-bold'>Search and Select Videos</label>
-                      <div className='input-group mb-3'>
-                        <input
-                          type='text'
-                          className='form-control'
-                          placeholder='Search videos...'
-                          value={videoSearchTerm}
-                          onChange={(e) => handleVideoSearch(e.target.value)}
-                        />
-                        <button
-                          className='btn btn-outline-secondary'
-                          type='button'
-                          onClick={() => handleVideoSearch(videoSearchTerm)}
-                          disabled={searchingVideos}
-                        >
-                          {searchingVideos ? (
-                            <span className='spinner-border spinner-border-sm' role='status'></span>
-                          ) : (
-                            <i className='fas fa-search'></i>
-                          )}
-                        </button>
-                      </div>
-                      
-                      {availableVideos.length > 0 && (
-                        <div className='border rounded p-3' style={{maxHeight: '300px', overflowY: 'auto'}}>
-                          <h6 className='mb-3'>Available Videos</h6>
-                          {availableVideos.map((video) => (
-                            <div key={video.video_id} className='d-flex align-items-center mb-2 p-2 border rounded'>
-                              <input
-                                type='checkbox'
-                                className='form-check-input me-2'
-                                checked={selectedVideos.includes(video.video_id)}
-                                onChange={() => handleVideoSelection(video.video_id)}
-                              />
-                              <div className='me-3' style={{width: '80px', height: '45px', flexShrink: 0}}>
-                                <img
-                                  src={video.thumbnail || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iNDUiIHZpZXdCb3g9IjAgMCA4MCA0NSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjQ1IiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik00MCAyM0M0MCAyMyA0MCAyMyA0MCAyM0M0MCAyMyA0MCAyMyA0MCAyM1oiIGZpbGw9IiNDQ0NDQ0MiLz4KPHRleHQgeD0iNDAiIHk9IjI1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTAiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
-                                  alt={video.title}
-                                  className='img-fluid rounded'
-                                  style={{width: '100%', height: '100%', objectFit: 'cover'}}
-                                />
-                              </div>
-                              <div className='flex-grow-1'>
-                                <div className='fw-bold small'>{video.title}</div>
-                                <div className='text-muted small'>
-                                  {isTeachingStaff(currentUser?.role?.role_type) && (
-                                    <>
-                                      {video.source === 1 ? 'YouTube' : 'Vimeo'} • 
-                                    </>
-                                  )}
-                                  {video.duration ? formatDuration(video.duration) : 'Unknown duration'}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {selectedVideos.length > 0 && (
-                        <div className='mt-3'>
-                          <h6 className='text-success'>Selected Videos: {selectedVideos.length}</h6>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Student Selection */}
-                  <div className='col-md-6'>
-                    <div className='mb-4'>
-                      <label className='form-label fw-bold'>Select Students</label>
-                      <div style={{position: 'relative', zIndex: 2000}}>
-                        <StudentSelectionTable 
-                          exerciseIds={selectedVideos} // Pass selected video IDs as exercise IDs for compatibility
-                          search="" 
-                          selectedUsers={bulkSelectedStudents}
-                          onUserSelectionChange={handleBulkStudentSelection}
-                        />
-                      </div>
-                    </div>
-
-                    <div className='mb-4'>
-                      <label className='form-label fw-bold'>Due Date (Optional)</label>
-                      <div style={{position: 'relative', zIndex: 1000}}>
-                        <DatePicker
-                          selected={bulkAssignmentDueDate}
-                          onChange={(date: Date | null) => setBulkAssignmentDueDate(date)}
-                          placeholderText="Select due date"
-                          minDate={new Date()}
-                          isClearable={true}
-                          dayClassName={(date) => 
-                            date.getTime() === bulkAssignmentDueDate?.getTime() ? 'bg-primary text-white' : ''
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className='mb-4'>
-                      <label className='form-label fw-bold'>Message for Students (Optional)</label>
-                      <div style={{position: 'relative', zIndex: 1}}>
-                        <TinyMCEEditor
-                          value={bulkAssignmentMessage}
-                          onChange={setBulkAssignmentMessage}
-                          placeholder='Enter a message for your students...'
-                          height={200}
-                        />
-                      </div>
-                      <div className='form-text'>This message will be shown to students when they access the videos</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => {
-                  setShowBulkAssignModal(false)
-                  setBulkSelectedStudents([])
-                  setBulkAssignmentDueDate(null)
-                  setBulkAssignmentMessage('')
-                  setVideoSearchTerm('')
-                  setAvailableVideos([])
-                  setSelectedVideos([])
-                  // Clear modal search timeout when canceling
-                  if (modalSearchTimeoutRef.current) {
-                    clearTimeout(modalSearchTimeoutRef.current)
-                  }
-                }}>
-                  Cancel
-                </button>
-                <button type="button" className="btn btn-primary" onClick={handleBulkAssignVideos} disabled={assigning}>
-                  {assigning ? (
-                    <>
-                      <span className='spinner-border spinner-border-sm me-2' role='status'></span>
-                      Assigning...
-                    </>
-                  ) : (
-                    'Assign Videos'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => {
+              setShowBulkAssignModal(false)
+              setBulkSelectedStudents([])
+              setBulkAssignmentDueDate(null)
+              setBulkAssignmentMessage('')
+              setVideoSearchTerm('')
+              setAvailableVideos([])
+              setSelectedVideos([])
+              // Clear modal search timeout when canceling
+              if (modalSearchTimeoutRef.current) {
+                clearTimeout(modalSearchTimeoutRef.current)
+              }
+            }}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleBulkAssignVideos} disabled={assigning}>
+              {assigning ? (
+                <>
+                  <span className='spinner-border spinner-border-sm me-2' role='status'></span>
+                  Assigning...
+                </>
+              ) : (
+                'Assign Videos'
+              )}
+            </Button>
+          </Modal.Footer>
+        </Modal>
       )}
     </>
   )

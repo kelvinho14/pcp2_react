@@ -396,22 +396,18 @@
     // Status-based styling for list items
     &.status-completed {
       border-left-color: #28a745 !important;
-      .progress-fill { background: #28a745 !important; }
     }
     
     &.status-in_progress {
       border-left-color: #ffc107 !important;
-      .progress-fill { background: #ffc107 !important; }
     }
     
     &.status-not_started {
       border-left-color: #adb5bd !important;
-      .progress-fill { background: #adb5bd !important; }
     }
     
     &.status-overdue {
       border-left-color: #dc3545 !important;
-      .progress-fill { background: #dc3545 !important; }
     }
     
     .list-item-header {

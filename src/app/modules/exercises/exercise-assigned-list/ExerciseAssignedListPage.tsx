@@ -307,7 +307,7 @@ const ExerciseAssignedListPage: FC = () => {
                                   <div className='progress-container flex-grow-1 me-2'>
                                     <div className='progress' style={{ height: '6px' }}>
                                       <div 
-                                        className={`progress-bar bg-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)}`}
+                                        className={`progress-bar bg-${getProgressBarColor(assignment.progress)}`}
                                         style={{ width: `${assignment.progress}%` }}
                                       ></div>
                                     </div>
@@ -456,7 +456,7 @@ const ExerciseAssignedListPage: FC = () => {
                                     <span className='fw-bold fs-7 me-2'>{assignment.progress}%</span>
                                     <div className='progress h-3px' style={{width: 80}}>
                                       <div 
-                                        className={`progress-bar bg-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)}`}
+                                        className={`progress-bar bg-${getProgressBarColor(assignment.progress)}`}
                                         style={{width: `${assignment.progress}%`}}
                                       ></div>
                                     </div>
