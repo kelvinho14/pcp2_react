@@ -343,6 +343,24 @@ const GradingModal: FC<GradingModalProps> = ({
 
   if (!show) return null
 
+  // Helper function to render a DrawingPad
+  const renderDrawingPad = (drawing: Drawing, index: number) => (
+    <DrawingPad
+      width={1000}
+      height={800}
+      questionId={questionId}
+      saveFunction={handleDrawingSave}
+      className="grading-drawing-pad"
+      ref={(el) => {
+        if (el) drawingPadRefs.current[index] = el
+      }}
+      backgroundImageUrl={drawing.drawing_image_url}
+      initialDrawingData={drawing.drawing_data || undefined}
+      title={`Student Drawing ${index + 1}`}
+      description="You can draw on top of the student's work using the tools below"
+    />
+  )
+
   return (
     <Modal
       show={show}
@@ -457,20 +475,7 @@ const GradingModal: FC<GradingModalProps> = ({
                               tabClassName="drawing-tab"
                             >
                               <div className='mt-3'>
-                                <DrawingPad
-                                  width={1600}
-                                  height={1000}
-                                  questionId={questionId}
-                                  saveFunction={handleDrawingSave}
-                                  className="grading-drawing-pad"
-                                  ref={(el) => {
-                                    if (el) drawingPadRefs.current[index] = el
-                                  }}
-                                  backgroundImageUrl={drawing.drawing_image_url}
-                                  initialDrawingData={drawing.drawing_data || undefined}
-                                  title={`Student Drawing ${index + 1}`}
-                                  description="You can draw on top of the student's work using the tools below"
-                                />
+                                {renderDrawingPad(drawing, index)}
                                 {!drawing.drawing_image_url && (
                                   <div className='alert alert-warning mt-2'>
                                     <i className='fas fa-exclamation-triangle me-2'></i>
@@ -487,20 +492,7 @@ const GradingModal: FC<GradingModalProps> = ({
                     {/* Single Drawing (no tabs needed) */}
                     {drawings.length === 1 && (
                       <div>
-                        <DrawingPad
-                          width={1600}
-                          height={2000}
-                          questionId={questionId}
-                          saveFunction={handleDrawingSave}
-                          className="grading-drawing-pad"
-                          ref={(el) => {
-                            if (el) drawingPadRefs.current[0] = el
-                          }}
-                          backgroundImageUrl={drawings[0].drawing_image_url}
-                          initialDrawingData={drawings[0].drawing_data || undefined}
-                          title="Student Drawing"
-                          description="You can draw on top of the student's work using the tools below"
-                        />
+                        {renderDrawingPad(drawings[0], 0)}
                         {!drawings[0].drawing_image_url && (
                           <div className='alert alert-warning mt-2'>
                             <i className='fas fa-exclamation-triangle me-2'></i>
@@ -539,7 +531,7 @@ const GradingModal: FC<GradingModalProps> = ({
                     <div className='icon-wrapper bg-secondary bg-opacity-10 rounded-circle p-2 me-3'>
                       <i className='fas fa-comment text-secondary fs-5'></i>
                     </div>
-                    <h6 className='mb-0 fw-bold text-dark'>Teacher Remark & Answer Status</h6>
+                    <h6 className='mb-0 fw-bold text-dark'>Scores and Feedback</h6>
                   </div>
                 </div>
                 <div className='card-body'>

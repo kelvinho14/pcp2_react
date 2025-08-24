@@ -26,6 +26,16 @@ interface SavedAnswer {
   fill_blanks_answer?: string[]
   answered_at: string
   updated_at: string
+  drawings?: Array<{
+    drawing_id: string
+    drawing_order: number
+    file_id: string
+    is_primary: boolean
+    created_at: string
+    file_url: string
+    drawing_data?: string
+    teacher_grading?: any
+  }>
 }
 
 interface Question {
@@ -380,7 +390,37 @@ const ExerciseAttemptPage: FC = () => {
 
   // Remove a drawing pad
   const removeDrawingPad = (id: string) => {
-    setDrawingPads(prev => prev.filter(pad => pad.id !== id))
+    // Check if it's a manually added drawing pad
+    const isManualPad = drawingPads.find(pad => pad.id === id)
+    
+    if (isManualPad) {
+      // Remove from manually added drawing pads
+      setDrawingPads(prev => prev.filter(pad => pad.id !== id))
+    } else {
+      // Remove from API response drawings by updating the question's saved answer
+      if (currentQuestion?.saved_answer?.drawings) {
+        const updatedDrawings = currentQuestion.saved_answer.drawings.filter(
+          drawing => drawing.drawing_id !== id
+        )
+        
+        // Update the current question's saved answer
+        const updatedQuestions = exercise?.questions.map(q => 
+          q.question_id === currentQuestion.question_id 
+            ? {
+                ...q,
+                saved_answer: {
+                  ...q.saved_answer!,
+                  drawings: updatedDrawings
+                }
+              }
+            : q
+        )
+        
+        if (updatedQuestions) {
+          setExercise(prev => prev ? { ...prev, questions: updatedQuestions } : null)
+        }
+      }
+    }
   }
 
   const getCurrentAnswer = () => {
@@ -664,17 +704,49 @@ const ExerciseAttemptPage: FC = () => {
                       <h6 className='mb-3'>Write your answer:</h6>
                       {isLongQuestion(currentQuestion.type) ? (
                         <div>
-                          {/* Main DrawingPad */}
-                          <DrawingPad
-                            width={800}
-                            height={600}
-                            className="w-100 mb-3"
-                            saveFunction={(questionId, questionType, answerData) => saveAnswerToAPI(questionId, questionType, answerData, 1)}
-                            questionId={currentQuestion.question_id}
-                            initialDrawingData={loadExistingDrawingData(currentQuestion.question_id) || undefined}
-                          />
+                          {/* Display existing drawings from API response */}
+                          {currentQuestion.saved_answer?.drawings && currentQuestion.saved_answer.drawings.length > 0 ? (
+                            <div>
+                              {currentQuestion.saved_answer.drawings.map((drawing, index) => (
+                                <div key={drawing.drawing_id} className="mb-3">
+                                  <div className="d-flex align-items-center mb-2">
+                                    <span className="badge badge-light-success">Page {index + 1}</span>
+                                    {index > 0 && (
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-danger ms-2"
+                                        onClick={() => removeDrawingPad(drawing.drawing_id)}
+                                        title="Remove this drawing page"
+                                      >
+                                        <i className="fas fa-times"></i>
+                                      </button>
+                                    )}
+                                  </div>
+                                  <DrawingPad
+                                    width={800}
+                                    height={600}
+                                    className="w-100"
+                                    saveFunction={(questionId, questionType, answerData) => saveAnswerToAPI(questionId, questionType, answerData, drawing.drawing_order)}
+                                    questionId={currentQuestion.question_id}
+                                    backgroundImageUrl={drawing.file_url}
+                                    initialDrawingData={drawing.drawing_data || undefined}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            /* Main DrawingPad when no existing drawings */
+                            <DrawingPad
+                              width={800}
+                              height={600}
+                              className="w-100 mb-3"
+                              saveFunction={(questionId, questionType, answerData) => saveAnswerToAPI(questionId, questionType, answerData, 1)}
+                              questionId={currentQuestion.question_id}
+                              initialDrawingData={loadExistingDrawingData(currentQuestion.question_id) || undefined}
+                            />
+                          )}
                           
-                          {/* Additional DrawingPads */}
+                          {/* Additional DrawingPads for new drawings */}
                           {drawingPads.map((pad, index) => (
                             <div key={pad.id} className="position-relative mb-3">
                               <DrawingPad

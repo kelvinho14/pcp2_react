@@ -229,7 +229,6 @@
 
 /* Compact card heights for grading modal */
 .grading-modal .card-body {
-  max-height: 300px;
   overflow-y: auto;
 }
 
