@@ -94,6 +94,7 @@ const ExerciseAttemptPage: FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [showTeacherMessage, setShowTeacherMessage] = useState(false)
   const questionContentRef = useRef<HTMLDivElement>(null)
+  const [drawingPads, setDrawingPads] = useState<Array<{id: string, questionId: string}>>([])
 
   // Breadcrumbs for the exercise attempt page
   const exerciseAttemptBreadcrumbs: Array<PageLink> = [
@@ -250,24 +251,65 @@ const ExerciseAttemptPage: FC = () => {
     }
   }
 
-  const saveAnswerToAPI = async (questionId: string, questionType: number, answerData: any) => {
+  const saveAnswerToAPI = async (questionId: string, questionType: number, answerData: any, drawingPadOrder?: number) => {
     if (!assignmentId) return
     
     try {
+      console.log('📤 saveAnswerToAPI called with:', {
+        questionId,
+        questionType,
+        answerDataKeys: Object.keys(answerData),
+        drawingPadOrder,
+        hasPngBlob: !!answerData.drawing_png_blob,
+        hasPngBase64: !!answerData.drawing_png_base64,
+        pngBlobSize: answerData.drawing_png_blob?.size || 0,
+        pngBase64Length: answerData.drawing_png_base64?.length || 0
+      })
+      
       const url = `${import.meta.env.VITE_APP_API_URL}/student-exercises/assignments/${assignmentId}/attempts`
       const headers = getHeadersWithSchoolSubject(url)
       
-      const payload = {
-        question_id: questionId,
-        question_type: questionType,
-        last_seen: new Date().toISOString(),
-        ...answerData
+      // For LQ questions, format the data as drawing_canvases with PNG base64
+      let formattedPayload
+      if (questionType === 1 && answerData.lq_answer) { // LQ question
+        formattedPayload = {
+          question_id: questionId,
+          question_type: questionType,
+          last_seen: new Date().toISOString(),
+          lq_answer: answerData.lq_answer, // Zwibbler3 JSON data
+          drawing_canvases: [
+            {
+              canvas_data: answerData.drawing_png_base64 || "", // Base64 image data
+              drawing_data: answerData.lq_answer || "", // Zwibbler JSON data
+              drawing_order: drawingPadOrder || 1
+            }
+          ]
+        }
+      } else {
+        // For other question types, use the original format
+        formattedPayload = {
+          question_id: questionId,
+          question_type: questionType,
+          last_seen: new Date().toISOString(),
+          ...answerData
+        }
       }
       
-      await axios.post(url, payload, {
+      console.log('📤 Sending payload to API:', {
+        url,
+        payloadKeys: Object.keys(formattedPayload),
+        hasLqAnswer: !!formattedPayload.lq_answer,
+        drawingCanvases: formattedPayload.drawing_canvases,
+        canvasDataLength: formattedPayload.drawing_canvases?.[0]?.canvas_data?.length || 0,
+        drawingOrder: formattedPayload.drawing_canvases?.[0]?.drawing_order
+      })
+      
+      await axios.post(url, formattedPayload, {
         headers,
         withCredentials: true
       })
+      
+      console.log('✅ API call successful')
       
       // Refresh attempt data to update saved_answers_count
       await refreshAttemptData()
@@ -312,33 +354,33 @@ const ExerciseAttemptPage: FC = () => {
     saveAnswerToAPI(currentQuestion.question_id, 0, { mc_answer: optionLetter })
   }
 
+  // Handle LQ answer changes
   const handleLQAnswer = (content: string) => {
     if (!currentQuestion) return
     
-    const newAnswers = [...answers]
-    const answerIndex = newAnswers.findIndex(a => a.question_id === currentQuestion.question_id)
-    
-    if (answerIndex >= 0) {
-      newAnswers[answerIndex] = {
-        ...newAnswers[answerIndex],
-        lq_answer: content
-      }
-    } else {
-      newAnswers.push({
-        question_id: currentQuestion.question_id,
-        type: 'lq',
-        lq_answer: content
-      })
-    }
-    
-    setAnswers(newAnswers)
+    const updatedAnswers = answers.map(answer => 
+      answer.question_id === currentQuestion.question_id 
+        ? { ...answer, lq_answer: content }
+        : answer
+    )
+    setAnswers(updatedAnswers)
     setHasUnsavedChanges(true)
+  }
+
+  // Add a new drawing pad
+  const addDrawingPad = () => {
+    if (!currentQuestion) return
     
-    // Save to API immediately (no timeout)
-    if (currentQuestion.question_id) {
-      // Save regardless of content length - even empty answers should be saved
-      saveAnswerToAPI(currentQuestion.question_id, 1, { lq_answer: content })
+    const newDrawingPad = {
+      id: `drawing-${Date.now()}`,
+      questionId: currentQuestion.question_id
     }
+    setDrawingPads(prev => [...prev, newDrawingPad])
+  }
+
+  // Remove a drawing pad
+  const removeDrawingPad = (id: string) => {
+    setDrawingPads(prev => prev.filter(pad => pad.id !== id))
   }
 
   const getCurrentAnswer = () => {
@@ -572,9 +614,6 @@ const ExerciseAttemptPage: FC = () => {
                   </div>
                 </div>
 
-                {/* Question Text */}
-               
-
                 {/* Answer Section */}
                 <div className='answer-section'>
                   {currentQuestion.type === 'mc' ? (
@@ -624,15 +663,50 @@ const ExerciseAttemptPage: FC = () => {
                     <div className='lq-answer'>
                       <h6 className='mb-3'>Write your answer:</h6>
                       {isLongQuestion(currentQuestion.type) ? (
-                        <DrawingPad
-                          width={800}
-                          height={600}
-                          className="w-100"
-                          filename={`Drawing_${currentQuestion.question_id}.pdf`}
-                          saveFunction={saveAnswerToAPI}
-                          questionId={currentQuestion.question_id}
-                          initialData={loadExistingDrawingData(currentQuestion.question_id)}
-                        />
+                        <div>
+                          {/* Main DrawingPad */}
+                          <DrawingPad
+                            width={800}
+                            height={600}
+                            className="w-100 mb-3"
+                            saveFunction={(questionId, questionType, answerData) => saveAnswerToAPI(questionId, questionType, answerData, 1)}
+                            questionId={currentQuestion.question_id}
+                            initialDrawingData={loadExistingDrawingData(currentQuestion.question_id) || undefined}
+                          />
+                          
+                          {/* Additional DrawingPads */}
+                          {drawingPads.map((pad, index) => (
+                            <div key={pad.id} className="position-relative mb-3">
+                              <DrawingPad
+                                width={800}
+                                height={600}
+                                className="w-100"
+                                saveFunction={(questionId, questionType, answerData) => saveAnswerToAPI(questionId, questionType, answerData, index + 2)}
+                                questionId={pad.questionId}
+                                initialDrawingData={undefined}
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-danger position-absolute"
+                                style={{ top: '10px', right: '10px' }}
+                                onClick={() => removeDrawingPad(pad.id)}
+                                title="Remove this drawing pad"
+                              >
+                                <i className="fas fa-times"></i>
+                              </button>
+                            </div>
+                          ))}
+                          
+                          {/* Add More DrawingPad Button */}
+                          <button
+                            type="button"
+                            className="btn btn-outline-primary"
+                            onClick={addDrawingPad}
+                          >
+                            <i className="fas fa-plus me-2"></i>
+                            Add Another Drawing Pad
+                          </button>
+                        </div>
                       ) : (
                         <TinyMCEEditor
                           value={currentAnswer?.lq_answer || ''}
@@ -704,9 +778,8 @@ const ExerciseAttemptPage: FC = () => {
         onClose={() => setSelectedImage(null)}
         title="Question Image"
       />
-
     </>
   )
 }
 
-export default ExerciseAttemptPage 
+export default ExerciseAttemptPage

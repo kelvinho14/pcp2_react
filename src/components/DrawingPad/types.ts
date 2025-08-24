@@ -6,14 +6,19 @@ declare global {
 }
 
 export interface DrawingPadProps {
-  width?: number
-  height?: number
-  onExport?: (data: any) => void
+  width: number
+  height: number
+  questionId: string
+  saveFunction: (questionId: string, questionType: number, answerData: any) => Promise<void>
   className?: string
-  filename?: string
-  saveFunction?: (questionId: string, questionType: number, answerData: any) => Promise<void>
-  questionId?: string
-  onLoadDrawing?: (jsonData: string) => void
-  onLoadFile?: (file: File) => void
-  initialData?: string | null
+  backgroundImageUrl?: string
+  initialDrawingData?: string // Zwibbler JSON data to load initially
+  title?: string // Optional title to display above the drawing pad
+  description?: string // Optional description text below the title
+}
+
+export interface DrawingPadRef {
+  getZwibblerContext: () => any
+  getDrawingData: () => Promise<any>
+  clearDrawing: () => void
 } 

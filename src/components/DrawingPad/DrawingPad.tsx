@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react'
-import { DrawingPadProps } from './types'
+import React, { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react'
+import { DrawingPadProps, DrawingPadRef } from './types'
 import './DrawingPad.css'
 
 // Add Zwibbler types
@@ -9,16 +9,17 @@ declare global {
   }
 }
 
-const DrawingPad: React.FC<DrawingPadProps> = ({
+const DrawingPad = forwardRef<DrawingPadRef, DrawingPadProps>(({
   width = 800,
-  height = 800, // Increased from 600 to 800 for taller canvas
-  onExport,
-  className = '',
-  filename = 'Drawing.pdf',
-  saveFunction,
+  height = 600,
   questionId,
-  initialData
-}) => {
+  saveFunction,
+  className = '',
+  backgroundImageUrl,
+  initialDrawingData,
+  title,
+  description
+}, ref) => {
   const canvasRef = useRef<HTMLDivElement>(null)
   const [zwibblerCtx, setZwibblerCtx] = useState<any>(null)
   const [zwibblerInstance, setZwibblerInstance] = useState<any>(null)
@@ -30,6 +31,7 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
   const changeCountRef = useRef(0)
   const onDocumentChangedRef = useRef<(() => void) | null>(null)
   const stableCtxRef = useRef<any>(null)
+  const isInitialized = useRef(false)
 
   // Document change handler
   const onDocumentChanged = useCallback(() => {
@@ -66,17 +68,288 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
     }
   }, [zwibblerCtx, zwibblerInstance])
 
+  // Helper function to convert Blob to base64
+  const blobToBase64 = useCallback(async (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result)
+        } else {
+          reject(new Error('Failed to convert blob to base64'))
+        }
+      }
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  }, [])
+
+  // Function to export drawing as PNG Blob for backend upload
+  const exportDrawingAsPNGBlob = useCallback(async (): Promise<Blob | null> => {
+    console.log('🚀 exportDrawingAsPNGBlob function called')
+    
+    // Use the stable context reference that's already available
+    const ctx = stableCtxRef.current || zwibblerInstance?.ctx || zwibblerCtx
+    
+    if (!ctx) {
+      console.log('❌ No Zwibbler context available from any source')
+      console.log('Context sources:', {
+        stableCtxRef: !!stableCtxRef.current,
+        zwibblerInstance: !!zwibblerInstance,
+        zwibblerInstanceCtx: !!zwibblerInstance?.ctx,
+        zwibblerCtx: !!zwibblerCtx
+      })
+      return null
+    }
+    
+    console.log('✅ Zwibbler context found from:', {
+      source: stableCtxRef.current ? 'stableCtxRef' : 
+              zwibblerInstance?.ctx ? 'zwibblerInstance.ctx' : 'zwibblerCtx'
+    })
+    
+    try {
+      console.log('🔄 Starting PNG export process...')
+      
+      // Force a redraw to ensure the canvas contains the latest drawing
+      if (typeof ctx.redraw === 'function') {
+        console.log('🔄 Forcing redraw before PNG export...')
+        ctx.redraw()
+      }
+      
+      // Wait a bit for the redraw to complete
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      console.log('Zwibbler context available:', {
+        hasContext: !!ctx,
+        hasEa: !!ctx.ea,
+        hasView: !!ctx.ea?.view,
+        hasDa: !!ctx.ea?.view?.da,
+        hasTc: !!ctx.tc,
+        contextKeys: Object.keys(ctx || {}),
+        viewKeys: ctx.ea?.view ? Object.keys(ctx.ea.view) : []
+      })
+      
+      // Method 1: Use the correct Zwibbler rendering method (like the print function does)
+      try {
+        console.log('🔍 Method 1: Using Zwibbler view rendering method...')
+        
+        // Get the view from the context
+        if (ctx.ea?.view) {
+          const view = ctx.ea.view
+          console.log('✅ Zwibbler view found:', view)
+          
+          // Get the current page bounds
+          const pageRect = ctx.Zh()
+          console.log('✅ Page bounds:', pageRect)
+          
+          if (pageRect && pageRect.width > 0 && pageRect.height > 0) {
+            // Create a temporary canvas with the page dimensions
+            const tempCanvas = document.createElement('canvas')
+            tempCanvas.width = pageRect.width
+            tempCanvas.height = pageRect.height
+            const tempCtx = tempCanvas.getContext('2d')
+            
+            if (tempCtx) {
+              console.log('✅ Temporary canvas created:', tempCanvas.width, 'x', tempCanvas.height)
+              
+              // Use the same method as the print function: 
+              // 1. First render the background (including background images) using view.kf()
+              // 2. Then render the drawing content using view.aa.la()
+              
+              // Render background (this includes background images, grid, etc.)
+              view.kf(tempCtx, 1, pageRect.x, pageRect.y, pageRect.width, pageRect.height, 1, 0, 0)
+              console.log('✅ Background rendered to temporary canvas')
+              
+              // Render drawing content
+              view.aa.la(tempCtx)
+              console.log('✅ Drawing content rendered to temporary canvas')
+              
+              // Convert to PNG
+              const pngDataUri = tempCanvas.toDataURL('image/png')
+              console.log('✅ PNG data URI created, length:', pngDataUri.length)
+              
+              // Convert data URI to Blob
+              const response = await fetch(pngDataUri)
+              const blob = await response.blob()
+              console.log('✅ PNG Blob created from view rendering, size:', blob.size, 'bytes')
+              return blob
+            }
+          } else {
+            console.log('⚠️ Invalid page bounds:', pageRect)
+          }
+        } else {
+          console.log('❌ Zwibbler view not available')
+        }
+      } catch (viewError) {
+        console.log('❌ Method 1 failed:', viewError)
+      }
+      
+      // Method 2: Try Zwibbler save method as fallback
+      try {
+        console.log('🔍 Method 2: Trying Zwibbler save method...')
+        const pngData = ctx.save('png', {
+          encoding: 'data-uri'
+        })
+        
+        console.log('✅ Zwibbler save result:', pngData, 'Type:', typeof pngData)
+        
+        if (pngData && typeof pngData.then === 'function') {
+          // If it's a Promise, wait for it
+          const result = await pngData
+          console.log('✅ Promise resolved with:', result, 'Type:', typeof result)
+          
+          // Convert data URI to Blob
+          if (typeof result === 'string' && result.startsWith('data:image/png')) {
+            const response = await fetch(result)
+            const blob = await response.blob()
+            console.log('✅ PNG Blob created from Zwibbler save, size:', blob.size, 'bytes')
+            return blob
+          }
+        } else {
+          // If it's already resolved
+          console.log('✅ Direct result:', pngData, 'Type:', typeof pngData)
+          
+          // Convert data URI to Blob
+          if (typeof pngData === 'string' && pngData.startsWith('data:image/png')) {
+            const response = await fetch(pngData)
+            const blob = await response.blob()
+            console.log('✅ PNG Blob created from Zwibbler save (direct), size:', blob.size, 'bytes')
+            return blob
+          }
+        }
+      } catch (zwibblerError) {
+        console.log('❌ Method 2 failed:', zwibblerError)
+      }
+      
+      // Method 3: Try to get the main canvas from the DOM as last resort
+      try {
+        console.log('🔍 Method 3: Trying DOM canvas...')
+        const domCanvas = canvasRef.current?.querySelector('canvas')
+        if (domCanvas) {
+          console.log('✅ DOM canvas found:', domCanvas, 'Dimensions:', domCanvas.width, 'x', domCanvas.height)
+          
+          // Check if the canvas has content
+          const tempCtx = domCanvas.getContext('2d')
+          if (tempCtx) {
+            const imageData = tempCtx.getImageData(0, 0, domCanvas.width, domCanvas.height)
+            const hasContent = imageData.data.some((pixel: number) => pixel !== 0)
+            console.log('DOM canvas content check:', { hasContent, totalPixels: imageData.data.length / 4 })
+            
+            if (hasContent) {
+              const pngDataUri = domCanvas.toDataURL('image/png')
+              console.log('✅ DOM canvas toDataURL successful, length:', pngDataUri.length)
+              
+              // Convert data URI to Blob
+              const response = await fetch(pngDataUri)
+              const blob = await response.blob()
+              console.log('✅ PNG Blob created from DOM canvas, size:', blob.size, 'bytes')
+              return blob
+            } else {
+              console.log('⚠️ DOM canvas also appears to be blank')
+            }
+          }
+        }
+      } catch (domCanvasError) {
+        console.log('❌ Method 3 failed:', domCanvasError)
+      }
+      
+      console.log('❌ All PNG export methods failed')
+      return null
+      
+    } catch (error) {
+      console.error('Error exporting drawing as PNG Blob:', error)
+      return null
+    }
+  }, [zwibblerCtx, zwibblerInstance, stableCtxRef, canvasRef])
+
   // Function to save drawing content to attempts API
   const saveDrawingToAttempts = useCallback(async (drawingContent: string) => {
     try {
       if (saveFunction && questionId) {
+        console.log('🔄 Starting to save drawing with PNG export...')
+        
+        // Try to export drawing as PNG first
+        let pngBlob = null
+        let pngBase64 = null
+        
+        try {
+          console.log('📸 Attempting PNG export...')
+          pngBlob = await exportDrawingAsPNGBlob()
+          if (pngBlob) {
+            console.log('✅ PNG Blob created successfully, size:', pngBlob.size, 'bytes')
+            pngBase64 = await blobToBase64(pngBlob)
+            console.log('✅ PNG Base64 created successfully, length:', pngBase64.length)
+          } else {
+            console.warn('⚠️ PNG export returned null')
+          }
+        } catch (pngError) {
+          console.warn('⚠️ Failed to export PNG, continuing with JSON data only:', pngError)
+          // Continue without PNG data - don't let PNG export failure break the save
+        }
+        
         // Use the passed saveFunction with the actual question ID
-        await saveFunction(questionId, 1, { lq_answer: drawingContent })
+        // Send both the Zwibbler3 JSON data and the PNG image data (if available)
+        const answerData: any = { 
+          lq_answer: drawingContent
+        }
+        
+        // Only add PNG data if we successfully exported it
+        if (pngBlob && pngBase64) {
+          answerData.drawing_png_blob = pngBlob
+          answerData.drawing_png_base64 = pngBase64
+          console.log('📤 PNG data added to answer payload')
+        } else {
+          console.log('📤 No PNG data available, sending JSON only')
+        }
+        
+        console.log('📤 Sending answer data to API:', {
+          hasJson: !!answerData.lq_answer,
+          hasPngBlob: !!answerData.drawing_png_blob,
+          hasPngBase64: !!answerData.drawing_png_base64,
+          jsonLength: answerData.lq_answer?.length || 0,
+          pngSize: pngBlob?.size || 0
+        })
+        
+        await saveFunction(questionId, 1, answerData)
+        console.log('✅ Drawing saved successfully to API')
       }
     } catch (error) {
-      console.error('Error saving drawing to attempts API:', error)
+      console.error('❌ Error saving drawing to attempts API:', error)
     }
-  }, [saveFunction, questionId])
+  }, [saveFunction, questionId, exportDrawingAsPNGBlob, blobToBase64])
+
+  // Function to get PNG data as a File object for FormData uploads
+  const getPNGAsFile = useCallback(async (filename?: string): Promise<File | null> => {
+    const pngBlob = await exportDrawingAsPNGBlob()
+    if (pngBlob) {
+      const defaultFilename = `drawing_${questionId || 'export'}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`
+      return new File([pngBlob], filename || defaultFilename, { type: 'image/png' })
+    }
+    return null
+  }, [exportDrawingAsPNGBlob, questionId])
+
+  // Function to export drawing as PNG (for download)
+  const exportDrawingAsPNG = useCallback(async (): Promise<string | null> => {
+    if (!zwibblerCtx) return null
+    
+    try {
+      // Use Zwibbler's save method to export as PNG
+      const pngData = zwibblerCtx.save('png', {
+        encoding: 'data-uri' // Get as data URI (base64 encoded)
+      })
+      
+      if (pngData && typeof pngData.then === 'function') {
+        // If it's a Promise, wait for it
+        return await pngData
+      } else {
+        // If it's already resolved
+        return pngData
+      }
+    } catch (error) {
+      console.error('Error exporting drawing as PNG:', error)
+      return null
+    }
+  }, [zwibblerCtx])
 
   // Store the callback in a ref to prevent multiple listeners
   useEffect(() => {
@@ -145,8 +418,17 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
 
         // Set up background like in the HTML reference
         ctx.useSinglelineBackground = () => {
-          ctx.setConfig('background', 'image')
-          ctx.setConfig('backgroundImage', 'https://app.myplp.io/chem/theme/assets/singleline_paper_2.jpg')
+          
+          if (backgroundImageUrl) {
+            // Use custom background image if provided
+            
+            ctx.setConfig('background', 'image')
+            ctx.setConfig('backgroundImage', backgroundImageUrl)
+          } else {
+            // Use default singleline paper background
+            ctx.setConfig('background', 'image')
+            ctx.setConfig('backgroundImage', 'https://app.myplp.io/chem/theme/assets/singleline_paper_2.jpg')
+          }
         }
         
         // Call the background function
@@ -205,6 +487,50 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
       console.error('Error initializing Zwibbler:', error)
     }
   }, [])
+
+  // Load initial drawing data if provided
+  useEffect(() => {
+    if (initialDrawingData && zwibblerCtx && !isInitialized.current) {
+      try {
+        console.log('Loading initial drawing data:', initialDrawingData.substring(0, 100) + '...')
+        
+        // Handle different data formats
+        let drawingData
+        if (typeof initialDrawingData === 'string') {
+          try {
+            drawingData = JSON.parse(initialDrawingData)
+          } catch (parseError) {
+            console.log('Data is not valid JSON, treating as raw string')
+            drawingData = initialDrawingData
+          }
+        } else {
+          drawingData = initialDrawingData
+        }
+        
+        // Load the drawing data into Zwibbler
+        if (drawingData && zwibblerCtx.load) {
+          zwibblerCtx.load(drawingData)
+          console.log('✅ Initial drawing data loaded successfully')
+          isInitialized.current = true
+        }
+      } catch (error) {
+        console.error('❌ Error loading initial drawing data:', error)
+      }
+    }
+  }, [initialDrawingData, zwibblerCtx])
+
+  // Set background image when component mounts or backgroundImageUrl changes
+  useEffect(() => {
+    if (zwibblerCtx && typeof zwibblerCtx.setConfig === 'function') {
+      if (backgroundImageUrl) {
+        zwibblerCtx.setConfig('background', 'image')
+        zwibblerCtx.setConfig('backgroundImage', backgroundImageUrl)
+      } else {
+        zwibblerCtx.setConfig('background', 'image')
+        zwibblerCtx.setConfig('backgroundImage', 'https://app.myplp.io/chem/theme/assets/singleline_paper_2.jpg')
+      }
+    }
+  }, [zwibblerCtx, backgroundImageUrl])
 
   // Tool functions
   const usePen = useCallback((width: number, color: string, type: number) => {
@@ -423,9 +749,9 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
   // Download/Export
   const download = useCallback(() => {
     if (zwibblerCtx && typeof zwibblerCtx.download === 'function') {
-      zwibblerCtx.download('pdf', filename)
+      zwibblerCtx.download('pdf', 'Drawing.pdf') // Changed filename to Drawing.pdf
     }
-  }, [zwibblerCtx, filename])
+  }, [zwibblerCtx])
 
   const save = useCallback(() => {
     if (zwibblerCtx && typeof zwibblerCtx.save === 'function') {
@@ -446,12 +772,12 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
   // const sampleData = '{"version":"3.0","pages":[{"id":"page1","width":800,"height":600,"nodes":[]}]}'
   // loadDrawingData(sampleData)
   const loadDrawingData = useCallback((jsonData: string) => {
-    
+    console.log('jsonData', jsonData)
     if (zwibblerCtx && typeof zwibblerCtx.load === 'function') {
       try {
         // Parse the JSON data if it's a string
         const dataToLoad = typeof jsonData === 'string' ? jsonData : JSON.stringify(jsonData)
-        
+        console.log('dataToLoad', dataToLoad)
         // Load the data into Zwibbler
         const success = zwibblerCtx.load(dataToLoad)
         
@@ -497,20 +823,34 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
     reader.readAsText(file)
   }, [loadDrawingData])
 
-  // Load initial data if provided
-  useEffect(() => {
-    if (initialData && zwibblerCtx) {
-      // Add a small delay to ensure Zwibbler is fully initialized
-      const timer = setTimeout(() => {
-        loadDrawingData(initialData)
-      }, 100)
-      
-      return () => clearTimeout(timer)
+  // Expose methods to parent component via ref
+  useImperativeHandle(ref, () => ({
+    getZwibblerContext: () => stableCtxRef.current || zwibblerInstance?.ctx || zwibblerCtx,
+    getDrawingData: () => {
+      const ctx = stableCtxRef.current || zwibblerInstance?.ctx || zwibblerCtx
+      if (ctx && typeof ctx.save === 'function') {
+        return ctx.save('zwibbler3')
+      }
+      return null
+    },
+    clearDrawing: () => {
+      const ctx = stableCtxRef.current || zwibblerInstance?.ctx || zwibblerCtx
+      if (ctx && typeof ctx.newDocument === 'function') {
+        ctx.newDocument()
+      }
     }
-  }, [initialData, zwibblerCtx, loadDrawingData])
+  }), [zwibblerCtx, zwibblerInstance, stableCtxRef])
 
   return (
     <div className={`drawing-pad ${className}`}>
+      {/* Title and Description */}
+      {(title || description) && (
+        <div className="drawing-pad-header mb-3 p-3 bg-light rounded">
+          {title && <h6 className="fw-bold text-dark mb-1">{title}</h6>}
+          {description && <small className="text-muted">{description}</small>}
+        </div>
+      )}
+      
       <div className="drawing-pad-container">
         {/* Toolbar */}
         <div className="drawing-pad-toolbar">
@@ -702,6 +1042,24 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
             >
               <i className="fas fa-download"></i>
             </button>
+            <button 
+              className="tool-button"
+              onClick={async () => {
+                const pngData = await exportDrawingAsPNG()
+                if (pngData) {
+                  // Create a download link for the PNG
+                  const link = document.createElement('a')
+                  link.href = pngData
+                  link.download = `drawing_${questionId || 'export'}.png`
+                  document.body.appendChild(link)
+                  link.click()
+                  document.body.removeChild(link)
+                }
+              }}
+              title="Export as PNG"
+            >
+              <i className="fas fa-image"></i>
+            </button>
           </div>
         </div>
         
@@ -726,6 +1084,6 @@ const DrawingPad: React.FC<DrawingPadProps> = ({
       </div>
     </div>
   )
-}
+})
 
 export default DrawingPad

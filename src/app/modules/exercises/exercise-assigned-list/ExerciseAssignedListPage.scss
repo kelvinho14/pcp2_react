@@ -1,5 +1,19 @@
 // Assigned Exercises List Page Custom Styles
 
+// Submit for Student Button Styles
+.btn-submit-for-student {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
 // Main container fixes
 .row.g-6 {
   margin-left: -0.75rem;
@@ -99,6 +113,8 @@
       .card-icon { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); }
       .card-number { color: #28a745; }
     }
+    
+
     
     &.in-progress {
       .card-icon { background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); }

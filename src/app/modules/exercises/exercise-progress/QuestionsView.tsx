@@ -2,6 +2,7 @@ import React, { FC, useState } from 'react';
 import { renderHtmlSafely } from '../../../../_metronic/helpers/htmlRenderer';
 import { formatApiTimestamp, getUserTimezone } from '../../../../_metronic/helpers/dateUtils';
 import ImageModal from '../../../../components/Modal/ImageModal';
+import { GradingModal } from '../../../../components/Modal';
 import { ASSIGNMENT_STATUS } from '../../../constants/assignmentStatus';
 
 import { Question } from './types';
@@ -29,6 +30,19 @@ const QuestionsView: FC<QuestionsViewProps> = ({
 }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [mcFilter, setMcFilter] = useState<'all' | 'correct' | 'incorrect'>('all');
+  
+  // Grading modal state
+  const [showGradingModal, setShowGradingModal] = useState(false);
+  const [gradingData, setGradingData] = useState<{
+    assignmentId: string;
+    questionId: string;
+    studentId: string;
+    studentName: string;
+    questionType: 'mc' | 'lq';
+    questionContent: string;
+    correctAnswer: string;
+    studentAnswer: string;
+  } | null>(null);
 
   // Check if there are any MC questions in the exercise
   const hasMCQuestions = allQuestions.some(question => question.question_type === 'mc');
@@ -81,6 +95,30 @@ const QuestionsView: FC<QuestionsViewProps> = ({
       }
       return true;
     });
+  };
+
+  // Function to open grading modal
+  const handleOpenGradingModal = (
+    assignmentId: string,
+    questionId: string,
+    studentId: string,
+    studentName: string,
+    questionType: 'mc' | 'lq',
+    questionContent: string,
+    correctAnswer: string,
+    studentAnswer: string
+  ) => {
+    setGradingData({
+      assignmentId,
+      questionId,
+      studentId,
+      studentName,
+      questionType,
+      questionContent,
+      correctAnswer,
+      studentAnswer
+    });
+    setShowGradingModal(true);
   };
 
   // Helper to render tag score badges for MC and LQ
@@ -309,17 +347,23 @@ const QuestionsView: FC<QuestionsViewProps> = ({
                                 )
                               ) : answer.student_answer ? (
                                 // For LQ, show different content based on status
-                                answer.status === ASSIGNMENT_STATUS.SUBMITTED || answer.status === ASSIGNMENT_STATUS.GRADED ? (
+                                answer.status === ASSIGNMENT_STATUS.SUBMITTED || answer.status === ASSIGNMENT_STATUS.GRADED || answer.status === ASSIGNMENT_STATUS.SUBMITTEDBYTEACHER ? (
                                   // Completed - show grade button
                                   <button
                                     type='button'
                                     className='btn btn-sm btn-primary'
-                                    onClick={() => {
-                                      // TODO: Open grading modal
-                                      console.log('Open grading modal for student:', answer.student_id, 'question:', question.question_id);
-                                    }}
+                                    onClick={() => handleOpenGradingModal(
+                                      answer.assignment_id,
+                                      question.question_id,
+                                      answer.student_id,
+                                      answer.student_name,
+                                      question.question_type,
+                                      question.question_content,
+                                      question.correct_answer || '',
+                                      answer.student_answer || ''
+                                    )}
                                   >
-                                    <i className='fas fa-star me-1'></i>
+                                    <i className='fas fa-clipboard-check me-1'></i>
                                     Ready to Grade
                                   </button>
                                 ) : (
@@ -385,6 +429,22 @@ const QuestionsView: FC<QuestionsViewProps> = ({
         onClose={() => setSelectedImage(null)}
         title="Question Image"
       />
+
+      {/* Grading Modal */}
+      {gradingData && (
+        <GradingModal
+          show={showGradingModal}
+          onHide={() => setShowGradingModal(false)}
+          assignmentId={gradingData.assignmentId}
+          questionId={gradingData.questionId}
+          studentId={gradingData.studentId}
+          studentName={gradingData.studentName}
+          questionType={gradingData.questionType}
+          questionContent={gradingData.questionContent}
+          correctAnswer={gradingData.correctAnswer}
+          studentAnswer={gradingData.studentAnswer}
+        />
+      )}
     </div>
   );
 };

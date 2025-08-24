@@ -416,6 +416,26 @@ export const fetchExerciseProgress = createAsyncThunk(
   }
 )
 
+export const submitExerciseByTeacher = createAsyncThunk(
+  'exercises/submitExerciseByTeacher',
+  async (assignmentId: string, { rejectWithValue }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/${assignmentId}/submit-by-teacher`)
+      
+      const response = await axios.post(`${API_URL}/exercises/${assignmentId}/submit-by-teacher`, {}, {
+        headers,
+        withCredentials: true
+      })
+      
+      return response.data
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to submit exercise by teacher'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 // Initial state
 interface ExercisesState {
   exercises: Exercise[]
@@ -615,6 +635,18 @@ const exercisesSlice = createSlice({
       .addCase(fetchExerciseProgress.rejected, (state, action) => {
         state.fetchingExerciseProgress = false
         state.error = action.error.message || 'Failed to fetch exercise progress'
+      })
+      // Submit exercise by teacher
+      .addCase(submitExerciseByTeacher.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(submitExerciseByTeacher.fulfilled, (state) => {
+        state.loading = false
+      })
+      .addCase(submitExerciseByTeacher.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message || 'Failed to submit exercise by teacher'
       })
   },
 })

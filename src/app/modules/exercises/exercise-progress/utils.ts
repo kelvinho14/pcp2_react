@@ -4,7 +4,7 @@ import { ASSIGNMENT_STATUS } from '../../../constants/assignmentStatus'
 export const calculateExerciseSummary = (students: StudentProgress[]): ExerciseSummary => {
   return {
     totalStudents: students.length,
-    completed: students.filter(s => s.status === ASSIGNMENT_STATUS.SUBMITTED || s.status === ASSIGNMENT_STATUS.GRADED).length,
+    completed: students.filter(s => s.status === ASSIGNMENT_STATUS.SUBMITTED || s.status === ASSIGNMENT_STATUS.GRADED || s.status === ASSIGNMENT_STATUS.SUBMITTEDBYTEACHER).length,
     inProgress: students.filter(s => s.status === ASSIGNMENT_STATUS.IN_PROGRESS).length,
     notStarted: students.filter(s => s.status === ASSIGNMENT_STATUS.ASSIGNED).length
   }
@@ -27,6 +27,7 @@ export const getStudentAnswersForQuestion = (
     return {
       student_id: student.student_id,
       student_name: student.student_name,
+      assignment_id: student.assignment_id,
       status: questionProgress?.status || ASSIGNMENT_STATUS.ASSIGNED,
       score: questionProgress?.score,
       student_answer: questionProgress?.student_answer,
@@ -65,7 +66,7 @@ export const getPaginationInfo = (currentPage: number, itemsPerPage: number, tot
 }
 
 export const getCompletedQuestionsCount = (questionProgress: any[]): number => {
-  return questionProgress.filter(q => q.status === 2 || q.status === 3).length
+  return questionProgress.filter(q => q.status === ASSIGNMENT_STATUS.SUBMITTED || q.status === ASSIGNMENT_STATUS.GRADED).length
 }
 
 export const getTotalQuestionsCount = (questionProgress: any[]): number => {
@@ -77,11 +78,11 @@ export const calculateOverallStatus = (questionProgress: any[]): number => {
   const completedQuestions = getCompletedQuestionsCount(questionProgress)
   
   if (completedQuestions === 0) {
-    return 0 // ASSIGNED
+    return ASSIGNMENT_STATUS.ASSIGNED
   } else if (completedQuestions === totalQuestions) {
-    return 2 // SUBMITTED (all questions completed)
+    return ASSIGNMENT_STATUS.SUBMITTED // (all questions completed)
   } else {
-    return 1 // IN_PROGRESS (some questions completed)
+    return ASSIGNMENT_STATUS.IN_PROGRESS // (some questions completed)
   }
 } 
 

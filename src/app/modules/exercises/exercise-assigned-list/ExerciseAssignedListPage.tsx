@@ -4,15 +4,67 @@ import {PageTitle} from '../../../../_metronic/layout/core'
 import {useIntl} from 'react-intl'
 import {AppDispatch, RootState} from '../../../../store'
 import {fetchAssignedExercises, setPage, setFilters, setLoadingFilters, clearCache} from '../../../../store/exercises/assignedExercisesSlice'
+import {submitExerciseByTeacher} from '../../../../store/exercises/exercisesSlice'
 import AssignedExercisesFilters from './components/AssignedExercisesFilters'
 import {ASSIGNMENT_STATUS, getStatusLabel, getStatusColor, AssignmentStatus} from '../../../constants/assignmentStatus'
 import {useNavigate} from 'react-router-dom'
+import {toast} from '../../../../_metronic/helpers/toast'
+import {ConfirmationDialog} from '../../../../_metronic/helpers/ConfirmationDialog'
 import './ExerciseAssignedListPage.scss'
 
 // Completely isolated filters component that doesn't re-render with parent
 const IsolatedFilters = memo(() => {
   return <AssignedExercisesFilters />
 })
+
+// Reusable Submit for Student Button component
+const SubmitForStudentButton: FC<{
+  assignmentId: string
+  studentName: string
+  onSubmit: (assignmentId: string, studentName: string) => Promise<void>
+  className?: string
+}> = ({ assignmentId, studentName, onSubmit, className = '' }) => {
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleConfirm = async () => {
+    setIsSubmitting(true)
+    try {
+      await onSubmit(assignmentId, studentName)
+      setShowConfirmation(false)
+    } catch (error) {
+      // Error is already handled by the parent component
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <>
+              <button
+          className={`btn btn-icon btn-sm btn-light-primary btn-submit-for-student ${className}`}
+          onClick={() => setShowConfirmation(true)}
+          title={`Submit exercise for ${studentName}`}
+          style={{ width: '32px', height: '32px' }}
+        >
+          <i className='fas fa-check text-primary'></i>
+        </button>
+      
+      <ConfirmationDialog
+        show={showConfirmation}
+        onHide={() => setShowConfirmation(false)}
+        onConfirm={handleConfirm}
+        title={`Submit Exercise for ${studentName}`}
+        message={`Are you sure you want to submit the exercise for ${studentName}? This action cannot be undone.`}
+        confirmText="Submit"
+        cancelText="Cancel"
+        variant="danger"
+        loading={isSubmitting}
+        loadingText="Submitting..."
+      />
+    </>
+  )
+}
 
 // Custom tooltip component
 const Tooltip: FC<{message: string, children: React.ReactNode}> = ({message, children}) => {
@@ -91,6 +143,19 @@ const ExerciseAssignedListPage: FC = () => {
     return 'secondary'
   }
 
+  // Handle submitting exercise for a student
+  const handleSubmitForStudent = async (assignmentId: string, studentName: string) => {
+    try {
+      await dispatch(submitExerciseByTeacher(assignmentId)).unwrap()
+      toast.success(`Exercise submitted successfully for ${studentName}`, 'Success')
+      // Refresh the data to show updated status
+      dispatch(fetchAssignedExercises(filters))
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to submit exercise for student'
+      toast.error(errorMessage, 'Error')
+    }
+  }
+
   // Rename local status helpers for exercises
   const getExerciseStatusColor = (status: string) => {
     switch (status) {
@@ -128,6 +193,15 @@ const ExerciseAssignedListPage: FC = () => {
     navigate(`/exercises/edit/${exerciseId}`)
   }, [navigate])
 
+  // Helper function to check if a status filter is active
+  const isStatusFilterActive = useCallback((statusToCheck: string) => {
+    if (!filters.status) return false
+    if (Array.isArray(filters.status)) {
+      return filters.status.includes(statusToCheck)
+    }
+    return filters.status === statusToCheck
+  }, [filters.status])
+
   const handleStatusFilter = useCallback((status: string) => {
     // Set loading state for filters
     dispatch(setLoadingFilters(true))
@@ -135,8 +209,20 @@ const ExerciseAssignedListPage: FC = () => {
     // Clear cache to force fresh API call
     dispatch(clearCache())
     
-    // Update filters with status (status is already the correct ASSIGNMENT_STATUS value)
-    dispatch(setFilters({ ...filtersRef.current, status }))
+    let statusToSend: string | string[]
+    
+    // Special case: when "Submitted" is selected, include both SUBMITTED and SUBMITTEDBYTEACHER
+    if (status === ASSIGNMENT_STATUS.SUBMITTED.toString()) {
+      statusToSend = [
+        ASSIGNMENT_STATUS.SUBMITTED.toString(),
+        ASSIGNMENT_STATUS.SUBMITTEDBYTEACHER.toString()
+      ]
+    } else {
+      statusToSend = status
+    }
+    
+    // Update filters with status
+    dispatch(setFilters({ ...filtersRef.current, status: statusToSend }))
   }, [dispatch])
 
   // Optimized debounced fetch function
@@ -294,9 +380,20 @@ const ExerciseAssignedListPage: FC = () => {
                                     <span className={`badge badge-light-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)} fs-7 me-2`}>
                                       {getStatusLabel(parseInt(assignment.status, 10) as AssignmentStatus)}
                                     </span>
+                                    {(parseInt(assignment.status, 10) === ASSIGNMENT_STATUS.ASSIGNED || 
+                                      parseInt(assignment.status, 10) === ASSIGNMENT_STATUS.IN_PROGRESS || 
+                                      parseInt(assignment.status, 10) === ASSIGNMENT_STATUS.OVERDUE) && 
+                                      parseInt(assignment.status, 10) !== ASSIGNMENT_STATUS.SUBMITTEDBYTEACHER && (
+                                      <SubmitForStudentButton
+                                        assignmentId={assignment.assignment_id}
+                                        studentName={assignment.student.name}
+                                        onSubmit={handleSubmitForStudent}
+                                        className="ms-2"
+                                      />
+                                    )}
                                     {assignment.message_for_student && (
                                       <i 
-                                        className='fas fa-comment text-muted cursor-pointer' 
+                                        className='fas fa-comment text-muted cursor-pointer ms-2' 
                                         title={assignment.message_for_student}
                                         style={{ cursor: 'pointer' }}
                                       ></i>
@@ -337,7 +434,7 @@ const ExerciseAssignedListPage: FC = () => {
         </div>
       )
     })
-  }, [exercises, collapsedCards, toggleCardCollapse, handleExerciseClick])
+  }, [exercises, collapsedCards, toggleCardCollapse, handleExerciseClick, handleSubmitForStudent])
 
   // Memoized exercise list rows for list view
   const exerciseListRows = useMemo(() => {
@@ -468,6 +565,17 @@ const ExerciseAssignedListPage: FC = () => {
                                   <span className={`badge badge-light-${getStatusColor(parseInt(assignment.status, 10) as AssignmentStatus)}`}>
                                     {getStatusLabel(parseInt(assignment.status, 10) as AssignmentStatus)}
                                   </span>
+                                  {(parseInt(assignment.status, 10) === ASSIGNMENT_STATUS.ASSIGNED || 
+                                    parseInt(assignment.status, 10) === ASSIGNMENT_STATUS.IN_PROGRESS || 
+                                    parseInt(assignment.status, 10) === ASSIGNMENT_STATUS.OVERDUE) && 
+                                    parseInt(assignment.status, 10) !== ASSIGNMENT_STATUS.SUBMITTEDBYTEACHER && (
+                                    <SubmitForStudentButton
+                                      assignmentId={assignment.assignment_id}
+                                      studentName={assignment.student.name}
+                                      onSubmit={handleSubmitForStudent}
+                                      className="ms-2"
+                                    />
+                                  )}
                                   {assignment.message_for_student && (
                                     <Tooltip message={assignment.message_for_student}>
                                       <i className='fas fa-comment text-muted ms-2'></i>
@@ -488,7 +596,7 @@ const ExerciseAssignedListPage: FC = () => {
         })}
       </div>
     )
-  }, [exercises, collapsedCards, toggleCardCollapse, handleExerciseClick])
+  }, [exercises, collapsedCards, toggleCardCollapse, handleExerciseClick, handleSubmitForStudent])
 
   // Show full-page loading only for initial load or errors
   if (isInitialLoad && loading) {
@@ -611,7 +719,7 @@ const ExerciseAssignedListPage: FC = () => {
           </div>
           <div>
             <div 
-              className={`progress-card completed ${filters.status === ASSIGNMENT_STATUS.SUBMITTED.toString() ? 'active' : ''}`}
+              className={`progress-card completed ${isStatusFilterActive(ASSIGNMENT_STATUS.SUBMITTED.toString()) ? 'active' : ''}`}
               onClick={() => handleStatusFilter(ASSIGNMENT_STATUS.SUBMITTED.toString())}
               style={{ cursor: 'pointer' }}
             >
@@ -620,20 +728,21 @@ const ExerciseAssignedListPage: FC = () => {
                   <i className='fas fa-check-circle text-white fs-2'></i>
                 </div>
                 <div className='card-content'>
-                  <div className='card-number'>{summary.completed}</div>
+                  <div className='card-number'>{(summary.submitted || 0) + (summary.submitted_by_teacher || 0)}</div>
                   <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.SUBMITTED)}</div>
                 </div>
               </div>
-              {filters.status === ASSIGNMENT_STATUS.SUBMITTED.toString() && (
+              {isStatusFilterActive(ASSIGNMENT_STATUS.SUBMITTED.toString()) && (
                 <div className='active-indicator'>
                   <i className='fas fa-check-circle text-white'></i>
                 </div>
               )}
             </div>
           </div>
+
           <div>
             <div 
-              className={`progress-card in-progress ${filters.status === ASSIGNMENT_STATUS.IN_PROGRESS.toString() ? 'active' : ''}`}
+              className={`progress-card in-progress ${isStatusFilterActive(ASSIGNMENT_STATUS.IN_PROGRESS.toString()) ? 'active' : ''}`}
               onClick={() => handleStatusFilter(ASSIGNMENT_STATUS.IN_PROGRESS.toString())}
               style={{ cursor: 'pointer' }}
             >
@@ -646,7 +755,7 @@ const ExerciseAssignedListPage: FC = () => {
                   <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.IN_PROGRESS)}</div>
                 </div>
               </div>
-              {filters.status === ASSIGNMENT_STATUS.IN_PROGRESS.toString() && (
+              {isStatusFilterActive(ASSIGNMENT_STATUS.IN_PROGRESS.toString()) && (
                 <div className='active-indicator'>
                   <i className='fas fa-check-circle text-white'></i>
                 </div>
@@ -655,7 +764,7 @@ const ExerciseAssignedListPage: FC = () => {
           </div>
           <div>
             <div 
-              className={`progress-card overdue ${filters.status === ASSIGNMENT_STATUS.OVERDUE.toString() ? 'active' : ''}`}
+              className={`progress-card overdue ${isStatusFilterActive(ASSIGNMENT_STATUS.OVERDUE.toString()) ? 'active' : ''}`}
               onClick={() => handleStatusFilter(ASSIGNMENT_STATUS.OVERDUE.toString())}
               style={{ cursor: 'pointer' }}
             >
@@ -668,7 +777,7 @@ const ExerciseAssignedListPage: FC = () => {
                   <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.OVERDUE)}</div>
                 </div>
               </div>
-              {filters.status === ASSIGNMENT_STATUS.OVERDUE.toString() && (
+              {isStatusFilterActive(ASSIGNMENT_STATUS.OVERDUE.toString()) && (
                 <div className='active-indicator'>
                   <i className='fas fa-check-circle text-white'></i>
                 </div>
@@ -677,7 +786,7 @@ const ExerciseAssignedListPage: FC = () => {
           </div>
           <div>
             <div 
-              className={`progress-card not-started ${filters.status === ASSIGNMENT_STATUS.ASSIGNED.toString() ? 'active' : ''}`}
+              className={`progress-card not-started ${isStatusFilterActive(ASSIGNMENT_STATUS.ASSIGNED.toString()) ? 'active' : ''}`}
               onClick={() => handleStatusFilter(ASSIGNMENT_STATUS.ASSIGNED.toString())}
               style={{ cursor: 'pointer' }}
             >
@@ -686,11 +795,11 @@ const ExerciseAssignedListPage: FC = () => {
                   <i className='fas fa-hourglass-start text-white fs-2'></i>
                 </div>
                 <div className='card-content'>
-                  <div className='card-number'>{typeof summary.not_started !== 'undefined' ? summary.not_started : summary.total - summary.completed - summary.in_progress - summary.overdue}</div>
+                  <div className='card-number'>{typeof summary.not_started !== 'undefined' ? summary.not_started : summary.total - ((summary.submitted || 0) + (summary.submitted_by_teacher || 0)) - summary.in_progress - summary.overdue}</div>
                   <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.ASSIGNED)}</div>
                 </div>
               </div>
-              {filters.status === ASSIGNMENT_STATUS.ASSIGNED.toString() && (
+              {isStatusFilterActive(ASSIGNMENT_STATUS.ASSIGNED.toString()) && (
                 <div className='active-indicator'>
                   <i className='fas fa-check-circle text-white'></i>
                 </div>

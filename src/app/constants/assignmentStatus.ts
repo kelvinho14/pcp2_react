@@ -4,6 +4,7 @@ export const ASSIGNMENT_STATUS = {
   SUBMITTED: 2,
   GRADED: 3,
   OVERDUE: 4,
+  SUBMITTEDBYTEACHER: 5,
 } as const
 
 export type AssignmentStatus = typeof ASSIGNMENT_STATUS[keyof typeof ASSIGNMENT_STATUS]
@@ -16,11 +17,13 @@ export const getStatusLabel = (status: AssignmentStatus): string => {
     case ASSIGNMENT_STATUS.IN_PROGRESS:
       return 'In Progress'
     case ASSIGNMENT_STATUS.SUBMITTED:
-      return 'Completed'
+      return 'Submitted'
     case ASSIGNMENT_STATUS.GRADED:
       return 'Graded'
     case ASSIGNMENT_STATUS.OVERDUE:
       return 'Overdue'
+    case ASSIGNMENT_STATUS.SUBMITTEDBYTEACHER:
+      return 'Teacher Submitted'
     default:
       return 'Unknown'
   }
@@ -39,6 +42,8 @@ export const getStatusColor = (status: AssignmentStatus): string => {
       return 'primary'
     case ASSIGNMENT_STATUS.OVERDUE:
       return 'danger'
+    case ASSIGNMENT_STATUS.SUBMITTEDBYTEACHER:
+      return 'info'
     default:
       return 'secondary'
   }
@@ -57,6 +62,8 @@ export const getStatusHexColor = (status: AssignmentStatus): string => {
       return '#3699ff' // Blue
     case ASSIGNMENT_STATUS.OVERDUE:
       return '#dc3545' // Red
+    case ASSIGNMENT_STATUS.SUBMITTEDBYTEACHER:
+      return '#17a2b8' // Info blue
     default:
       return '#6c757d' // Grey
   }
@@ -75,6 +82,8 @@ export const getStatusBackgroundColor = (status: AssignmentStatus): string => {
       return 'rgba(54, 153, 255, 0.1)' // Blue with opacity
     case ASSIGNMENT_STATUS.OVERDUE:
       return 'rgba(220, 53, 69, 0.1)' // Red with opacity
+    case ASSIGNMENT_STATUS.SUBMITTEDBYTEACHER:
+      return 'rgba(23, 162, 184, 0.1)' // Info blue with opacity
     default:
       return 'rgba(108, 117, 125, 0.1)' // Grey with opacity
   }
@@ -93,6 +102,8 @@ export const getStatusIcon = (status: AssignmentStatus): string => {
       return 'fas fa-star'
     case ASSIGNMENT_STATUS.OVERDUE:
       return 'fas fa-exclamation-triangle'
+    case ASSIGNMENT_STATUS.SUBMITTEDBYTEACHER:
+      return 'fas fa-user-tie'
     default:
       return 'fas fa-question-circle'
   }
