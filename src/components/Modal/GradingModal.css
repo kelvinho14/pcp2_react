@@ -1,0 +1,568 @@
+.grading-modal .modal-dialog {
+  max-width: 90vw;
+}
+
+.grading-modal .modal-body {
+  max-height: 98vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* Ensure proper spacing for drawing content */
+.grading-modal .modal-body .row {
+  height: auto;
+  min-height: unset;
+}
+
+.grading-modal .modal-body .col-md-6:last-child {
+  height: auto;
+  min-height: unset;
+}
+
+.grading-modal .card {
+  border: 1px solid #e1e3ea;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  margin-bottom: 1.5rem;
+  border-radius: 0.5rem;
+}
+
+.grading-modal .card-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 1px solid #e9ecef;
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.grading-modal .icon-wrapper {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.grading-modal .modal-header {
+  padding: 0.5rem 1.5rem;
+}
+
+.grading-modal .card-header h6 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.grading-modal .card-body {
+  padding: 1.5rem;
+}
+
+.grading-modal .form-control {
+  border: 1px solid #d1d3e0;
+  border-radius: 0.375rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.grading-modal .form-control:focus {
+  border-color: #3699ff;
+  box-shadow: 0 0 0 0.2rem rgba(54, 153, 255, 0.25);
+}
+
+.grading-modal .form-control-sm {
+  height: 38px;
+  font-size: 0.875rem;
+}
+
+.grading-modal .badge {
+  font-size: 0.75rem;
+  padding: 0.5em 0.75em;
+  border-radius: 0.375rem;
+}
+
+.grading-modal .indicator .indicator-progress {
+  display: flex;
+  align-items: center;
+}
+
+.grading-modal .spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+.grading-modal .form-text {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-top: 0.25rem;
+}
+
+/* Grading Drawing Pad Styles */
+.grading-drawing-pad {
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.grading-drawing-pad .drawing-pad-container {
+  background: #fff;
+}
+
+.grading-drawing-pad .drawing-pad-toolbar {
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  padding: 0.5rem;
+}
+
+.grading-drawing-pad .tool-button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+  background: #fff;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0.25rem;
+}
+
+.grading-drawing-pad .tool-button:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.grading-drawing-pad .tool-button.active {
+  background: #007bff;
+  border-color: #007bff;
+  color: #fff;
+}
+
+/* Drawing Tabs Styles */
+.grading-modal .drawing-tabs {
+  border-bottom: 2px solid #e9ecef;
+}
+
+.grading-modal .drawing-tabs .nav-tabs {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.grading-modal .drawing-tabs .nav-link {
+  border: none;
+  border-radius: 0.375rem 0.375rem 0 0;
+  color: #6c757d;
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  margin-right: 0.25rem;
+  background: #f8f9fa;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.grading-modal .drawing-tabs .nav-link:hover {
+  color: #495057;
+  background: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.grading-modal .drawing-tabs .nav-link.active {
+  color: #3699ff;
+  background: #fff;
+  border-color: #3699ff;
+  border-bottom-color: #fff;
+  font-weight: 600;
+}
+
+.grading-modal .drawing-tabs .tab-content {
+  padding: 1rem 0;
+  background: #fff;
+  border: 1px solid #e9ecef;
+  border-top: none;
+  border-radius: 0 0 0.375rem 0.375rem;
+}
+
+.grading-modal .drawing-tabs .tab-pane {
+  padding: 1rem;
+}
+
+/* Specific drawing tab styles */
+.grading-modal .drawing-tab {
+  transition: all 0.2s ease;
+}
+
+.grading-modal .drawing-tab.active {
+  background-color: #3699ff !important;
+  color: #fff !important;
+  border-color: #3699ff !important;
+}
+
+.grading-modal .drawing-tab:hover {
+  background-color: #e9ecef !important;
+  border-color: #adb5bd !important;
+}
+
+/* Drawing Info Display */
+.grading-modal .drawing-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.grading-modal .drawing-info .drawing-counter {
+  font-size: 0.875rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.grading-modal .drawing-info .drawing-order {
+  font-size: 0.875rem;
+  color: #495057;
+  background: #e9ecef;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+/* Compact card heights for grading modal */
+.grading-modal .card-body {
+  overflow-y: auto;
+}
+
+.grading-modal .card-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.grading-modal .card-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.grading-modal .card-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.grading-modal .card-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Ensure modal backdrop has consistent appearance with other modals */
+.grading-modal + .modal-backdrop {
+  background-color: #000 !important;
+  opacity: 0.5 !important;
+}
+
+.grading-modal + .modal-backdrop.show {
+  background-color: #000 !important;
+  opacity: 0.5 !important;
+}
+
+/* Override any global dark backdrop styles */
+.modal-backdrop.show {
+  opacity: 0.5 !important;
+}
+
+/* Responsive adjustments for drawing tabs */
+@media (max-width: 768px) {
+  .grading-modal .drawing-tabs .nav-link {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .grading-modal .drawing-tabs .tab-content {
+    padding: 0.5rem 0;
+  }
+  
+  .grading-modal .drawing-tabs .tab-pane {
+    padding: 0.5rem;
+  }
+}
+
+/* Drawing pad container adjustments for multiple drawings */
+.grading-modal .drawing-pad-container {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.grading-modal .drawing-pad-container canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Specific styles for the drawings card to ensure proper height */
+.grading-modal .card:has(.drawing-tabs),
+.grading-modal .card:has(.grading-drawing-pad) {
+  height: auto;
+  min-height: unset;
+}
+
+.grading-modal .drawing-tabs .tab-pane {
+  height: auto;
+  min-height: unset;
+}
+
+.grading-modal .grading-drawing-pad {
+  width: 100%;
+  height: auto;
+  min-height: unset;
+}
+
+/* Ensure the drawing pad itself has adequate space */
+.grading-modal .grading-drawing-pad .drawing-pad-container {
+  height: auto;
+  overflow: visible;
+  min-height: unset;
+  max-height: unset;
+}
+
+/* Make the drawing pad container scrollable if content is larger */
+.grading-modal .grading-drawing-pad .drawing-pad-container {
+  overflow: visible;
+}
+
+/* Improve drawing pad scrolling and centering */
+.grading-modal .grading-drawing-pad .drawing-pad-container {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.grading-modal .grading-drawing-pad .drawing-pad-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.grading-modal .grading-drawing-pad .drawing-pad-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.grading-modal .grading-drawing-pad .drawing-pad-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.grading-modal .grading-drawing-pad .drawing-pad-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Ensure drawing pad content is properly sized */
+.grading-modal .grading-drawing-pad canvas,
+.grading-modal .grading-drawing-pad .zwibbler-container {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Status indicator styles */
+.grading-modal .status-indicator {
+  display: inline-block;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #dee2e6;
+}
+
+/* Form check improvements */
+.grading-modal .form-check {
+  margin-bottom: 0.5rem;
+}
+
+.grading-modal .form-check-input:checked {
+  background-color: #3699ff;
+  border-color: #3699ff;
+}
+
+.grading-modal .form-check-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Tag-based Grading Form Controls */
+.grading-modal .tag-grading-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.grading-modal .tag-grading-form .form-group {
+  flex: 1;
+  min-width: 200px;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.grading-modal .tag-grading-form .form-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  display: block;
+  line-height: 1.2;
+}
+
+.grading-modal .tag-grading-form .form-control {
+  height: 38px;
+  font-size: 0.875rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d3e0;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.grading-modal .tag-grading-form .form-control:focus {
+  border-color: #3699ff;
+  box-shadow: 0 0 0 0.2rem rgba(54, 153, 255, 0.25);
+}
+
+.grading-modal .tag-grading-form .form-control::-webkit-outer-spin-button,
+.grading-modal .tag-grading-form .form-control::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.grading-modal .tag-grading-form .form-control[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Responsive adjustments for tag grading */
+@media (max-width: 768px) {
+  .grading-modal .tag-grading-form {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .grading-modal .tag-grading-form .form-group {
+    min-width: 100%;
+    flex: none;
+  }
+  
+  .grading-modal .tag-grading-form .form-control {
+    height: 42px;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .grading-modal .tag-grading-form .form-control {
+    height: 44px;
+    font-size: 1rem;
+  }
+}
+
+/* Exception for drawings card - allow full height */
+.grading-modal .card-body .tag-grading-form {
+  padding: 0;
+}
+
+/* Exception for drawings card - allow full height */
+.grading-modal .card:has(.drawing-tabs) .card-body,
+.grading-modal .card:has(.grading-drawing-pad) .card-body {
+  max-height: none;
+  overflow-y: visible;
+}
+
+/* Ensure consistent spacing in the tag grading card */
+.grading-modal .tag-grading-form .form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Improve the visual hierarchy */
+.grading-modal .tag-grading-form .form-label .text-muted {
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+
+/* Specific styling for tag grading within the Teacher Remark card */
+.grading-modal .card-body .tag-grading-form {
+  border-top: 1px solid #e9ecef;
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.grading-modal .card-body .tag-grading-form:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+/* Responsive adjustments for drawing pads */
+@media (max-width: 1200px) {
+  .grading-modal .grading-drawing-pad {
+    height: auto;
+    min-height: unset;
+  }
+  
+  .grading-modal .drawing-tabs .tab-pane {
+    height: auto;
+    min-height: unset;
+  }
+  
+  .grading-modal .grading-drawing-pad .drawing-pad-container {
+    height: auto;
+    min-height: unset;
+    max-height: unset;
+  }
+}
+
+@media (max-width: 992px) {
+  .grading-modal .modal-body .row {
+    height: auto;
+    min-height: unset;
+  }
+  
+  .grading-modal .modal-body .col-md-6:last-child {
+    height: auto;
+    min-height: unset;
+  }
+  
+  .grading-modal .grading-drawing-pad {
+    height: auto;
+    min-height: unset;
+  }
+  
+  .grading-modal .drawing-tabs .tab-pane {
+    height: auto;
+    min-height: unset;
+  }
+  
+  .grading-modal .grading-drawing-pad .drawing-pad-container {
+    height: auto;
+    min-height: unset;
+    max-height: unset;
+  }
+}
+
+@media (max-width: 768px) {
+  .grading-modal .modal-body .row {
+    height: auto;
+    min-height: unset;
+  }
+  
+  .grading-modal .modal-body .col-md-6:last-child {
+    height: auto;
+    min-height: unset;
+  }
+  
+  .grading-modal .grading-drawing-pad {
+    height: auto;
+    min-height: unset;
+  }
+  
+  .grading-modal .drawing-tabs .tab-pane {
+    height: auto;
+    min-height: unset;
+  }
+  
+  .grading-modal .grading-drawing-pad .drawing-pad-container {
+    height: auto;
+    min-height: unset;
+    max-height: unset;
+  }
+} 

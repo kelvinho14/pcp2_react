@@ -58,7 +58,7 @@ const TestPage: FC = () => {
                 <h6 className='alert-heading mb-1'>Interactive Drawing Tool</h6>
                 <p className='mb-0'>
                   Use the toolbar to draw, erase, and create artwork. Features include multiple drawing tools, 
-                  color palette, line width selection, and export functionality (PDF, PNG, JPG).
+                  color palette, line width selection, and drawing persistence.
                 </p>
               </div>
             </div>
@@ -66,10 +66,13 @@ const TestPage: FC = () => {
           <DrawingPad
             width={canvasSize.width}
             height={canvasSize.height}
-            onExport={(format: 'pdf' | 'png' | 'jpg') => {
-              console.log(`Exporting drawing as ${format}`)
+            questionId="test-question"
+            saveFunction={async (questionId: string, questionType: number, answerData: any) => {
+              console.log('Saving drawing:', { questionId, questionType, answerData })
             }}
             className="test-drawing-pad"
+            title="Test Drawing Pad"
+            description="This is a test drawing pad for development purposes"
           />
         </div>
       </div>

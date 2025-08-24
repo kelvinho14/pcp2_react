@@ -32,6 +32,13 @@ const StudentsView: FC<StudentsViewProps> = ({
   setSelectedStudent,
   hasStudentChange,
 }) => {
+  // Get progress bar color based on percentage (not status)
+  const getProgressBarColor = (progress: number) => {
+    if (progress === 0) return 'secondary'
+    if (progress >= 50) return 'success'
+    if (progress >= 30) return 'warning'
+    return 'secondary'
+  }
   return (
     <div className='table-responsive'>
       <table className='table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3'>
@@ -80,7 +87,7 @@ const StudentsView: FC<StudentsViewProps> = ({
                 <div className='d-flex align-items-center'>
                   <div className='progress h-6px w-100 me-3'>
                     <div 
-                      className={`progress-bar bg-${getStatusColor(getOverallStatus(student) as any)}`}
+                      className={`progress-bar bg-${getProgressBarColor(getProgressPercentage(student))}`}
                       style={{width: `${getProgressPercentage(student)}%`}}
                     ></div>
                   </div>

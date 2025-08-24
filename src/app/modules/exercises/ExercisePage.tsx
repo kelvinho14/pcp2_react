@@ -3,6 +3,7 @@ import {Navigate, Route, Routes} from 'react-router-dom'
 import TopBarProgress from 'react-topbar-progress-indicator'
 import {getCSSVariableValue} from '../../../_metronic/assets/ts/_utils'
 import {WithChildren} from '../../../_metronic/helpers'
+import StudentRouteGuard from './StudentRouteGuard'
 
 const ExerciseFormPage = lazy(() => import('./ExerciseFormPage'))
 const ExerciseListPage = lazy(() => import('./exercise-list/ExerciseListPage'))
@@ -35,9 +36,11 @@ const ExercisePage: FC = () => {
         </SuspensedView>
       } />
       <Route path='dashboard' element={
-        <SuspensedView>
-          <ExerciseDashboardPage />
-        </SuspensedView>
+        <StudentRouteGuard>
+          <SuspensedView>
+            <ExerciseDashboardPage />
+          </SuspensedView>
+        </StudentRouteGuard>
       } />
       <Route path='attempt/:assignmentId' element={
         <SuspensedView>

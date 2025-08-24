@@ -31,7 +31,7 @@ const ExerciseSummary: React.FC<ExerciseSummaryProps> = ({ summary }) => {
               </div>
               <div className='card-content'>
                 <div className='card-number'>{summary.completed}</div>
-                <div className='card-label'>{getStatusLabel(ASSIGNMENT_STATUS.SUBMITTED)}</div>
+                <div className='card-label'>Completed</div>
               </div>
             </div>
           </div>

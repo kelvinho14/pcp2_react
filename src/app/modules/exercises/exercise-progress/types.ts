@@ -51,6 +51,7 @@ export interface Question {
 export interface StudentAnswer {
   student_id: string
   student_name: string
+  assignment_id: string
   status: number
   score?: number
   student_answer?: string

@@ -37,6 +37,7 @@ export interface AssignedExercise {
     in_progress: number
     not_started: number
     overdue: number
+    submitted_by_teacher: number
   }
   assignments: Assignment[]
   created_at: string
@@ -50,7 +51,7 @@ export interface AssignedExercisesFilters {
   assigned_to?: string
   student_ids?: string
   search?: string
-  status?: string
+  status?: string | string[] // Support both single status and array of statuses
   order_by?: 'due_date' | 'assigned_date' | 'title' | 'progress'
   order?: 'asc' | 'desc'
 }
@@ -64,6 +65,8 @@ export interface AssignedExercisesResponse {
       in_progress: number
       not_started: number
       overdue: number
+      submitted: number
+      submitted_by_teacher: number
     }
     exercises: AssignedExercise[]
     pagination: {
@@ -83,6 +86,8 @@ interface AssignedExercisesState {
     in_progress: number
     not_started: number
     overdue: number
+    submitted: number
+    submitted_by_teacher: number
   }
   pagination: {
     current_page: number
@@ -111,7 +116,9 @@ const initialState: AssignedExercisesState = {
     completed: 0,
     in_progress: 0,
     not_started: 0,
-    overdue: 0
+    overdue: 0,
+    submitted: 0,
+    submitted_by_teacher: 0
   },
   pagination: {
     current_page: 1,
@@ -174,7 +181,12 @@ export const fetchAssignedExercises = createAsyncThunk(
       // Add filter parameters
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
-          params.append(key, value.toString())
+          if (key === 'status' && Array.isArray(value)) {
+            // Handle multiple statuses by joining them with commas
+            params.append(key, value.join(','))
+          } else {
+            params.append(key, value.toString())
+          }
         }
       })
       

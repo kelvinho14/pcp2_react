@@ -270,3 +270,22 @@
 .react-select__menu-portal {
   z-index: 9999 !important;
 } 
+
+/* Video Modal Sizing */
+.video-modal-lg {
+  max-width: 1200px !important;
+}
+
+/* Ensure modals have proper widths */
+.modal-lg {
+  max-width: 800px !important;
+}
+
+.modal-xl {
+  max-width: 1140px !important;
+}
+
+/* Custom modal backdrop to match the original style */
+.modal-backdrop.show {
+  opacity: 0.5 !important;
+} 
