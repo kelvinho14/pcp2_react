@@ -355,7 +355,6 @@ const GradingModal: FC<GradingModalProps> = ({
         if (el) drawingPadRefs.current[index] = el
       }}
       backgroundImageUrl={drawing.drawing_image_url}
-      initialDrawingData={drawing.drawing_data || undefined}
       title={`Student Drawing ${index + 1}`}
       description="You can draw on top of the student's work using the tools below"
     />
