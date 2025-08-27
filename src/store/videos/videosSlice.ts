@@ -421,33 +421,50 @@ export const extractVideoId = (url: string): { platform: 'youtube' | 'vimeo'; vi
 // Assign videos to students
 export const assignVideosToStudents = createAsyncThunk(
   'videos/assignVideosToStudents',
-  async ({ videoIds, studentIds, dueDate, messageForStudent }: { 
+  async ({ videoIds, studentIds, groupIds, dueDate, messageForStudent }: { 
     videoIds: string[]
     studentIds: string[]
+    groupIds?: string[]
     dueDate?: string
     messageForStudent?: string
   }) => {
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/videos/assign`)
-      const response = await axios.post(`${API_URL}/videos/assign`, {
+      
+      // Prepare the payload with both student_ids and group_ids
+      const payload: any = {
         video_ids: videoIds, // Always an array
-        student_ids: studentIds,
         due_date: dueDate,
         message_for_student: messageForStudent
-      }, { 
+      }
+      
+      // Only include student_ids if students are selected
+      if (studentIds && studentIds.length > 0) {
+        payload.student_ids = studentIds
+      }
+      
+      // Only include group_ids if groups are selected
+      if (groupIds && groupIds.length > 0) {
+        payload.group_ids = groupIds
+      }
+      
+      const response = await axios.post(`${API_URL}/videos/assign`, payload, { 
         headers,
         withCredentials: true 
       })
       
       if (response.data.status === 'success') {
-        toast.success('Videos assigned to students successfully!', 'Success')
+        const message = groupIds && groupIds.length > 0 
+          ? 'Videos assigned to students and groups successfully!' 
+          : 'Videos assigned to students successfully!'
+        toast.success(message, 'Success')
       } else {
-        toast.error('Failed to assign videos to students. Please try again.', 'Error')
+        toast.error('Failed to assign videos. Please try again.', 'Error')
       }
       
       return response.data
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to assign videos to students'
+      const errorMessage = error.response?.data?.message || 'Failed to assign videos'
       toast.error(errorMessage, 'Error')
       throw new Error(errorMessage)
     }

@@ -339,8 +339,9 @@ export const fetchExerciseStudents = createAsyncThunk(
 
 export const assignExercisesToStudents = createAsyncThunk(
   'exercises/assignExercisesToStudents',
-  async ({ studentIds, exercises }: { 
+  async ({ studentIds, groupIds, exercises }: { 
     studentIds: string[]
+    groupIds?: string[]
     exercises: Array<{
       exercise_id: string
       due_date?: string
@@ -349,23 +350,39 @@ export const assignExercisesToStudents = createAsyncThunk(
   }) => {
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/student-exercises/assignments`)
-      const response = await axios.post(`${API_URL}/student-exercises/assignments`, {
-        student_ids: studentIds,
+      
+      // Prepare the payload with both student_ids and group_ids
+      const payload: any = {
         exercises: exercises
-      }, { 
+      }
+      
+      // Only include student_ids if students are selected
+      if (studentIds && studentIds.length > 0) {
+        payload.student_ids = studentIds
+      }
+      
+      // Only include group_ids if groups are selected
+      if (groupIds && groupIds.length > 0) {
+        payload.group_ids = groupIds
+      }
+      
+      const response = await axios.post(`${API_URL}/student-exercises/assignments`, payload, { 
         headers,
         withCredentials: true 
       })
       
       if (response.data.status === 'success') {
-        toast.success('Exercises assigned to students successfully!', 'Success')
+        const message = groupIds && groupIds.length > 0 
+          ? 'Exercises assigned to students and groups successfully!' 
+          : 'Exercises assigned to students successfully!'
+        toast.success(message, 'Success')
       } else {
-        toast.error('Failed to assign exercises to students. Please try again.', 'Error')
+        toast.error('Failed to assign exercises. Please try again.', 'Error')
       }
       
       return response.data
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to assign exercises to students'
+      const errorMessage = error.response?.data?.message || 'Failed to assign exercises'
       toast.error(errorMessage, 'Error')
       throw new Error(errorMessage)
     }

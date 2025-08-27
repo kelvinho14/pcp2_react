@@ -73,7 +73,6 @@ const VideoDetailPage: FC = () => {
       }
     }
     
-    console.log('User is teaching staff, returning "Private"')
     // For teachers, show private for private videos
     return {
       text: 'Private',
