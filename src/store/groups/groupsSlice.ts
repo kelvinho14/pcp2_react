@@ -13,6 +13,7 @@ interface Group {
     name: string
     email: string
   }>
+  member_count?: number
   created_at: string
   updated_at: string
 }

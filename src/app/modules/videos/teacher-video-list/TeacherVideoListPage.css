@@ -271,6 +271,32 @@
   z-index: 9999 !important;
 } 
 
+/* Fix z-index for groups and students dropdowns in assignment modal */
+.bulk-assign-modal .react-select__menu {
+  z-index: 9999 !important;
+}
+
+.bulk-assign-modal .react-select__menu-portal {
+  z-index: 9999 !important;
+} 
+
+/* Ensure groups dropdown has higher z-index than students dropdown */
+.bulk-assign-modal .groups-select .react-select__menu {
+  z-index: 10000 !important;
+}
+
+.bulk-assign-modal .groups-select .react-select__menu-portal {
+  z-index: 10000 !important;
+}
+
+.bulk-assign-modal .students-select .react-select__menu {
+  z-index: 9999 !important;
+}
+
+.bulk-assign-modal .students-select .react-select__menu-portal {
+  z-index: 9999 !important;
+}
+
 /* Video Modal Sizing */
 .video-modal-lg {
   max-width: 1200px !important;
