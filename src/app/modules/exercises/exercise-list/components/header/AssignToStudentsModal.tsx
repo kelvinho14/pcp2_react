@@ -3,8 +3,10 @@ import {useDispatch, useSelector} from 'react-redux'
 import {DatePicker} from '../../../../../../_metronic/helpers/components/DatePicker'
 import {AppDispatch, RootState} from '../../../../../../store'
 import {assignExercisesToStudents, Exercise} from '../../../../../../store/exercises/exercisesSlice'
+import {fetchGroups} from '../../../../../../store/groups/groupsSlice'
 import {toast} from '../../../../../../_metronic/helpers/toast'
 import {StudentSelectionTable} from './StudentSelectionTable'
+import Select from 'react-select'
 
 type Props = {
   show: boolean
@@ -15,6 +17,7 @@ type Props = {
 const AssignToStudentsModal: FC<Props> = ({show, onHide, exerciseIds}) => {
   const dispatch = useDispatch<AppDispatch>()
   const [selectedStudents, setSelectedStudents] = useState<string[]>([])
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([])
   const [dueDate, setDueDate] = useState<Date | null>(null)
   const [messageToStudent, setMessageToStudent] = useState<string>('')
   const isAssigning = useSelector((state: RootState) => state.exercises.assigning)
@@ -23,11 +26,21 @@ const AssignToStudentsModal: FC<Props> = ({show, onHide, exerciseIds}) => {
   const exercises = useSelector((state: RootState) => state.exercises.exercises)
   const selectedExercises = exercises.filter((exercise: Exercise) => exerciseIds.includes(exercise.exercise_id))
   
+  // Get groups data
+  const { groups, loading: groupsLoading } = useSelector((state: RootState) => state.groups)
+  
   // Check if any selected exercises have no questions
   const exercisesWithoutQuestions = selectedExercises.filter((exercise: Exercise) => exercise.question_count === 0)
   const hasExercisesWithoutQuestions = exercisesWithoutQuestions.length > 0
 
   console.log('🔍 AssignToStudentsModal - show:', show, 'exerciseIds:', exerciseIds)
+
+  // Fetch groups when modal opens
+  useEffect(() => {
+    if (show) {
+      dispatch(fetchGroups({ page: 1, items_per_page: 1000 }))
+    }
+  }, [show, dispatch])
 
   const handleStudentToggle = (studentId: string) => {
     setSelectedStudents(prev => 
@@ -37,9 +50,14 @@ const AssignToStudentsModal: FC<Props> = ({show, onHide, exerciseIds}) => {
     )
   }
 
+  const handleGroupChange = (selectedOptions: any) => {
+    const groupIds = selectedOptions ? selectedOptions.map((option: any) => option.value) : []
+    setSelectedGroups(groupIds)
+  }
+
   const handleSubmit = async () => {
-    if (selectedStudents.length === 0) {
-      toast.warning('Please select at least one student', 'Warning')
+    if (selectedStudents.length === 0 && selectedGroups.length === 0) {
+      toast.warning('Please select at least one group or student', 'Warning')
       return
     }
 
@@ -58,16 +76,18 @@ const AssignToStudentsModal: FC<Props> = ({show, onHide, exerciseIds}) => {
         message_for_student: messageToStudent.trim() || undefined,
       }))
 
-      console.log('Assigning exercises:', exercisesData, 'to students:', selectedStudents, 'due date:', dueDate)
+      console.log('Assigning exercises:', exercisesData, 'to students:', selectedStudents, 'to groups:', selectedGroups, 'due date:', dueDate)
       console.log(dueDate);
       
       await dispatch(assignExercisesToStudents({
         studentIds: selectedStudents,
+        groupIds: selectedGroups,
         exercises: exercisesData
       })).unwrap()
       
       onHide()
       setSelectedStudents([])
+      setSelectedGroups([])
       setDueDate(null)
       setMessageToStudent('')
     } catch (error) {
@@ -78,6 +98,7 @@ const AssignToStudentsModal: FC<Props> = ({show, onHide, exerciseIds}) => {
 
   const handleClose = () => {
     setSelectedStudents([])
+    setSelectedGroups([])
     setDueDate(null)
     setMessageToStudent('')
     onHide()
@@ -100,7 +121,7 @@ const AssignToStudentsModal: FC<Props> = ({show, onHide, exerciseIds}) => {
             <div className="modal-body">
               <div className='mb-4'>
                 <h6>Selected Exercises: {exerciseIds.length}</h6>
-                <p className='text-muted'>Choose students to assign these exercises to:</p>
+                <p className='text-muted'>Choose at least one group or student to assign these exercises to:</p>
                 
                 {/* Warning for exercises without questions */}
                 {hasExercisesWithoutQuestions && (
@@ -114,6 +135,43 @@ const AssignToStudentsModal: FC<Props> = ({show, onHide, exerciseIds}) => {
                     </ul>
                   </div>
                 )}
+              </div>
+
+              {/* User Groups Selection */}
+              <div className='mb-4'>
+                <label className='form-label fw-bold'>Select Groups</label>
+                <div className="mb-3">
+                  <Select
+                    options={groups.map((group) => ({
+                      value: group.group_id,
+                      label: `${group.name} (${group.member_count || 0} students)`,
+                      data: group,
+                      isDisabled: !group.member_count || group.member_count === 0
+                    }))}
+                    isMulti
+                    onChange={handleGroupChange}
+                    placeholder="Select groups..."
+                    isLoading={groupsLoading}
+                    isClearable
+                    isSearchable
+                    isDisabled={isAssigning}
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    noOptionsMessage={() => {
+                      if (groupsLoading) {
+                        return "Loading groups..."
+                      }
+                      if (groups.length === 0) {
+                        return "No groups available"
+                      }
+                      return "No groups found"
+                    }}
+                  />
+                </div>
+                <div className='form-text text-muted'>
+                  <i className='fas fa-info-circle me-1'></i>
+                  Selecting groups will assign exercises to all students in those groups. Groups with 0 students are disabled.
+                </div>
               </div>
 
               <div className='mb-4'>
@@ -167,9 +225,9 @@ const AssignToStudentsModal: FC<Props> = ({show, onHide, exerciseIds}) => {
                 type="button" 
                 className="btn btn-primary"
                 onClick={handleSubmit}
-                disabled={isAssigning || selectedStudents.length === 0 || hasExercisesWithoutQuestions}
+                disabled={isAssigning || (selectedStudents.length === 0 && selectedGroups.length === 0) || hasExercisesWithoutQuestions}
               >
-                {isAssigning ? 'Assigning...' : `Assign to ${selectedStudents.length} Student(s)`}
+                {isAssigning ? 'Assigning...' : `Assign to ${selectedStudents.length + selectedGroups.length} Selection(s)`}
               </button>
             </div>
           </div>

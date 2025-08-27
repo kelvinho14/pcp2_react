@@ -30,6 +30,7 @@ import {
   fetchVideoTags,
 } from '../../../../store/videos/videosSlice'
 import {fetchTags} from '../../../../store/tags/tagsSlice'
+import {fetchGroups} from '../../../../store/groups/groupsSlice'
 import VideoTagInput, {VideoTagData} from '../../../../components/Video/VideoTagInput'
 import {toast} from '../../../../_metronic/helpers/toast'
 import {KTIcon} from '../../../../_metronic/helpers'
@@ -69,6 +70,7 @@ const TeacherVideoListPage: FC = () => {
   } = useSelector((state: RootState) => state.videos)
   
   const {tags} = useSelector((state: RootState) => state.tags)
+  const {groups, loading: groupsLoading} = useSelector((state: RootState) => state.groups)
 
   // State for pagination and filtering
   const [currentPage, setCurrentPage] = useState(1)
@@ -121,6 +123,7 @@ const TeacherVideoListPage: FC = () => {
   // State for bulk video assignment
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false)
   const [bulkSelectedStudents, setBulkSelectedStudents] = useState<string[]>([])
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([])
   const [bulkAssignmentDueDate, setBulkAssignmentDueDate] = useState<Date | null>(null)
   const [bulkAssignmentMessage, setBulkAssignmentMessage] = useState<string>('')
   const [videoSearchTerm, setVideoSearchTerm] = useState('')
@@ -147,6 +150,29 @@ const TeacherVideoListPage: FC = () => {
     dispatch(fetchTags())
     dispatch(fetchVideoTags())
   }, [dispatch])
+
+  // Effect to handle debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  // Effect to fetch groups when bulk assignment modal opens
+  useEffect(() => {
+    if (showBulkAssignModal) {
+      dispatch(fetchGroups({ page: 1, items_per_page: 1000 }))
+    }
+  }, [showBulkAssignModal, dispatch])
+
+  // Effect to fetch groups when single assignment modal opens
+  useEffect(() => {
+    if (showAssignModal) {
+      dispatch(fetchGroups({ page: 1, items_per_page: 1000 }))
+    }
+  }, [showAssignModal, dispatch])
 
   // Clear messages when component unmounts
   useEffect(() => {
@@ -454,11 +480,12 @@ const TeacherVideoListPage: FC = () => {
   }
 
   // Shared function for assigning videos
-  const assignVideos = async (videoIds: string[], studentIds: string[], dueDate: Date | null, message: string) => {
+  const assignVideos = async (videoIds: string[], studentIds: string[], groupIds: string[], dueDate: Date | null, message: string) => {
     try {
       await dispatch(assignVideosToStudents({
         videoIds,
         studentIds,
+        groupIds,
         dueDate: dueDate ? new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate(), 23, 59, 59).toISOString() : undefined,
         messageForStudent: message.trim() || undefined,
       })).unwrap()
@@ -473,8 +500,8 @@ const TeacherVideoListPage: FC = () => {
 
   // Handle single video assignment
   const handleAssignVideo = async () => {
-    if (selectedStudents.length === 0) {
-      toast.warning('Please select at least one student', 'Warning')
+    if (selectedStudents.length === 0 && selectedGroups.length === 0) {
+      toast.warning('Please select at least one student or group', 'Warning')
       return
     }
 
@@ -483,6 +510,7 @@ const TeacherVideoListPage: FC = () => {
     const success = await assignVideos(
       [videoToAssign.video_id],
       selectedStudents,
+      selectedGroups,
       assignmentDueDate,
       assignmentMessage
     )
@@ -524,6 +552,15 @@ const TeacherVideoListPage: FC = () => {
         ? prev.filter(id => id !== studentId)
         : [...prev, studentId]
     )
+  }
+
+  const handleGroupSelection = (selectedOptions: any) => {
+    if (!selectedOptions) {
+      setSelectedGroups([])
+      return
+    }
+    const selected = selectedOptions.map((option: any) => option.value)
+    setSelectedGroups(selected)
   }
 
   // Handle video selection for bulk assign
@@ -589,19 +626,20 @@ const TeacherVideoListPage: FC = () => {
 
   // Handle bulk video assignment
   const handleBulkAssignVideos = async () => {
-    if (bulkSelectedStudents.length === 0) {
-      toast.warning('Please select at least one student', 'Warning')
+    if (selectedVideos.length === 0) {
+      toast.error('Please select at least one video', 'Error')
       return
     }
 
-    if (selectedVideos.length === 0) {
-      toast.warning('Please select at least one video', 'Warning')
+    if (bulkSelectedStudents.length === 0 && selectedGroups.length === 0) {
+      toast.error('Please select at least one student or group', 'Error')
       return
     }
 
     const success = await assignVideos(
       selectedVideos,
       bulkSelectedStudents,
+      selectedGroups,
       bulkAssignmentDueDate,
       bulkAssignmentMessage
     )
@@ -609,6 +647,7 @@ const TeacherVideoListPage: FC = () => {
     if (success) {
       setShowBulkAssignModal(false)
       setBulkSelectedStudents([])
+      setSelectedGroups([])
       setBulkAssignmentDueDate(null)
       setBulkAssignmentMessage('')
       setVideoSearchTerm('')
@@ -691,22 +730,14 @@ const TeacherVideoListPage: FC = () => {
 
   // Get privacy label for video (different for teachers vs students)
   const getPrivacyLabel = (video: Video) => {
-    console.log('TeacherVideoListPage getPrivacyLabel called with video:', {
-      video_id: video.video_id,
-      status: video.status,
-      user_role: currentUser?.role?.role_type,
-      isTeachingStaff: isTeachingStaff(currentUser?.role?.role_type)
-    })
     
     // For public videos, show no label regardless of user role
     if (video.status === 2) {
-      console.log('Video is public, returning null')
       return null
     }
     
     // If user is a student, show "Assigned to You" for private videos
     if (!isTeachingStaff(currentUser?.role?.role_type)) {
-      console.log('User is a student, private video - returning "Assigned to You"')
       return {
         text: 'Assigned to You',
         icon: 'fas fa-user-check',
@@ -714,7 +745,6 @@ const TeacherVideoListPage: FC = () => {
       }
     }
     
-    console.log('User is teaching staff, returning "Private"')
     // For teachers, show private for private videos
     return {
       text: 'Private',
@@ -1726,7 +1756,47 @@ const TeacherVideoListPage: FC = () => {
           <Modal.Body>
             <div className='mb-4'>
               <h6>Selected Video: {videoToAssign.title}</h6>
-              <p className='text-muted'>Choose students to assign this video to:</p>
+              <p className='text-muted'>Choose students or groups to assign this video to:</p>
+            </div>
+
+            {/* Group Selection */}
+            <div className='mb-4'>
+              <label className='form-label fw-bold'>Select Groups</label>
+              <div style={{position: 'relative', zIndex: 3000}} className="groups-select">
+                <Select
+                  options={(groups || []).map((group) => ({
+                    value: group.group_id,
+                    label: `${group.name} (${group.member_count || 0} students)`,
+                    data: group,
+                    isDisabled: !group.member_count || group.member_count === 0
+                  }))}
+                  isMulti
+                  onChange={handleGroupSelection}
+                  placeholder="Select groups..."
+                  isLoading={groupsLoading}
+                  isClearable
+                  isSearchable
+                  isDisabled={assigning}
+                  value={(groups || [])
+                    .filter(group => selectedGroups.includes(group.group_id))
+                    .map(group => ({
+                      value: group.group_id,
+                      label: `${group.name} (${group.member_count || 0} students)`,
+                      data: group
+                    }))}
+                />
+              </div>
+              {selectedGroups.length > 0 && (
+                <div className="mt-2">
+                  <small className="text-muted">
+                    {selectedGroups.length} group(s) selected
+                  </small>
+                </div>
+              )}
+              <div className="form-text text-muted mt-2">
+                <i className="fas fa-info-circle me-1"></i>
+                Selecting groups will assign videos to all students in those groups. Groups with 0 students are disabled.
+              </div>
             </div>
 
             <div className='mb-4'>
@@ -1775,6 +1845,7 @@ const TeacherVideoListPage: FC = () => {
               setShowAssignModal(false)
               setVideoToAssign(null)
               setSelectedStudents([])
+              setSelectedGroups([])
               setAssignmentDueDate(null)
               setAssignmentMessage('')
             }}>
@@ -1787,7 +1858,7 @@ const TeacherVideoListPage: FC = () => {
                   Assigning...
                 </>
               ) : (
-                'Assign Video'
+                `Assign Video to ${selectedStudents.length + selectedGroups.length} Selection(s)`
               )}
             </Button>
           </Modal.Footer>
@@ -1796,7 +1867,7 @@ const TeacherVideoListPage: FC = () => {
 
       {/* Bulk Video Assignment Modal */}
       {showBulkAssignModal && (
-        <Modal 
+        <Modal
           show={showBulkAssignModal} 
           onHide={() => {
             setShowBulkAssignModal(false)
@@ -1807,6 +1878,7 @@ const TeacherVideoListPage: FC = () => {
           }}
           size="xl"
           centered
+          className="bulk-assign-modal"
         >
           <Modal.Header closeButton>
             <Modal.Title>Assign Videos to Students</Modal.Title>
@@ -1885,8 +1957,47 @@ const TeacherVideoListPage: FC = () => {
               {/* Student Selection */}
               <div className='col-md-6'>
                 <div className='mb-4'>
+                  <label className='form-label fw-bold'>Select Groups</label>
+                  <div style={{position: 'relative', zIndex: 3000}} className="groups-select">
+                    <Select
+                      options={(groups || []).map((group) => ({
+                        value: group.group_id,
+                        label: `${group.name} (${group.member_count || 0} students)`,
+                        data: group,
+                        isDisabled: !group.member_count || group.member_count === 0
+                      }))}
+                      isMulti
+                      onChange={handleGroupSelection}
+                      placeholder="Select groups..."
+                      isLoading={groupsLoading}
+                      isClearable
+                      isSearchable
+                      isDisabled={assigning}
+                      value={(groups || [])
+                        .filter(group => selectedGroups.includes(group.group_id))
+                        .map(group => ({
+                          value: group.group_id,
+                          label: `${group.name} (${group.member_count || 0} students)`,
+                          data: group
+                        }))}
+                    />
+                  </div>
+                  {selectedGroups.length > 0 && (
+                    <div className="mt-2">
+                      <small className="text-muted">
+                        {selectedGroups.length} group(s) selected
+                      </small>
+                    </div>
+                  )}
+                  <div className="form-text text-muted mt-2">
+                    <i className="fas fa-info-circle me-1"></i>
+                    Selecting groups will assign videos to all students in those groups. Groups with 0 students are disabled.
+                  </div>
+                </div>
+
+                <div className='mb-4'>
                   <label className='form-label fw-bold'>Select Students</label>
-                  <div style={{position: 'relative', zIndex: 2000}}>
+                  <div style={{position: 'relative', zIndex: 2000}} className="students-select">
                     <StudentSelectionTable 
                       exerciseIds={selectedVideos} // Pass selected video IDs as exercise IDs for compatibility
                       search="" 
@@ -1931,6 +2042,7 @@ const TeacherVideoListPage: FC = () => {
             <Button variant="secondary" onClick={() => {
               setShowBulkAssignModal(false)
               setBulkSelectedStudents([])
+              setSelectedGroups([])
               setBulkAssignmentDueDate(null)
               setBulkAssignmentMessage('')
               setVideoSearchTerm('')
@@ -1950,7 +2062,7 @@ const TeacherVideoListPage: FC = () => {
                   Assigning...
                 </>
               ) : (
-                'Assign Videos'
+                `Assign Videos to ${bulkSelectedStudents.length + selectedGroups.length} Selection(s)`
               )}
             </Button>
           </Modal.Footer>

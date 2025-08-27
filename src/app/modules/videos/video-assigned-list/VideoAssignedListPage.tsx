@@ -111,7 +111,7 @@ const AssignedVideosFilters: FC<AssignedVideosFiltersProps> = ({ onClearFilters,
   // Helper function to format date with timezone for API (following app pattern)
   const formatDateForAPI = (date: Date | null, isEndOfDay: boolean = false): string => {
     if (!date) return ''
-    // Use same pattern as AssignVideoModal and AssignToStudentsModal
+    // Use same pattern as AssignToStudentsModal
     const hours = isEndOfDay ? 23 : 0
     const minutes = isEndOfDay ? 59 : 0  
     const seconds = isEndOfDay ? 59 : 0
