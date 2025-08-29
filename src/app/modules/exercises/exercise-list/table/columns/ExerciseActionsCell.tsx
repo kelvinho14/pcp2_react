@@ -26,10 +26,6 @@ const ExerciseActionsCell: FC<Props> = ({id}) => {
     navigate(`/exercises/edit/${id}`)
   }
 
-  const openProgressModal = () => {
-    navigate(`/exercises/progress/${id}`)
-  }
-
   const handleDelete = async () => {
     if (!id) return
     setIsDeleting(true)
@@ -52,15 +48,16 @@ const ExerciseActionsCell: FC<Props> = ({id}) => {
 
   return (
     <>
-      <a
-        href='#'
-        className='btn btn-light btn-active-light-primary btn-sm'
-        data-kt-menu-trigger='click'
-        data-kt-menu-placement='bottom-end'
-      >
-        Actions
-        <KTIcon iconName='down' className='fs-5 m-0' />
-      </a>
+      <div className='text-end'>
+        <a
+          href='#'
+          className='btn btn-light btn-active-light-primary btn-sm'
+          data-kt-menu-trigger='click'
+          data-kt-menu-placement='bottom-end'
+        >
+          <i className='fas fa-cog'></i>
+        </a>
+      </div>
       {/* begin::Menu */}
       <div
         className='menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-bold fs-7 w-125px py-4'
@@ -70,14 +67,6 @@ const ExerciseActionsCell: FC<Props> = ({id}) => {
         <div className='menu-item px-3'>
           <a className='menu-link px-3' onClick={openEditModal}>
             Edit
-          </a>
-        </div>
-        {/* end::Menu item */}
-
-        {/* begin::Menu item */}
-        <div className='menu-item px-3'>
-          <a className='menu-link px-3' onClick={openProgressModal}>
-            View Progress
           </a>
         </div>
         {/* end::Menu item */}

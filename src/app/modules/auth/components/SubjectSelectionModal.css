@@ -4,10 +4,6 @@
   backdrop-filter: blur(5px);
 }
 
-.modal-backdrop.show {
-  opacity: 1 !important;
-}
-
 /* Ensure modal is on top of everything */
 .modal {
   z-index: 9999 !important;
@@ -24,11 +20,6 @@ body.modal-open {
   width: 100% !important;
 }
 
-/* Additional backdrop styling */
-.modal-backdrop.show {
-  background-color: #000 !important;
-  opacity: 0.95 !important;
-} 
 
 /* Subject item hover effects */
 .subject-item {

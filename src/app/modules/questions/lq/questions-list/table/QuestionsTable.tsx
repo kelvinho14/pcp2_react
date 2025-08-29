@@ -118,7 +118,7 @@ const QuestionsTable = ({ search, selectedTags, tagLogic }: Props) => {
               })
             ) : (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={5}>
                   <div className='d-flex text-center w-100 align-content-center justify-content-center'>
                     No matching records found
                   </div>

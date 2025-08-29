@@ -78,9 +78,6 @@ const SortableRow: FC<{ question: Question; index: number; onRemove: (questionId
         }
       </td>
       <td>
-        <div className="fw-bold text-dark">{question.name}</div>
-      </td>
-      <td>
         <div style={{ maxWidth: '400px' }}>
           {hasImages(question.question_content) ? (
             <div 
@@ -220,7 +217,14 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
   }
 
   return (
-    <Modal show={show} onHide={handleClose} size="xl">
+    <Modal 
+      show={show} 
+      onHide={handleClose} 
+      size="xl"
+      centered
+      backdrop={true}
+      keyboard={true}
+    >
       <Modal.Header closeButton>
         <Modal.Title>Assign to Exercise(s)</Modal.Title>
       </Modal.Header>
@@ -251,7 +255,6 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
                         <th style={{ width: '50px' }}></th>
                         <th style={{ width: '50px' }}>#</th>
                         <th style={{ width: '80px' }}>Type</th>
-                        <th style={{ width: '150px' }}>Name</th>
                         <th>Content</th>
                         <th style={{ width: '50px' }}></th>
                       </tr>

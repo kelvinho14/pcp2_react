@@ -5,3 +5,8 @@
 .modal-rounded {
 	border-radius: $modal-content-border-radius !important;	
 }
+
+// Standardized modal backdrop opacity for consistent appearance across the application
+.modal-backdrop.show {
+	opacity: 0.5 !important;
+}

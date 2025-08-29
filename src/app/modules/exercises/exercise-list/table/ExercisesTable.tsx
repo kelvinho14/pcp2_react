@@ -11,9 +11,11 @@ import { KTCardBody } from '../../../../../_metronic/helpers'
 
 type Props = {
   search: string
+  selectedTags: string[]
+  tagLogic: 'and' | 'or'
 }
 
-const ExercisesTable = ({ search }: Props) => {
+const ExercisesTable = ({ search, selectedTags, tagLogic }: Props) => {
   const dispatch = useDispatch<AppDispatch>()
   const dispatchRef = useRef(dispatch)
   dispatchRef.current = dispatch
@@ -35,18 +37,20 @@ const ExercisesTable = ({ search }: Props) => {
         sort: sort?.id,
         order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
         search: search || undefined,
+        tags: selectedTags.length > 0 ? selectedTags : undefined,
+        tagLogic: selectedTags.length > 0 ? tagLogic : undefined,
       })
     )
-  }, [page, sort, search, itemsPerPage])
+  }, [page, sort, search, selectedTags, tagLogic, itemsPerPage])
 
   useEffect(() => {
     fetchExercisesData()
   }, [fetchExercisesData])
 
-  // Reset page to 1 when search changes
+  // Reset page to 1 when search, tags, or logic change
   useEffect(() => {
     setPage(1)
-  }, [search])
+  }, [search, selectedTags, tagLogic])
 
   const data = useMemo(() => (Array.isArray(exercises) ? exercises : []), [exercises])
   const columns = useMemo(() => exercisesColumns, [])

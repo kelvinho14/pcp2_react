@@ -1,10 +1,11 @@
 import { Column } from 'react-table'
 import { QuestionSelectionCell } from './QuestionSelectionCell'
-import { QuestionInfoCell } from './QuestionInfoCell'
 import { QuestionActionsCell } from './QuestionActionsCell'
 import { Question } from '../../../../../../../store/questions/questionsSlice'
 import { ID } from '../../../../../../../_metronic/helpers'
 import { hasImages, renderHtmlSafely, getTextPreview } from '../../../../../../../_metronic/helpers/htmlRenderer'
+import { useNavigate } from 'react-router-dom'
+import { formatApiTimestamp } from '../../../../../../../_metronic/helpers/dateUtils'
 
 const questionsColumns: ReadonlyArray<Column<Question>> = [
   {
@@ -13,21 +14,24 @@ const questionsColumns: ReadonlyArray<Column<Question>> = [
     Cell: ({ ...props }) => <QuestionSelectionCell id={props.data[props.row.index].q_id as unknown as ID} />,
   },
   {
-    Header: 'Name',
-    accessor: 'name',
-    id: 'name',
-    Cell: ({ ...props }) => <QuestionInfoCell question={props.data[props.row.index]} />,
-  },
-  {
     Header: 'Content Preview',
     accessor: 'question_content',
     id: 'content_preview',
     Cell: ({ ...props }) => {
       const questionContent = props.data[props.row.index].question_content || ''
       const answerContent = props.data[props.row.index].lq_question?.answer_content || ''
+      const navigate = useNavigate()
+      
+      const handleContentClick = () => {
+        navigate(`/questions/lq/edit/${props.data[props.row.index].q_id}`)
+      }
       
       return (
-        <div className="d-flex flex-column" style={{ maxWidth: '500px', minWidth: '400px' }}>
+        <div 
+          className="d-flex flex-column cursor-pointer" 
+          style={{ maxWidth: '500px', minWidth: '400px', cursor: 'pointer' }}
+          onClick={handleContentClick}
+        >
           {/* Question Content */}
           <div className="mb-2">
             <div className="fw-bold text-muted mb-1" style={{ fontSize: '0.75rem' }}>Question:</div>
@@ -63,14 +67,7 @@ const questionsColumns: ReadonlyArray<Column<Question>> = [
     id: 'created_at',
     Cell: ({ ...props }) => {
       const date = props.data[props.row.index].created_at
-      if (!date) return '-'
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      return formatApiTimestamp(date, { format: 'custom' })
     },
   },
   {

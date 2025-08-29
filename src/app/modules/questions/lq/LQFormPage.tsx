@@ -21,10 +21,6 @@ import {useAIImageToText} from '../../../../hooks/useAIImageToText'
 import {transformLQQuestionForBackend} from '../components/questionTransformers'
 
 const lqValidationSchema = Yup.object().shape({
-  questionName: Yup.string()
-    .min(1, 'Minimum 1 characters')
-    .max(200, 'Maximum 200 characters')
-    .required('Question name is required'),
   teacherRemark: Yup.string()
     .max(500, 'Maximum 500 characters'),
   question: Yup.string()
@@ -41,7 +37,6 @@ const lqValidationSchema = Yup.object().shape({
 })
 
 interface LQFormData {
-  questionName: string
   teacherRemark: string
   question: string
   answer: string
@@ -124,7 +119,6 @@ const LQFormPage: FC = () => {
 
   const formik = useFormik<LQFormData>({
     initialValues: {
-      questionName: '',
       teacherRemark: '',
       question: '',
       answer: '',
@@ -138,7 +132,6 @@ const LQFormPage: FC = () => {
 
         const questionData = transformLQQuestionForBackend(
           'lq',
-          values.questionName,
           values.question,
           values.teacherRemark,
           values.answer,
@@ -174,9 +167,8 @@ const LQFormPage: FC = () => {
       })) as TagWithScoreData[]
 
       formik.setValues({
-        questionName: currentQuestion.name || '',
-        teacherRemark: currentQuestion.teacher_remark || '',
         question: currentQuestion.question_content || '',
+        teacherRemark: currentQuestion.teacher_remark || '',
         answer: currentQuestion.lq_question?.answer_content || '',
         selectedTags: transformedTags,
       }, false) // Set validateOnChange to false to prevent validation during load
@@ -224,31 +216,7 @@ const LQFormPage: FC = () => {
         
         <div className='card-body'>
           <form onSubmit={formik.handleSubmit} className='form'>
-            {/* Question Name */}
-            <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label required fw-semibold fs-6'>
-                Question Name
-              </label>
-              <div className='col-lg-9'>
-                <input
-                  type='text'
-                  className={clsx(
-                    'form-control form-control-lg form-control-solid',
-                    {
-                      'is-valid': formik.touched.questionName && !formik.errors.questionName,
-                      'is-invalid': formik.touched.questionName && formik.errors.questionName,
-                    }
-                  )}
-                  placeholder='Enter question name'
-                  {...formik.getFieldProps('questionName')}
-                />
-                {formik.touched.questionName && formik.errors.questionName && (
-                  <div className='fv-plugins-message-container invalid-feedback'>
-                    <div>{formik.errors.questionName}</div>
-                  </div>
-                )}
-              </div>
-            </div>
+
 
             {/* Question Content */}
             <div className='row mb-6'>
@@ -366,7 +334,6 @@ const LQFormPage: FC = () => {
 
                               const questionData = transformLQQuestionForBackend(
                                 'lq',
-                                formik.values.questionName,
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
@@ -407,7 +374,6 @@ const LQFormPage: FC = () => {
 
                               const questionData = transformLQQuestionForBackend(
                                 'lq',
-                                formik.values.questionName,
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
@@ -449,7 +415,6 @@ const LQFormPage: FC = () => {
                               const transformedTags = transformTags(formik.values.selectedTags)
                               const questionData = transformLQQuestionForBackend(
                                 'lq',
-                                formik.values.questionName,
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
@@ -487,7 +452,6 @@ const LQFormPage: FC = () => {
                               const transformedTags = transformTags(formik.values.selectedTags)
                               const questionData = transformLQQuestionForBackend(
                                 'lq',
-                                formik.values.questionName,
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
