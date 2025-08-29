@@ -4,6 +4,7 @@ import { ExerciseActionsCell } from './ExerciseActionsCell'
 import { Exercise } from '../../../../../../store/exercises/exercisesSlice'
 import { ID } from '../../../../../../_metronic/helpers'
 import { useNavigate } from 'react-router-dom'
+import { formatApiTimestamp } from '../../../../../../_metronic/helpers/dateUtils'
 
 const exercisesColumns: ReadonlyArray<Column<Exercise>> = [
   {
@@ -98,14 +99,7 @@ const exercisesColumns: ReadonlyArray<Column<Exercise>> = [
     id: 'created_at',
     Cell: ({ ...props }) => {
       const date = props.data[props.row.index].created_at
-      if (!date) return 'N/A'
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      return formatApiTimestamp(date, { format: 'custom' })
     },
   },
   {
@@ -114,14 +108,7 @@ const exercisesColumns: ReadonlyArray<Column<Exercise>> = [
     id: 'updated_at',
     Cell: ({ ...props }) => {
       const date = props.data[props.row.index].updated_at
-      if (!date) return 'N/A'
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      return formatApiTimestamp(date, { format: 'custom' })
     },
   },
   {

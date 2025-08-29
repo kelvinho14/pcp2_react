@@ -1,4 +1,4 @@
-import { KTSVG } from '../../../../../../../_metronic/helpers'
+import {KTIcon} from '../../../../../../../_metronic/helpers'
 
 type Props = {
   setSearch: (value: string) => void
@@ -7,6 +7,7 @@ type Props = {
 const QuestionsListSearchComponent: React.FC<Props> = ({ setSearch }) => {
   return (
     <div className='d-flex align-items-center position-relative my-1'>
+      <KTIcon iconName='magnifier' className='fs-1 position-absolute ms-6' />
       <input
         type='text'
         data-kt-question-table-filter='search'

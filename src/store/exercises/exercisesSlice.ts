@@ -49,19 +49,23 @@ export interface ExerciseFormData {
 // Async thunks
 export const fetchExercises = createAsyncThunk(
   'exercises/fetchExercises',
-  async ({ page, items_per_page, sort, order, search, all }: {
+  async ({ page, items_per_page, sort, order, search, all, types, status }: {
     page: number
     items_per_page: number
     sort?: string
     order?: 'asc' | 'desc'
     search?: string
     all?: number
+    types?: string[]
+    status?: number
   }) => {
     const params: any = { page, items_per_page }
     if (sort) params.sort = sort
     if (order) params.order = order
     if (search) params.search = search
     if (all) params.all = all
+    if (types && types.length > 0) params.types = types.join(',')
+    if (status !== undefined) params.status = status
 
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises`)

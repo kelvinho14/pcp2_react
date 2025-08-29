@@ -11,9 +11,11 @@ import { KTCardBody } from '../../../../../_metronic/helpers'
 
 type Props = {
   search: string
+  selectedTypes: string[]
+  statusFilter: number | ''
 }
 
-const ExercisesTable = ({ search }: Props) => {
+const ExercisesTable = ({ search, selectedTypes, statusFilter }: Props) => {
   const dispatch = useDispatch<AppDispatch>()
   const dispatchRef = useRef(dispatch)
   dispatchRef.current = dispatch
@@ -35,18 +37,20 @@ const ExercisesTable = ({ search }: Props) => {
         sort: sort?.id,
         order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
         search: search || undefined,
+        types: selectedTypes.length > 0 ? selectedTypes : undefined,
+        status: statusFilter !== '' ? statusFilter : undefined,
       })
     )
-  }, [page, sort, search, itemsPerPage])
+  }, [page, sort, search, selectedTypes, statusFilter, itemsPerPage])
 
   useEffect(() => {
     fetchExercisesData()
   }, [fetchExercisesData])
 
-  // Reset page to 1 when search changes
+  // Reset page to 1 when search, types, or status change
   useEffect(() => {
     setPage(1)
-  }, [search])
+  }, [search, selectedTypes, statusFilter])
 
   const data = useMemo(() => (Array.isArray(exercises) ? exercises : []), [exercises])
   const columns = useMemo(() => exercisesColumns, [])
@@ -86,7 +90,7 @@ const ExercisesTable = ({ search }: Props) => {
       <div className='table-responsive'>
         <table
           id='kt_table_exercises'
-          className='table align-middle table-row-dashed fs-6 gy-5 dataTable no-footer'
+          className='table align-middle table-row-dashed fs-6 gy-5 dataTable no-footer table-row-hover'
           {...getTableProps()}
         >
           <thead>

@@ -1,3 +1,4 @@
+import { KTIcon } from "../../../../../../_metronic/helpers"
 
 type Props = {
   setSearch: (value: string) => void
@@ -6,6 +7,7 @@ type Props = {
 const ExercisesListSearchComponent: React.FC<Props> = ({ setSearch }) => {
   return (
     <div className='d-flex align-items-center position-relative my-1'>
+      <KTIcon iconName='magnifier' className='fs-1 position-absolute ms-6' />
       <input
         type='text'
         data-kt-exercise-table-filter='search'
