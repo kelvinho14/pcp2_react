@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react'
+import {useState, useEffect, useRef} from 'react'
 import * as Yup from 'yup'
 import clsx from 'clsx'
 import {Link, useNavigate} from 'react-router-dom'
@@ -42,6 +42,7 @@ const ERROR_MESSAGES = {
 export function Login() {
   const [loading, setLoading] = useState(false)
   const {currentUser} = useAuth()
+  const emailInputRef = useRef<HTMLInputElement>(null)
   const {
     showSubjectModal,
     userSchools,
@@ -55,6 +56,13 @@ export function Login() {
   useEffect(() => {
     checkExistingUserSession(currentUser)
   }, [currentUser, checkExistingUserSession])
+
+  // Auto-focus email input when component mounts
+  useEffect(() => {
+    if (emailInputRef.current) {
+      emailInputRef.current.focus()
+    }
+  }, [])
 
   const formik = useFormik({
     initialValues: INITIAL_VALUES,
@@ -85,7 +93,55 @@ export function Login() {
       }
     },
   })
+/*
+<div className='text-center mb-11'>
+<h1 className='text-gray-900 fw-bolder mb-3'>Sign In</h1>
+<div className='text-gray-500 fw-semibold fs-6'>Your Social Campaigns</div>
+</div>
+<div className='row g-3 mb-9'>
 
+<div className='col-md-6'>
+  <a
+    href='#'
+    className='btn btn-flex btn-outline btn-text-gray-700 btn-active-color-primary bg-state-light flex-center text-nowrap w-100'
+  >
+    <img
+      alt='Logo'
+      src={toAbsoluteUrl('media/svg/brand-logos/google-icon.svg')}
+      className='h-15px me-3'
+    />
+    Sign in with Google
+  </a>
+  
+</div>
+
+<div className='col-md-6'>
+  <a
+    href='#'
+    className='btn btn-flex btn-outline btn-text-gray-700 btn-active-color-primary bg-state-light flex-center text-nowrap w-100'
+  >
+    <img
+      alt='Logo'
+      src={toAbsoluteUrl('media/svg/brand-logos/apple-black.svg')}
+      className='theme-light-show h-15px me-3'
+    />
+    <img
+      alt='Logo'
+      src={toAbsoluteUrl('media/svg/brand-logos/apple-black-dark.svg')}
+      className='theme-dark-show h-15px me-3'
+    />
+    Sign in with Apple
+  </a>
+
+</div>
+
+</div>
+
+<div className='separator separator-content my-14'>
+<span className='w-125px text-gray-500 fw-semibold fs-7'>Or with email</span>
+</div>
+
+*/
   return (
     <form
       className='form w-100'
@@ -93,64 +149,6 @@ export function Login() {
       noValidate
       id='kt_login_signin_form'
     >
-      {/* begin::Heading */}
-      <div className='text-center mb-11'>
-        <h1 className='text-gray-900 fw-bolder mb-3'>Sign In</h1>
-        <div className='text-gray-500 fw-semibold fs-6'>Your Social Campaigns</div>
-      </div>
-      {/* begin::Heading */}
-
-      {/* begin::Login options */}
-      <div className='row g-3 mb-9'>
-        {/* begin::Col */}
-        <div className='col-md-6'>
-          {/* begin::Google link */}
-          <a
-            href='#'
-            className='btn btn-flex btn-outline btn-text-gray-700 btn-active-color-primary bg-state-light flex-center text-nowrap w-100'
-          >
-            <img
-              alt='Logo'
-              src={toAbsoluteUrl('media/svg/brand-logos/google-icon.svg')}
-              className='h-15px me-3'
-            />
-            Sign in with Google
-          </a>
-          {/* end::Google link */}
-        </div>
-        {/* end::Col */}
-
-        {/* begin::Col */}
-        <div className='col-md-6'>
-          {/* begin::Google link */}
-          <a
-            href='#'
-            className='btn btn-flex btn-outline btn-text-gray-700 btn-active-color-primary bg-state-light flex-center text-nowrap w-100'
-          >
-            <img
-              alt='Logo'
-              src={toAbsoluteUrl('media/svg/brand-logos/apple-black.svg')}
-              className='theme-light-show h-15px me-3'
-            />
-            <img
-              alt='Logo'
-              src={toAbsoluteUrl('media/svg/brand-logos/apple-black-dark.svg')}
-              className='theme-dark-show h-15px me-3'
-            />
-            Sign in with Apple
-          </a>
-          {/* end::Google link */}
-        </div>
-        {/* end::Col */}
-      </div>
-      {/* end::Login options */}
-
-      {/* begin::Separator */}
-      <div className='separator separator-content my-14'>
-        <span className='w-125px text-gray-500 fw-semibold fs-7'>Or with email</span>
-      </div>
-      {/* end::Separator */}
-
       {formik.status ? (
         <div className='mb-lg-15 alert alert-danger'>
           <div className='alert-text font-weight-bold'>{formik.status}</div>
@@ -163,6 +161,7 @@ export function Login() {
       <div className='fv-row mb-8'>
         <label className='form-label fs-6 fw-bolder text-gray-900'>Email</label>
         <input
+          ref={emailInputRef}
           placeholder='Email'
           {...formik.getFieldProps('email')}
           className={clsx(
@@ -175,6 +174,7 @@ export function Login() {
           type='email'
           name='email'
           autoComplete='off'
+          autoFocus
         />
         {formik.touched.email && formik.errors.email && (
           <div className='fv-plugins-message-container'>
