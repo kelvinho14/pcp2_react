@@ -34,7 +34,7 @@ const questionsColumns: ReadonlyArray<Column<Question>> = [
         >
           {/* Question Content */}
           <div className="mb-2">
-            <div className="fw-bold text-muted mb-1" style={{ fontSize: '0.75rem' }}>Question:</div>
+            <div className="fw-bold mb-1" style={{ fontSize: '0.75rem', color: '#6f42c1', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Question:</div>
             {hasImages(questionContent) ? (
               <div 
                 className="d-flex align-items-center"
@@ -47,7 +47,7 @@ const questionsColumns: ReadonlyArray<Column<Question>> = [
           
           {/* Answer Content */}
           <div>
-            <div className="fw-bold text-muted mb-1" style={{ fontSize: '0.75rem' }}>Answer:</div>
+            <div className="fw-bold mb-1" style={{ fontSize: '0.75rem', color: '#28a745', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Answer:</div>
             {hasImages(answerContent) ? (
               <div 
                 className="d-flex align-items-center"

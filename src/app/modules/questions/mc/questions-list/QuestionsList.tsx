@@ -9,7 +9,7 @@ import { AppDispatch, RootState } from '../../../../../store'
 import { fetchQuestionTags } from '../../../../../store/tags/tagsSlice'
 import Select from 'react-select'
 import clsx from 'clsx'
-import '../../questions.css'
+
 
 const mcListBreadcrumbs: Array<PageLink> = [
   {

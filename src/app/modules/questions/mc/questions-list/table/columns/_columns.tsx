@@ -36,7 +36,7 @@ const questionsColumns: ReadonlyArray<Column<Question>> = [
         >
           {/* Question Content */}
           <div className="mb-2">
-            <div className="fw-bold text-muted mb-1" style={{ fontSize: '0.75rem' }}>Question:</div>
+            <div className="fw-bold mb-1" style={{ fontSize: '0.75rem', color: '#6f42c1', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Question:</div>
             {hasImages(questionContent) ? (
               <div 
                 className="d-flex align-items-center"
@@ -50,7 +50,7 @@ const questionsColumns: ReadonlyArray<Column<Question>> = [
           {/* Answer Content */}
           {answerContent && (
             <div className="mb-2">
-              <div className="fw-bold text-muted mb-1" style={{ fontSize: '0.75rem' }}>Answer:</div>
+              <div className="fw-bold mb-1" style={{ fontSize: '0.75rem', color: '#28a745', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Answer:</div>
               {hasImages(answerContent) ? (
                 <div 
                   className="d-flex align-items-center"
@@ -64,9 +64,22 @@ const questionsColumns: ReadonlyArray<Column<Question>> = [
           
           {/* Correct Answer Option */}
           <div>
-            <div className="fw-bold text-muted mb-1" style={{ fontSize: '0.75rem' }}>Correct Option:</div>
+            <div className="fw-bold mb-1" style={{ fontSize: '0.75rem', color: '#fd7e14', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Correct Option:</div>
             <div style={{ fontSize: '0.875rem' }}>
-              {correctOptionLetter ? `Option ${correctOptionLetter}` : 'No correct answer set'}
+              {correctOptionLetter ? (
+                <>
+                  <span className='fw-bold'>[Option {correctOptionLetter}]</span>
+                  {mcQuestion?.options?.find(opt => opt.option_letter === correctOptionLetter)?.option_text ? (
+                    <span className='ms-2'>
+                      {getTextPreview(mcQuestion.options.find(opt => opt.option_letter === correctOptionLetter)?.option_text || '', 80)}
+                    </span>
+                  ) : (
+                    <span className='text-muted ms-2'>No option text available</span>
+                  )}
+                </>
+              ) : (
+                'No correct answer set'
+              )}
             </div>
           </div>
         </div>

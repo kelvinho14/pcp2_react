@@ -9,7 +9,7 @@ import {AppDispatch, RootState} from '../../../../store'
 import {fetchTags} from '../../../../store/tags/tagsSlice'
 import Select from 'react-select'
 import clsx from 'clsx'
-import './ExerciseListPage.css'
+
 
 const exercisesListBreadcrumbs: Array<PageLink> = [
   {
