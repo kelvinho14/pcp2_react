@@ -246,3 +246,19 @@
         }
     }
 }
+
+// Table Row Hover Effects - Utility Class
+.table-row-hover {
+	tbody tr {
+		transition: background-color 0.2s ease;
+		
+		&:hover {
+			background-color: #f8f9fa !important;
+			cursor: pointer;
+			
+			td {
+				background-color: #f8f9fa !important;
+			}
+		}
+	}
+}

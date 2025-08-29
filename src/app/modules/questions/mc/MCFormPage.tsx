@@ -20,10 +20,6 @@ import {useAIImageToText} from '../../../../hooks/useAIImageToText'
 import {transformMCQuestionForBackend} from '../components/questionTransformers'
 
 const mcValidationSchema = Yup.object().shape({
-  questionName: Yup.string()
-    .min(1, 'Minimum 1 characters')
-    .max(200, 'Maximum 200 characters')
-    .required('Question name is required'),
   teacherRemark: Yup.string()
     .max(500, 'Maximum 500 characters'),
   question: Yup.string()
@@ -53,7 +49,6 @@ interface MCOptionData {
 }
 
 interface MCFormData {
-  questionName: string
   teacherRemark: string
   question: string
   answer: string
@@ -144,7 +139,6 @@ const MCFormPage: FC = () => {
 
   const formik = useFormik<MCFormData>({
     initialValues: {
-      questionName: '',
       teacherRemark: '',
       question: '',
       answer: '',
@@ -165,7 +159,7 @@ const MCFormPage: FC = () => {
 
         const questionData = {
           type: 'mc' as const,
-          name: values.questionName,
+          name: '', // questionName is removed from formik.values, so it's empty
           question_content: values.question,
           teacher_remark: values.teacherRemark,
           mc_question: {
@@ -232,7 +226,6 @@ const MCFormPage: FC = () => {
       })
 
       formik.setValues({
-        questionName: currentQuestion.name || '',
         teacherRemark: currentQuestion.teacher_remark || '',
         question: currentQuestion.question_content || '',
         answer: currentQuestion.mc_question?.answer_content || '',
@@ -312,31 +305,7 @@ const MCFormPage: FC = () => {
         
         <div className='card-body'>
           <form onSubmit={formik.handleSubmit} className='form'>
-            {/* Question Name */}
-            <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label required fw-semibold fs-6'>
-                Question Name
-              </label>
-              <div className='col-lg-9'>
-                <input
-                  type='text'
-                  className={clsx(
-                    'form-control form-control-lg form-control-solid',
-                    {
-                      'is-valid': formik.touched.questionName && !formik.errors.questionName,
-                      'is-invalid': formik.touched.questionName && formik.errors.questionName,
-                    }
-                  )}
-                  placeholder='Enter question name'
-                  {...formik.getFieldProps('questionName')}
-                />
-                {formik.touched.questionName && formik.errors.questionName && (
-                  <div className='fv-plugins-message-container invalid-feedback'>
-                    <div>{formik.errors.questionName}</div>
-                  </div>
-                )}
-              </div>
-            </div>
+
 
             {/* Question Content */}
             <div className='row mb-6'>
@@ -510,7 +479,6 @@ const MCFormPage: FC = () => {
                               const transformedTags = transformTags(formik.values.selectedTags)
                               const questionData = transformMCQuestionForBackend(
                                 'mc',
-                                formik.values.questionName,
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.options,
@@ -551,7 +519,6 @@ const MCFormPage: FC = () => {
                               const transformedTags = transformTags(formik.values.selectedTags)
                               const questionData = transformMCQuestionForBackend(
                                 'mc',
-                                formik.values.questionName,
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.options,
@@ -594,7 +561,6 @@ const MCFormPage: FC = () => {
                               const transformedTags = transformTags(formik.values.selectedTags)
                               const questionData = transformMCQuestionForBackend(
                                 'mc',
-                                formik.values.questionName,
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.options,
@@ -634,7 +600,6 @@ const MCFormPage: FC = () => {
                               const transformedTags = transformTags(formik.values.selectedTags)
                               const questionData = transformMCQuestionForBackend(
                                 'mc',
-                                formik.values.questionName,
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.options,

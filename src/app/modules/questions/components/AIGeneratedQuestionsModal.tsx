@@ -10,7 +10,7 @@ interface MCOption {
 
 interface GeneratedQuestion {
   type: 'mc' | 'lq'
-  name: string
+  name?: string // Made optional since it's no longer used
   question_content: string
   teacher_remark: string
   lq_question?: {
@@ -75,11 +75,7 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
     setEditedQuestions(updated)
   }
 
-  const handleQuestionNameChange = (index: number, name: string) => {
-    const updated = [...editedQuestions]
-    updated[index] = { ...updated[index], name }
-    setEditedQuestions(updated)
-  }
+
 
   const handleAnswerContentChange = (index: number, content: string) => {
     const updated = [...editedQuestions]
@@ -190,15 +186,7 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
                       <div className='card-header bg-light py-5'>
                         <div className='d-flex align-items-center justify-content-between w-100'>
                           <div style={{ maxWidth: 350, width: '100%' }}>
-                            <label className='form-label fw-bold mb-1'>Question Name:</label>
-                            <input
-                              type='text'
-                              className='form-control'
-                              value={question.name}
-                              onChange={(e) => handleQuestionNameChange(index, e.target.value)}
-                              placeholder='Enter question name...'
-                              disabled={isLoading || isCreating}
-                            />
+                            {/* Question name field removed */}
                           </div>
                           <div className='d-flex gap-2 ms-auto'>
                             <button

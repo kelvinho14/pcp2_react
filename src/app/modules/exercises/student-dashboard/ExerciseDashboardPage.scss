@@ -884,13 +884,4 @@
   }
 } 
 
-// Override React Bootstrap modal backdrop to be lighter
-.modal-backdrop.show {
-  opacity: 0.5 !important;
-}
-
-// Alternative: Target specific modal classes if needed
-.teacher-message-modal + .modal-backdrop.show,
-.start-exercise-modal + .modal-backdrop.show {
-  opacity: 0.5 !important;
-} 
+ 

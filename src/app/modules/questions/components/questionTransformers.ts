@@ -8,7 +8,7 @@ interface MCOption {
 
 interface GeneratedQuestion {
   type: 'mc' | 'lq'
-  name: string
+  name?: string // Made optional since it's no longer used
   question_content: string
   teacher_remark: string
   lq_question?: {
@@ -27,7 +27,6 @@ const isValidLetter = (letter: string, options: any[]) =>
 // Unified transformation function for both regular forms and AI modal
 export const transformMCQuestionForBackend = (
   type: 'mc',
-  name: string,
   question_content: string,
   teacher_remark: string,
   options: Array<{ option_letter: string; content: string; is_correct: boolean }>,
@@ -42,7 +41,7 @@ export const transformMCQuestionForBackend = (
 
   return {
     type,
-    name,
+    name: '', // Name field is no longer used
     question_content,
     teacher_remark,
     mc_question: {
@@ -60,7 +59,6 @@ export const transformMCQuestionForBackend = (
 
 export const transformLQQuestionForBackend = (
   type: 'lq',
-  name: string,
   question_content: string,
   teacher_remark: string,
   answer_content: string,
@@ -68,7 +66,7 @@ export const transformLQQuestionForBackend = (
 ): QuestionFormData => {
   return {
     type,
-    name,
+    name: '', // Name field is no longer used
     question_content,
     teacher_remark,
     lq_question: {
@@ -91,7 +89,7 @@ export const transformQuestionsForBackend = (questions: GeneratedQuestion[]): Qu
     
     return {
       type: q.type,
-      name: q.name,
+      name: '', // Name field is no longer used
       question_content: q.question_content,
       teacher_remark: q.teacher_remark,
       ...(q.type === 'lq' && q.lq_question && {
@@ -121,7 +119,7 @@ export const transformQuestionsForBackend = (questions: GeneratedQuestion[]): Qu
 export const transformSingleQuestionForBackend = (question: GeneratedQuestion): QuestionFormData => {
   let questionData: QuestionFormData = { 
     type: question.type,
-    name: question.name,
+    name: '', // Name field is no longer used
     question_content: question.question_content,
     teacher_remark: question.teacher_remark
   }

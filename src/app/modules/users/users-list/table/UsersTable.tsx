@@ -89,7 +89,7 @@ const UsersTable = ({ search, roleFilter, schoolFilter, subjectFilter }: Props) 
       <div className='table-responsive'>
         <table
           id='kt_table_users'
-          className='table align-middle table-row-dashed fs-6 gy-5 dataTable no-footer'
+          className='table align-middle table-row-dashed fs-6 gy-5 dataTable no-footer table-row-hover'
           {...getTableProps()}
         >
           <thead>

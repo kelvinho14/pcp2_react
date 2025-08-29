@@ -92,7 +92,7 @@ const QuestionsTable = ({ search, selectedTags, tagLogic }: Props) => {
       <div className='table-responsive'>
         <table
           id='kt_table_questions'
-          className='table align-middle table-row-dashed fs-6 gy-5 dataTable no-footer'
+          className='table align-middle table-row-dashed fs-6 gy-5 dataTable no-footer table-row-hover'
           {...getTableProps()}
         >
           <thead>
@@ -115,7 +115,7 @@ const QuestionsTable = ({ search, selectedTags, tagLogic }: Props) => {
               })
             ) : (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={5}>
                   <div className='d-flex text-center w-100 align-content-center justify-content-center'>
                     No matching records found
                   </div>

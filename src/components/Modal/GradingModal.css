@@ -253,17 +253,6 @@
 /* Ensure modal backdrop has consistent appearance with other modals */
 .grading-modal + .modal-backdrop {
   background-color: #000 !important;
-  opacity: 0.5 !important;
-}
-
-.grading-modal + .modal-backdrop.show {
-  background-color: #000 !important;
-  opacity: 0.5 !important;
-}
-
-/* Override any global dark backdrop styles */
-.modal-backdrop.show {
-  opacity: 0.5 !important;
 }
 
 /* Responsive adjustments for drawing tabs */

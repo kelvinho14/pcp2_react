@@ -9,7 +9,7 @@ interface MCOption {
 
 interface GeneratedQuestion {
   type: 'mc' | 'lq'
-  name: string
+  name?: string // Made optional since it's no longer used
   question_content: string
   teacher_remark: string
   lq_question?: {
@@ -27,7 +27,6 @@ interface QuestionCardProps {
   index: number
   isCreating: boolean
   isLoading: boolean
-  onNameChange: (index: number, name: string) => void
   onContentChange: (index: number, content: string) => void
   onAnswerChange: (index: number, content: string) => void
   onMCOptionChange: (index: number, optionIndex: number, text: string) => void
@@ -42,7 +41,6 @@ const QuestionCard: FC<QuestionCardProps> = ({
   index,
   isCreating,
   isLoading,
-  onNameChange,
   onContentChange,
   onAnswerChange,
   onMCOptionChange,
@@ -58,15 +56,7 @@ const QuestionCard: FC<QuestionCardProps> = ({
       <div className='card-header bg-light py-4'>
         <div className='d-flex align-items-center justify-content-between w-100'>
           <div style={{ maxWidth: 350, width: '100%' }}>
-            <label className='form-label fw-bold mb-2'>Question Name:</label>
-            <input
-              type='text'
-              className='form-control'
-              value={question.name}
-              onChange={(e) => onNameChange(index, e.target.value)}
-              placeholder='Enter question name...'
-              disabled={isDisabled}
-            />
+            {/* Question name field removed */}
           </div>
           <div className='d-flex gap-2 ms-auto'>
             <button

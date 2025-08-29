@@ -311,7 +311,4 @@
   max-width: 1140px !important;
 }
 
-/* Custom modal backdrop to match the original style */
-.modal-backdrop.show {
-  opacity: 0.5 !important;
-} 
+ 

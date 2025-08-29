@@ -54,8 +54,7 @@ const QuestionActionsCell: FC<Props> = ({id}) => {
         data-kt-menu-trigger='click'
         data-kt-menu-placement='bottom-end'
       >
-        Actions
-        <KTIcon iconName='down' className='fs-5 m-0' />
+        <i className='fas fa-cog'></i>
       </a>
       {/* begin::Menu */}
       <div

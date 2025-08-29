@@ -26,7 +26,7 @@ const ExercisesListGrouping = () => {
       clearSelected()
       setShowDeleteDialog(false)
       // Refresh the exercises list
-      dispatch(fetchExercises({ page: 1, items_per_page: 10 }))
+      dispatch(fetchExercises({ page: 1, items_per_page: 10, status: undefined }))
     } catch (error) {
       console.error('Error deleting exercises:', error)
       // Error toast is handled by the thunk
