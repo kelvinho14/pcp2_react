@@ -6,9 +6,8 @@ import {ExercisesTable} from './table/ExercisesTable'
 import {ListViewProvider} from './core/ListViewProvider'
 import {useDispatch, useSelector} from 'react-redux'
 import {AppDispatch, RootState} from '../../../../store'
-import {fetchTags} from '../../../../store/tags/tagsSlice'
+import {fetchExerciseTypes} from '../../../../store/exercise/exerciseSlice'
 import Select from 'react-select'
-import clsx from 'clsx'
 
 
 const exercisesListBreadcrumbs: Array<PageLink> = [
@@ -18,32 +17,37 @@ const exercisesListBreadcrumbs: Array<PageLink> = [
     isSeparator: false,
     isActive: false,
   },
+  {
+    title: 'Exercise List',
+    path: '/exercises/list',
+    isSeparator: false,
+    isActive: true,
+  },
 ]
 
 const ExerciseListPage: FC = () => {
   const [search, setSearch] = useState('')
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [tagLogic, setTagLogic] = useState<'and' | 'or'>('and')
-  const [selectedLogic, setSelectedLogic] = useState<'and' | 'or'>('and')
-  const [showTagFilter, setShowTagFilter] = useState(false)
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
+  const [showTypeFilter, setShowTypeFilter] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<number | ''>('')
   
   const dispatch = useDispatch<AppDispatch>()
-  const {tags, loading: tagsLoading} = useSelector((state: RootState) => state.tags)
+  const {exerciseTypes, loading: exerciseTypesLoading} = useSelector((state: RootState) => state.exercise)
 
-  // Fetch tags on component mount
+  // Fetch exercise types on component mount
   useEffect(() => {
-    dispatch(fetchTags())
+    dispatch(fetchExerciseTypes())
   }, [dispatch])
 
-  const handleTagChange = (selectedOptions: any) => {
-    const tagIds = selectedOptions ? selectedOptions.map((option: any) => option.value) : []
-    setSelectedTags(tagIds)
+  const handleTypeChange = (selectedOptions: any) => {
+    const typeIds = selectedOptions ? selectedOptions.map((option: any) => option.value) : []
+    setSelectedTypes(typeIds)
   }
 
-  const handleLogicChange = (logic: 'and' | 'or') => {
-    setSelectedLogic(logic)
-    setTagLogic(logic)
-  }
+  // Reset page when filters change
+  useEffect(() => {
+    // This will trigger a re-render and reset the page in the table component
+  }, [search, selectedTypes, statusFilter])
 
   return (
     <>
@@ -55,9 +59,6 @@ const ExerciseListPage: FC = () => {
       <div className='welcome-section'>
         <div className='welcome-content'>
           <div className='welcome-text'>
-            <h2 className='welcome-title'>
-              Exercises Management Hub! 📚
-            </h2>
             <p className='welcome-subtitle'>
               Create, manage, and assign exercises with questions to your students
             </p>
@@ -71,37 +72,37 @@ const ExerciseListPage: FC = () => {
               Create Exercise
             </button>
             
-            {/* Tag Filter */}
+            {/* Type Filter */}
             <div className='d-flex align-items-center gap-2'>
               <button
                 type='button'
                 className='btn btn-light-dark btn-sm'
-                onClick={() => setShowTagFilter(!showTagFilter)}
+                onClick={() => setShowTypeFilter(!showTypeFilter)}
               >
-                <i className={`fas fa-chevron-${showTagFilter ? 'up' : 'down'} me-2`}></i>
+                <i className={`fas fa-chevron-${showTypeFilter ? 'up' : 'down'} me-2`}></i>
                 Filters
               </button>
             </div>
           </div>
         </div>
         
-        {/* Tag Filter Dropdown - Right Aligned */}
-        {showTagFilter && (
+        {/* Type Filter Dropdown - Right Aligned */}
+        {showTypeFilter && (
           <div className='tag-filter-section mt-3 d-flex justify-content-end'>
             <div className='d-flex align-items-center gap-3 flex-wrap'>
               <div className='d-flex align-items-center gap-2'>
-                <label htmlFor='exercise-tag-filter' className='form-label mb-0 text-white-50' style={{ fontSize: '0.875rem' }}>Tags:</label>
+                <label htmlFor='exercise-type-filter' className='form-label mb-0 text-white-50' style={{ fontSize: '0.875rem' }}>Types:</label>
                 <div style={{ width: '180px' }}>
                   <Select
-                    id='exercise-tag-filter'
-                    options={tags.map((tag: any) => ({
-                      value: tag.id,
-                      label: tag.name
+                    id='exercise-type-filter'
+                    options={exerciseTypes.map((type: any) => ({
+                      value: type.type_id,
+                      label: type.name
                     }))}
                     isMulti
-                    onChange={handleTagChange}
+                    onChange={handleTypeChange}
                     placeholder='Select...'
-                    isLoading={tagsLoading}
+                    isLoading={exerciseTypesLoading}
                     isClearable
                     isSearchable
                     styles={{
@@ -119,34 +120,21 @@ const ExerciseListPage: FC = () => {
                 </div>
               </div>
               
+
+              
               <div className='d-flex align-items-center gap-2'>
-                <span className='text-white-50' style={{ fontSize: '0.875rem' }}>Logic:</span>
-                <div className='btn-group btn-group-sm' role='group'>
-                  <input
-                    type='radio'
-                    className='btn-check'
-                    name='exerciseTagLogic'
-                    id='exerciseTagLogicAnd'
-                    value='and'
-                    checked={selectedLogic === 'and'}
-                    onChange={() => handleLogicChange('and')}
-                  />
-                  <label className={clsx('btn btn-sm', selectedLogic === 'and' ? 'btn-light-primary' : 'btn-outline-light')} htmlFor='exerciseTagLogicAnd'>
-                    AND
-                  </label>
-                  <input
-                    type='radio'
-                    className='btn-check'
-                    name='exerciseTagLogic'
-                    id='exerciseTagLogicOr'
-                    value='or'
-                    checked={selectedLogic === 'or'}
-                    onChange={() => handleLogicChange('or')}
-                  />
-                  <label className={clsx('btn btn-sm', selectedLogic === 'or' ? 'btn-light-primary' : 'btn-outline-light')} htmlFor='exerciseTagLogicOr'>
-                    OR
-                  </label>
-                </div>
+                <label htmlFor='exercise-status-filter' className='form-label mb-0 text-white-50' style={{ fontSize: '0.875rem' }}>Status:</label>
+                <select
+                  id='exercise-status-filter'
+                  className='form-select form-select-sm'
+                  style={{ width: '120px' }}
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value === '' ? '' : parseInt(e.target.value))}
+                >
+                  <option value=''>All</option>
+                  <option value={1}>Active</option>
+                  <option value={0}>Inactive</option>
+                </select>
               </div>
             </div>
           </div>
@@ -156,12 +144,12 @@ const ExerciseListPage: FC = () => {
       <KTCard>
         <ListViewProvider>
           <ExercisesListHeader setSearch={setSearch} />
+          <ExercisesTable 
+            search={search} 
+            selectedTypes={selectedTypes} 
+            statusFilter={statusFilter}
+          />
         </ListViewProvider>
-        <ExercisesTable 
-          search={search} 
-          selectedTags={selectedTags} 
-          tagLogic={tagLogic}
-        />
       </KTCard>
     </>
   )

@@ -11,11 +11,11 @@ import { KTCardBody } from '../../../../../_metronic/helpers'
 
 type Props = {
   search: string
-  selectedTags: string[]
-  tagLogic: 'and' | 'or'
+  selectedTypes: string[]
+  statusFilter: number | ''
 }
 
-const ExercisesTable = ({ search, selectedTags, tagLogic }: Props) => {
+const ExercisesTable = ({ search, selectedTypes, statusFilter }: Props) => {
   const dispatch = useDispatch<AppDispatch>()
   const dispatchRef = useRef(dispatch)
   dispatchRef.current = dispatch
@@ -37,20 +37,20 @@ const ExercisesTable = ({ search, selectedTags, tagLogic }: Props) => {
         sort: sort?.id,
         order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
         search: search || undefined,
-        tags: selectedTags.length > 0 ? selectedTags : undefined,
-        tagLogic: selectedTags.length > 0 ? tagLogic : undefined,
+        types: selectedTypes.length > 0 ? selectedTypes : undefined,
+        status: statusFilter !== '' ? statusFilter : undefined,
       })
     )
-  }, [page, sort, search, selectedTags, tagLogic, itemsPerPage])
+  }, [page, sort, search, selectedTypes, statusFilter, itemsPerPage])
 
   useEffect(() => {
     fetchExercisesData()
   }, [fetchExercisesData])
 
-  // Reset page to 1 when search, tags, or logic change
+  // Reset page to 1 when search, types, or status change
   useEffect(() => {
     setPage(1)
-  }, [search, selectedTags, tagLogic])
+  }, [search, selectedTypes, statusFilter])
 
   const data = useMemo(() => (Array.isArray(exercises) ? exercises : []), [exercises])
   const columns = useMemo(() => exercisesColumns, [])

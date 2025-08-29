@@ -208,7 +208,8 @@ const AssignToExerciseModal: React.FC<AssignToExerciseModalProps> = ({
         page: 1, 
         items_per_page: 100, 
         search: inputValue,
-        all: 1
+        all: 1,
+        status: undefined
       }))
     } else if (inputValue.length === 0) {
       // Clear results when search is empty

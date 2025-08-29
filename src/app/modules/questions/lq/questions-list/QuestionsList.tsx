@@ -17,6 +17,12 @@ const questionsListBreadcrumbs: Array<PageLink> = [
     path: '/dashboard',
     isSeparator: false,
     isActive: false,
+  },
+  {
+    title: 'Long Questions Bank',
+    path: '/questions/lq/list',
+    isSeparator: false,
+    isActive: true,
   }
 ]
 
@@ -49,16 +55,13 @@ const QuestionsList = () => {
   return (
     <>
       <PageTitle breadcrumbs={questionsListBreadcrumbs}>
-        Long Questions
+        Long Questions Bank
       </PageTitle>
       
       {/* Welcome Banner */}
       <div className='welcome-section'>
         <div className='welcome-content'>
           <div className='welcome-text'>
-            <h2 className='welcome-title'>
-              Long Questions Bank! 📝
-            </h2>
             <p className='welcome-subtitle'>
               Create, manage, and assign long questions to an exercise and assign them to students
             </p>

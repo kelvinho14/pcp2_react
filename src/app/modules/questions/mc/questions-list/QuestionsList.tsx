@@ -19,7 +19,7 @@ const mcListBreadcrumbs: Array<PageLink> = [
     isActive: false,
   },
   {
-    title: 'Multiple Choice Questions',
+    title: 'Multiple Choice Questions Bank',
     path: '/questions/mc',
     isSeparator: false,
     isActive: true,
@@ -54,16 +54,13 @@ const MCList = () => {
   return (
     <>
       <PageTitle breadcrumbs={mcListBreadcrumbs}>
-        Multiple Choice Questions
+        Multiple Choice Questions Bank
       </PageTitle>
       
       {/* Welcome Banner */}
       <div className='welcome-section'>
         <div className='welcome-content'>
           <div className='welcome-text'>
-            <h2 className='welcome-title'>
-              Multiple Choice Questions Bank! 📝
-            </h2>
             <p className='welcome-subtitle'>
               Create, manage, and assign multiple choice questions to an exercise and assign them to students
             </p>
