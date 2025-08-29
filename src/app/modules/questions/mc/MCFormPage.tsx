@@ -56,12 +56,19 @@ interface MCFormData {
   selectedTags: TagWithScoreData[]
 }
 
+
+
 const MCFormPage: FC = () => {
   const navigate = useNavigate()
   const { qId } = useParams<{ qId: string }>()
   const dispatch = useDispatch<AppDispatch>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEditMode = !!qId
+  
+  // State for storing the question ID returned from image uploads
+  const [currentQuestionId, setCurrentQuestionId] = useState<string | undefined>(qId)
+  
+
 
   // Custom hook for AI functionality
   const { processingField, handleAIImageToText } = useAIImageToText('mc')
@@ -93,6 +100,16 @@ const MCFormPage: FC = () => {
     formik.setFieldTouched(field, true)
     toast.success('AI processed content applied successfully!', 'Success')
   }
+
+  // Handle image uploads to update currentQuestionId when question_id is returned
+  const handleImageUpload = (fileId: string, url: string, field: 'question' | 'answer' | string, questionId?: string) => {
+    // If we received a question ID from the image upload, update our state
+    if (questionId) {
+      setCurrentQuestionId(questionId)
+    }
+  }
+  
+
 
   // Fetch tags on component mount
   useEffect(() => {
@@ -157,27 +174,48 @@ const MCFormPage: FC = () => {
         const transformedTags = transformTags(values.selectedTags)
         const correctOption = values.options.find(opt => opt.is_correct)
 
-        const questionData = {
-          type: 'mc' as const,
-          name: '', // questionName is removed from formik.values, so it's empty
-          question_content: values.question,
-          teacher_remark: values.teacherRemark,
-          mc_question: {
-            options: values.options.map(option => ({
-              option_letter: option.option_letter,
-              option_text: option.content,
-              is_correct: option.is_correct
-            })),
-            correct_option: values.options.find(opt => opt.is_correct)?.option_letter || '',
-            answer_content: values.answer
-          },
-          tags: transformedTags
-        }
-        
         if (isEditMode) {
+          // Edit mode - create questionData without question_id
+          const questionData = {
+            type: 'mc' as const,
+            name: '', // questionName is removed from formik.values, so it's empty
+            question_content: values.question,
+            teacher_remark: values.teacherRemark,
+            mc_question: {
+              options: values.options.map(option => ({
+                option_letter: option.option_letter,
+                option_text: option.content,
+                is_correct: option.is_correct
+              })),
+              correct_option: values.options.find(opt => opt.is_correct)?.option_letter || '',
+              answer_content: values.answer
+            },
+            tags: transformedTags
+          }
+          
           await dispatch(updateQuestion({qId, questionData})).unwrap()
           toast.success('Multiple Choice Question updated successfully!', 'Success')
         } else {
+          // Create mode - create questionData with question_id if available
+          const questionData = {
+            type: 'mc' as const,
+            name: '', // questionName is removed from formik.values, so it's empty
+            question_content: values.question,
+            teacher_remark: values.teacherRemark,
+            mc_question: {
+              options: values.options.map(option => ({
+                option_letter: option.option_letter,
+                option_text: option.content,
+                is_correct: option.is_correct
+              })),
+              correct_option: values.options.find(opt => opt.is_correct)?.option_letter || '',
+              answer_content: values.answer
+            },
+            tags: transformedTags,
+            // Include question_id if we have one from image uploads
+            ...(currentQuestionId && { question_id: currentQuestionId })
+          }
+          
           const createdQuestion = await dispatch(createQuestion(questionData)).unwrap()
           toast.success('Multiple Choice Question created successfully!', 'Success')
           navigate('/questions/mc/list')
@@ -194,6 +232,9 @@ const MCFormPage: FC = () => {
   // Update form values when question data is loaded (edit mode)
   useEffect(() => {
     if (isEditMode && currentQuestion) {
+      // Set the current question ID for edit mode
+      setCurrentQuestionId(currentQuestion.q_id)
+      
       // Transform the tags from API format to our component format
       const transformedTags: TagWithScoreData[] = (currentQuestion.tags || []).map(tag => ({
         id: tag.tag_id || '',
@@ -216,9 +257,13 @@ const MCFormPage: FC = () => {
           }
         } else {
           // API returns options as objects with option_text field
+          let content = option.option_text || ''
+          
+
+          
           const transformed = {
             option_letter: option.option_letter || option,
-            content: option.option_text || '', // Prioritize option_text for TinyMCE
+            content: content,
             is_correct: (option.option_letter || option) === correctOptionLetter
           }
           return transformed
@@ -323,6 +368,9 @@ const MCFormPage: FC = () => {
                   isProcessing={processingField !== null}
                   processingField={processingField}
                   onAIClick={handleAIImageToText}
+                  onImageUpload={handleImageUpload}
+                  questionType='mc'
+                  questionId={currentQuestionId || qId}
                   height={300}
                   placeholder='Enter the question content...'
                   editorKey={`question-editor-${isEditMode ? qId : 'create'}`}
@@ -351,6 +399,9 @@ const MCFormPage: FC = () => {
                   isProcessing={processingField !== null}
                   processingField={processingField}
                   onAIClick={handleAIImageToText}
+                  onImageUpload={handleImageUpload}
+                  questionType='mc'
+                  questionId={currentQuestionId || qId}
                   height={300}
                   placeholder='Enter the answer content...'
                   editorKey={`answer-editor-${isEditMode ? qId : 'create'}`}
@@ -400,6 +451,9 @@ const MCFormPage: FC = () => {
                               formik.setFieldValue('options', newOptions)
                               formik.setFieldTouched('options', true)
                             }}
+                            onImageUpload={(fileId, url, questionId) => handleImageUpload(fileId, url, option.option_letter, questionId)}
+                            questionType='mc'
+                            questionId={currentQuestionId || qId}
                             height={200}
                             placeholder={`Enter content for option ${option.option_letter}...`}
                           />
@@ -483,7 +537,8 @@ const MCFormPage: FC = () => {
                                 formik.values.teacherRemark,
                                 formik.values.options,
                                 formik.values.answer,
-                                transformedTags
+                                transformedTags,
+                                currentQuestionId
                               )
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -523,7 +578,8 @@ const MCFormPage: FC = () => {
                                 formik.values.teacherRemark,
                                 formik.values.options,
                                 formik.values.answer,
-                                transformedTags
+                                transformedTags,
+                                currentQuestionId
                               )
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -565,7 +621,8 @@ const MCFormPage: FC = () => {
                                 formik.values.teacherRemark,
                                 formik.values.options,
                                 formik.values.answer,
-                                transformedTags
+                                transformedTags,
+                                currentQuestionId
                               )
                               const createdQuestion = await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Multiple Choice Question created successfully!', 'Success')
@@ -604,7 +661,8 @@ const MCFormPage: FC = () => {
                                 formik.values.teacherRemark,
                                 formik.values.options,
                                 formik.values.answer,
-                                transformedTags
+                                transformedTags,
+                                currentQuestionId
                               )
                               await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Multiple Choice Question created successfully!', 'Success')

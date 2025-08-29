@@ -43,12 +43,19 @@ interface LQFormData {
   selectedTags: TagWithScoreData[]
 }
 
+
+
 const LQFormPage: FC = () => {
   const navigate = useNavigate()
   const { qId } = useParams<{ qId: string }>()
   const dispatch = useDispatch<AppDispatch>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEditMode = !!qId
+  
+  // State for storing the question ID returned from image uploads
+  const [currentQuestionId, setCurrentQuestionId] = useState<string | undefined>(qId)
+  
+
 
   // Custom hook for AI functionality
   const { processingField, handleAIImageToText } = useAIImageToText('lq')
@@ -73,6 +80,8 @@ const LQFormPage: FC = () => {
     })
     return result
   }
+  
+
 
   // Fetch tags on component mount
   useEffect(() => {
@@ -130,18 +139,28 @@ const LQFormPage: FC = () => {
       try {
         const transformedTags = transformTags(values.selectedTags)
 
-        const questionData = transformLQQuestionForBackend(
-          'lq',
-          values.question,
-          values.teacherRemark,
-          values.answer,
-          transformedTags
-        )
-        
         if (isEditMode) {
+          const questionData = transformLQQuestionForBackend(
+            'lq',
+            values.question,
+            values.teacherRemark,
+            values.answer,
+            transformedTags
+          )
+          
           await dispatch(updateQuestion({qId, questionData})).unwrap()
           toast.success('Long Question updated successfully!', 'Success')
         } else {
+          // Create mode - create questionData with question_id if available
+          const questionData = transformLQQuestionForBackend(
+            'lq',
+            values.question,
+            values.teacherRemark,
+            values.answer,
+            transformedTags,
+            currentQuestionId
+          )
+          
           await dispatch(createQuestion(questionData)).unwrap()
           toast.success('Long Question created successfully!', 'Success')
         }
@@ -159,6 +178,9 @@ const LQFormPage: FC = () => {
   // Update form values when question data is loaded (edit mode)
   useEffect(() => {
     if (isEditMode && currentQuestion) {
+      // Set the current question ID for edit mode
+      setCurrentQuestionId(currentQuestion.q_id)
+      
       // Transform the tags from API format to our component format
       const transformedTags: TagWithScoreData[] = (currentQuestion.tags || []).map(tag => ({
         id: tag.tag_id || '',
@@ -174,6 +196,21 @@ const LQFormPage: FC = () => {
       }, false) // Set validateOnChange to false to prevent validation during load
     }
   }, [currentQuestion, isEditMode])
+
+  // Update currentQuestionId when questionId prop changes
+  useEffect(() => {
+    if (qId) {
+      setCurrentQuestionId(qId)
+    }
+  }, [qId])
+
+  // Handle image uploads to update currentQuestionId when question_id is returned
+  const handleImageUpload = (fileId: string, url: string, field: 'question' | 'answer', questionId?: string) => {
+    // If we received a question ID from the image upload, update our state
+    if (questionId) {
+      setCurrentQuestionId(questionId)
+    }
+  }
 
   // Handle accepting processed content from modal
   const handleAcceptProcessedContent = (content: string, field: 'question' | 'answer') => {
@@ -234,6 +271,9 @@ const LQFormPage: FC = () => {
                   isProcessing={processingField !== null}
                   processingField={processingField}
                   onAIClick={handleAIImageToText}
+                  onImageUpload={handleImageUpload}
+                  questionType='lq'
+                  questionId={currentQuestionId || qId}
                   height={400}
                   placeholder='Enter the question content...'
                   editorKey={`question-editor-${isEditMode ? qId : 'create'}`}
@@ -262,6 +302,9 @@ const LQFormPage: FC = () => {
                   isProcessing={processingField !== null}
                   processingField={processingField}
                   onAIClick={handleAIImageToText}
+                  onImageUpload={handleImageUpload}
+                  questionType='lq'
+                  questionId={currentQuestionId || qId}
                   height={400}
                   placeholder='Enter the answer content...'
                   editorKey={`answer-editor-${isEditMode ? qId : 'create'}`}
@@ -337,7 +380,8 @@ const LQFormPage: FC = () => {
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
-                                transformedTags
+                                transformedTags,
+                                currentQuestionId
                               )
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -377,7 +421,8 @@ const LQFormPage: FC = () => {
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
-                                transformedTags
+                                transformedTags,
+                                currentQuestionId
                               )
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -418,7 +463,8 @@ const LQFormPage: FC = () => {
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
-                                transformedTags
+                                transformedTags,
+                                currentQuestionId
                               )
                               const createdQuestion = await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Long Question created successfully!', 'Success')
@@ -455,7 +501,8 @@ const LQFormPage: FC = () => {
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
-                                transformedTags
+                                transformedTags,
+                                currentQuestionId
                               )
                               await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Long Question created successfully!', 'Success')

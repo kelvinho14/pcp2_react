@@ -9,6 +9,9 @@ interface AIEditorWithButtonProps {
   isProcessing: boolean
   processingField: 'question' | 'answer' | null
   onAIClick: (content: string, field: 'question' | 'answer') => void
+  onImageUpload?: (fileId: string, url: string, field: 'question' | 'answer', questionId?: string) => void
+  questionType?: 'mc' | 'lq'
+  questionId?: string
   height?: number
   placeholder?: string
   editorKey?: string
@@ -21,6 +24,9 @@ const AIEditorWithButton: React.FC<AIEditorWithButtonProps> = ({
   isProcessing,
   processingField,
   onAIClick,
+  onImageUpload,
+  questionType,
+  questionId,
   height = 300,
   placeholder = 'Enter content...',
   editorKey
@@ -33,6 +39,11 @@ const AIEditorWithButton: React.FC<AIEditorWithButtonProps> = ({
         onBlur={onBlur}
         height={height}
         placeholder={placeholder}
+        questionType={questionType}
+        questionId={questionId}
+        onImageUpload={(fileId, url, questionId) => {
+          onImageUpload?.(fileId, url, field, questionId);
+        }}
       />
       <AIImageToTextButton
         field={field}

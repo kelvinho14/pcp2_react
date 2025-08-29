@@ -31,7 +31,8 @@ export const transformMCQuestionForBackend = (
   teacher_remark: string,
   options: Array<{ option_letter: string; content: string; is_correct: boolean }>,
   answer_content: string,
-  tags: Array<{ tag_id?: string; name?: string; score?: number }> = []
+  tags: Array<{ tag_id?: string; name?: string; score?: number }> = [],
+  question_id?: string
 ): QuestionFormData => {
   const correctOption = options.find(opt => opt.is_correct)
   if (!correctOption) {
@@ -44,6 +45,7 @@ export const transformMCQuestionForBackend = (
     name: '', // Name field is no longer used
     question_content,
     teacher_remark,
+    ...(question_id && { question_id }),
     mc_question: {
       options: options.map(option => ({
         option_letter: option.option_letter,
@@ -62,13 +64,15 @@ export const transformLQQuestionForBackend = (
   question_content: string,
   teacher_remark: string,
   answer_content: string,
-  tags: Array<{ tag_id?: string; name?: string; score?: number }> = []
+  tags: Array<{ tag_id?: string; name?: string; score?: number }> = [],
+  question_id?: string
 ): QuestionFormData => {
   return {
     type,
     name: '', // Name field is no longer used
     question_content,
     teacher_remark,
+    ...(question_id && { question_id }),
     lq_question: {
       answer_content
     },
