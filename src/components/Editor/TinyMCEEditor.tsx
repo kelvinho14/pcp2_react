@@ -50,28 +50,65 @@ const TinyMCEEditor = ({
   
   // Update editor content when value prop changes, but only if it's different
   useEffect(() => {
-    if (isEditorReady && editorRef.current && editorRef.current.getContent && value !== undefined && value !== lastValueRef.current) {
+    console.log('🔄 TinyMCE value effect triggered:', { 
+      isEditorReady, 
+      hasEditorRef: !!editorRef.current, 
+      hasGetContent: !!editorRef.current?.getContent,
+      value, 
+      lastValue: lastValueRef.current,
+      valueChanged: value !== lastValueRef.current
+    })
+    
+    if (isEditorReady && editorRef.current && editorRef.current.getContent && value !== undefined) {
       try {
+        console.log('📝 Setting TinyMCE content:', value)
+        
+        // Always set the content when value changes, regardless of lastValue
+        // This ensures content is displayed even if it was set before editor was ready
+        editorRef.current.setContent(value);
         lastValueRef.current = value;
-        // Only update if the content is actually different
-        const currentContent = editorRef.current.getContent();
-        if (currentContent !== value) {
-          editorRef.current.setContent(value);
-        }
+        console.log('✅ TinyMCE content set successfully')
+        
       } catch (error) {
+        console.error('❌ Error setting TinyMCE content:', error)
         // If editor is not ready, try again after a short delay
         setTimeout(() => {
           if (editorRef.current && editorRef.current.getContent) {
             try {
-              const currentContent = editorRef.current.getContent();
-              if (currentContent !== value) {
-                editorRef.current.setContent(value);
-              }
+              editorRef.current.setContent(value);
+              lastValueRef.current = value;
+              console.log('✅ TinyMCE content set successfully after retry')
             } catch (retryError) {
               console.warn('Editor still not ready after retry:', retryError);
             }
           }
         }, 100);
+      }
+    } else {
+      console.log('⚠️ TinyMCE not ready for content update:', { 
+        isEditorReady, 
+        hasEditorRef: !!editorRef.current, 
+        hasGetContent: !!editorRef.current?.getContent,
+        valueDefined: value !== undefined,
+        valueChanged: value !== lastValueRef.current
+      })
+      
+      // If editor is not ready but we have a value, schedule it for later
+      if (value !== undefined && value !== lastValueRef.current) {
+        console.log('⏰ Scheduling content update for when editor is ready')
+        const timer = setTimeout(() => {
+          if (isEditorReady && editorRef.current && editorRef.current.getContent) {
+            try {
+              editorRef.current.setContent(value);
+              lastValueRef.current = value;
+              console.log('✅ TinyMCE content set successfully after delay')
+            } catch (retryError) {
+              console.warn('Editor still not ready after delay:', retryError);
+            }
+          }
+        }, 500); // Wait 500ms for editor to be ready
+        
+        return () => clearTimeout(timer);
       }
     }
   }, [value, isEditorReady]);

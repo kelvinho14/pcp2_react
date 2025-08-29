@@ -28,6 +28,7 @@ interface AIGeneratedQuestionsModalProps {
   onHide: () => void
   onAccept: (questions: GeneratedQuestion[]) => void
   onAcceptSingle: (question: GeneratedQuestion) => void
+  onUseInCurrentForm?: (question: GeneratedQuestion) => void // New callback for using in current form
   questions: GeneratedQuestion[]
   isLoading?: boolean
 }
@@ -37,6 +38,7 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
   onHide,
   onAccept,
   onAcceptSingle,
+  onUseInCurrentForm,
   questions,
   isLoading = false
 }) => {
@@ -207,6 +209,18 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
                                 </>
                               )}
                             </button>
+                            {onUseInCurrentForm && (
+                              <button
+                                type='button'
+                                className='btn btn-sm btn-info'
+                                onClick={() => onUseInCurrentForm(question)}
+                                disabled={isLoading || isCreating}
+                                title='Use this content in the current form instead of creating a new question'
+                              >
+                                <KTIcon iconName='edit' className='fs-6 me-1' />
+                                Use in Form
+                              </button>
+                            )}
                             <button
                               type='button'
                               className='btn btn-sm btn-secondary'

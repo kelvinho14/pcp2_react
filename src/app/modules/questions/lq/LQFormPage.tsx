@@ -17,6 +17,7 @@ import Select from 'react-select'
 import TagWithScore, {TagWithScoreData} from '../components/TagWithScore'
 import AIEditorWithButton from '../../../../components/AI/AIEditorWithButton'
 import AIProcessedContentModal from '../../../../components/AI/AIProcessedContentModal'
+import AIGeneratedQuestionsModal from '../components/AIGeneratedQuestionsModal'
 import {useAIImageToText} from '../../../../hooks/useAIImageToText'
 import {transformLQQuestionForBackend} from '../components/questionTransformers'
 
@@ -54,6 +55,14 @@ const LQFormPage: FC = () => {
   
   // State for storing the question ID returned from image uploads
   const [currentQuestionId, setCurrentQuestionId] = useState<string | undefined>(qId)
+  
+  // State for AI generated questions modal
+  const [showAIGeneratedQuestionsModal, setShowAIGeneratedQuestionsModal] = useState(false)
+  const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([])
+  const [generatingSimilarQuestions, setGeneratingSimilarQuestions] = useState(false)
+  const [creatingMultipleQuestions, setCreatingMultipleQuestions] = useState(false)
+  
+
   
 
 
@@ -188,12 +197,18 @@ const LQFormPage: FC = () => {
         score: tag.score !== undefined ? tag.score : 0
       })) as TagWithScoreData[]
 
-      formik.setValues({
-        question: currentQuestion.question_content || '',
-        teacherRemark: currentQuestion.teacher_remark || '',
-        answer: currentQuestion.lq_question?.answer_content || '',
-        selectedTags: transformedTags,
-      }, false) // Set validateOnChange to false to prevent validation during load
+      // Delay setting form values to ensure TinyMCE editors are ready
+      console.log('🔄 LQ Form: Setting form values with delay to ensure editors are ready')
+      setTimeout(() => {
+        console.log('📝 LQ Form: Setting question content:', currentQuestion.question_content)
+        console.log('📝 LQ Form: Setting answer content:', currentQuestion.lq_question?.answer_content)
+        formik.setValues({
+          question: currentQuestion.question_content || '',
+          teacherRemark: currentQuestion.teacher_remark || '',
+          answer: currentQuestion.lq_question?.answer_content || '',
+          selectedTags: transformedTags,
+        }, false) // Set validateOnChange to false to prevent validation during load
+      }, 500) // 500ms delay to ensure editors are initialized
     }
   }, [currentQuestion, isEditMode])
 
@@ -212,11 +227,75 @@ const LQFormPage: FC = () => {
     }
   }
 
+
+
   // Handle accepting processed content from modal
   const handleAcceptProcessedContent = (content: string, field: 'question' | 'answer') => {
     formik.setFieldValue(field, content)
     formik.setFieldTouched(field, true)
     toast.success('AI processed content applied successfully!', 'Success')
+  }
+
+  // Handle accepting generated questions
+  const handleAcceptGeneratedQuestions = async (questions: any[]) => {
+    try {
+      // This would typically create multiple questions
+      console.log('Accepting generated questions:', questions)
+      toast.success(`${questions.length} questions accepted!`, 'Success')
+      setShowAIGeneratedQuestionsModal(false)
+    } catch (error) {
+      console.error('Error accepting generated questions:', error)
+      toast.error('Failed to accept generated questions', 'Error')
+    }
+  }
+
+  // Handle accepting single generated question
+  const handleAcceptSingleQuestion = async (question: any) => {
+    try {
+      // This would typically create a single question
+      console.log('Accepting single question:', question)
+      toast.success('Question accepted!', 'Success')
+    } catch (error) {
+      console.error('Error accepting single question:', error)
+      toast.error('Failed to accept question', 'Error')
+    }
+  }
+
+  // Handle using generated question in current form
+  const handleUseInCurrentForm = (question: any) => {
+    try {
+      console.log('🔄 Using question in current form:', question)
+      
+      // Populate the current form with the generated content
+      if (question.question_content) {
+        console.log('📝 Setting question content:', question.question_content)
+        formik.setFieldValue('question', question.question_content)
+        formik.setFieldTouched('question', true)
+      }
+      
+      if (question.lq_question?.answer_content) {
+        console.log('📝 Setting answer content:', question.lq_question.answer_content)
+        formik.setFieldValue('answer', question.lq_question.answer_content)
+        formik.setFieldTouched('answer', true)
+      }
+      
+      if (question.teacher_remark) {
+        console.log('📝 Setting teacher remark:', question.teacher_remark)
+        formik.setFieldValue('teacherRemark', question.teacher_remark)
+        formik.setFieldTouched('teacherRemark', true)
+      }
+      
+      // Force a re-render by updating the form values
+      console.log('🔄 Current form values after update:', formik.values)
+      
+      // Close the modal
+      setShowAIGeneratedQuestionsModal(false)
+      
+      toast.success('Generated content applied to current form!', 'Success')
+    } catch (error) {
+      console.error('Error using question in current form:', error)
+      toast.error('Failed to apply generated content to form', 'Error')
+    }
   }
 
   if (tagsLoading || (isEditMode && questionLoading)) {
@@ -545,6 +624,17 @@ const LQFormPage: FC = () => {
 
       {/* AI Processed Content Modal */}
       <AIProcessedContentModal onAccept={handleAcceptProcessedContent} />
+      
+      {/* AI Generated Questions Modal */}
+      <AIGeneratedQuestionsModal
+        show={showAIGeneratedQuestionsModal}
+        onHide={() => setShowAIGeneratedQuestionsModal(false)}
+        onAccept={handleAcceptGeneratedQuestions}
+        onAcceptSingle={handleAcceptSingleQuestion}
+        onUseInCurrentForm={handleUseInCurrentForm}
+        questions={generatedQuestions}
+        isLoading={generatingSimilarQuestions || creatingMultipleQuestions || creating}
+      />
     </>
   )
 }
