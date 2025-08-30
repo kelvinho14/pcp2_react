@@ -31,7 +31,8 @@ export const transformMCQuestionForBackend = (
   teacher_remark: string,
   options: Array<{ option_letter: string; content: string; is_correct: boolean }>,
   answer_content: string,
-  tags: Array<{ tag_id?: string; name?: string; score?: number }> = []
+  tags: Array<{ tag_id?: string; name?: string; score?: number }> = [],
+  question_id?: string
 ): QuestionFormData => {
   const correctOption = options.find(opt => opt.is_correct)
   if (!correctOption) {
@@ -44,6 +45,7 @@ export const transformMCQuestionForBackend = (
     name: '', // Name field is no longer used
     question_content,
     teacher_remark,
+    ...(question_id && { question_id }),
     mc_question: {
       options: options.map(option => ({
         option_letter: option.option_letter,
@@ -62,13 +64,15 @@ export const transformLQQuestionForBackend = (
   question_content: string,
   teacher_remark: string,
   answer_content: string,
-  tags: Array<{ tag_id?: string; name?: string; score?: number }> = []
+  tags: Array<{ tag_id?: string; name?: string; score?: number }> = [],
+  question_id?: string
 ): QuestionFormData => {
   return {
     type,
     name: '', // Name field is no longer used
     question_content,
     teacher_remark,
+    ...(question_id && { question_id }),
     lq_question: {
       answer_content
     },
@@ -76,8 +80,8 @@ export const transformLQQuestionForBackend = (
   }
 }
 
-export const transformQuestionsForBackend = (questions: GeneratedQuestion[]): QuestionFormData[] => {
-  const questionData = questions.map(q => {
+export const transformQuestionsForBackend = (questions: GeneratedQuestion[], questionIds?: Map<number, string>): QuestionFormData[] => {
+  const questionData = questions.map((q, index) => {
     if (q.type === 'mc' && q.mc_question) {
       const correctLetter = q.mc_question.correct_option
       if (!isValidLetter(correctLetter, q.mc_question.options)) {
@@ -87,11 +91,14 @@ export const transformQuestionsForBackend = (questions: GeneratedQuestion[]): Qu
 
     }
     
+    const questionId = questionIds?.get(index)
+    
     return {
       type: q.type,
       name: '', // Name field is no longer used
       question_content: q.question_content,
       teacher_remark: q.teacher_remark,
+      ...(questionId && { question_id: questionId }),
       ...(q.type === 'lq' && q.lq_question && {
         lq_question: {
           answer_content: q.lq_question.answer_content
@@ -116,12 +123,13 @@ export const transformQuestionsForBackend = (questions: GeneratedQuestion[]): Qu
   return questionData
 }
 
-export const transformSingleQuestionForBackend = (question: GeneratedQuestion): QuestionFormData => {
+export const transformSingleQuestionForBackend = (question: GeneratedQuestion, questionId?: string): QuestionFormData => {
   let questionData: QuestionFormData = { 
     type: question.type,
     name: '', // Name field is no longer used
     question_content: question.question_content,
-    teacher_remark: question.teacher_remark
+    teacher_remark: question.teacher_remark,
+    ...(questionId && { question_id: questionId })
   }
   
   if (question.type === 'lq' && question.lq_question) {

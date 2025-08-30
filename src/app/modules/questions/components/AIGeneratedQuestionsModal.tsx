@@ -26,10 +26,12 @@ interface GeneratedQuestion {
 interface AIGeneratedQuestionsModalProps {
   show: boolean
   onHide: () => void
-  onAccept: (questions: GeneratedQuestion[]) => void
-  onAcceptSingle: (question: GeneratedQuestion) => void
+  onAccept: (questions: GeneratedQuestion[], questionIds?: Map<number, string>) => void
+  onAcceptSingle: (question: GeneratedQuestion, questionId?: string) => void
+  onUseInCurrentForm?: (question: GeneratedQuestion) => void // New callback for using in current form
   questions: GeneratedQuestion[]
   isLoading?: boolean
+  questionType?: 'mc' | 'lq' // Add question type for image uploads
 }
 
 const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
@@ -37,19 +39,52 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
   onHide,
   onAccept,
   onAcceptSingle,
+  onUseInCurrentForm,
   questions,
-  isLoading = false
+  isLoading = false,
+  questionType
 }) => {
+  
+  // Simple CSS injection for TinyMCE z-index fixes
+  useEffect(() => {
+    if (show) {
+      // Check if CSS is already injected
+      let style = document.getElementById('tinymce-modal-zindex-fix') as HTMLStyleElement;
+      if (!style) {
+        style = document.createElement('style');
+        style.id = 'tinymce-modal-zindex-fix';
+        style.textContent = `
+          .modal .tox-tinymce { z-index: 1060 !important; }
+          .modal .tox-toolbar, .modal .tox-toolbar__group, .modal .tox-toolbar__primary { z-index: 1065 !important; }
+          .modal .tox-menu, .modal .tox-dropzone, .modal .tox-dialog-wrap, .modal .tox-dialog, 
+          .modal .tox-collection__item, .modal .tox-selected-menu, .modal .tox-pop { z-index: 9999 !important; }
+          .tox-menu, .tox-dropzone, .tox-dialog-wrap, .tox-dialog, 
+          .tox-collection__item, .tox-selected-menu, .tox-pop { z-index: 9999 !important; }
+        `;
+        document.head.appendChild(style);
+      }
+      
+      return () => {
+        // Clean up when modal closes
+        const existingStyle = document.getElementById('tinymce-modal-zindex-fix');
+        if (existingStyle) {
+          existingStyle.remove();
+        }
+      }
+    }
+  }, [show])
   const [editedQuestions, setEditedQuestions] = useState<GeneratedQuestion[]>(questions)
   const [acceptedQuestions, setAcceptedQuestions] = useState<Set<number>>(new Set())
   const [dismissedQuestions, setDismissedQuestions] = useState<Set<number>>(new Set())
   const [creatingQuestion, setCreatingQuestion] = useState<number | null>(null)
+  const [questionIds, setQuestionIds] = useState<Map<number, string>>(new Map())
 
   // Update edited questions when questions prop changes
   useEffect(() => {
     setEditedQuestions(questions)
     setAcceptedQuestions(new Set())
     setDismissedQuestions(new Set())
+    setQuestionIds(new Map())
   }, [questions])
 
   // Auto-close modal when all questions are handled
@@ -88,10 +123,36 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
     setEditedQuestions(updated)
   }
 
+  // Handle image upload from TinyMCE editors - tracks per question index, ensures same question_id for all editors in same question
+  const handleImageUpload = (fileId: string, url: string, questionId?: string, questionIndex?: number) => {
+    console.log('🖼️ Modal: handleImageUpload called with:', { fileId, questionId, questionIndex, currentQuestionIds: Array.from(questionIds.entries()) })
+    
+    if (questionId && questionIndex !== undefined) {
+      setQuestionIds(prev => {
+        const newMap = new Map(prev)
+        if (!newMap.has(questionIndex)) {
+          // First time setting question_id for this question
+          newMap.set(questionIndex, questionId)
+          console.log('🖼️ Modal: Setting question_id:', questionId, 'for question index:', questionIndex)
+        } else {
+          // Question already has a question_id, this should use the existing one
+          const existingQuestionId = newMap.get(questionIndex)
+          if (existingQuestionId !== questionId) {
+            console.log('🖼️ Modal: Question index', questionIndex, 'already has question_id:', existingQuestionId, 'but received different question_id:', questionId, '- keeping existing one')
+          }
+          // Don't update the map - keep the existing question_id
+        }
+        console.log('🖼️ Modal: Updated questionIds map:', Array.from(newMap.entries()))
+        return newMap
+      })
+    }
+  }
+
   const handleAcceptQuestion = async (index: number) => {
     setCreatingQuestion(index)
     try {
-      await onAcceptSingle(editedQuestions[index])
+      const questionId = questionIds.get(index)
+      await onAcceptSingle(editedQuestions[index], questionId)
       setAcceptedQuestions(prev => new Set([...prev, index]))
       setDismissedQuestions(prev => {
         const newSet = new Set(prev)
@@ -116,7 +177,20 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
 
   const handleAcceptAll = async () => {
     const visibleQuestions = editedQuestions.filter((_, index) => !dismissedQuestions.has(index))
-    await onAccept(visibleQuestions)
+    // Create a map of question index to question_id for visible questions
+    const visibleQuestionIds = new Map<number, string>()
+    visibleQuestions.forEach((_, visibleIndex) => {
+      const originalIndex = editedQuestions.findIndex((q, idx) => 
+        !dismissedQuestions.has(idx) && 
+        editedQuestions.filter((_, i) => !dismissedQuestions.has(i)).indexOf(q) === visibleIndex
+      )
+      const questionId = questionIds.get(originalIndex)
+      if (questionId) {
+        visibleQuestionIds.set(visibleIndex, questionId)
+      }
+    })
+    
+    await onAccept(visibleQuestions, visibleQuestionIds)
     const allIndices = new Set(editedQuestions.map((_, index) => index))
     setAcceptedQuestions(allIndices)
     setDismissedQuestions(new Set())
@@ -151,6 +225,7 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
       keyboard={true}
       dialogClassName="ai-generated-questions-modal"
       style={{ maxWidth: '90vw' }}
+      className="tinymce-modal-fix"
     >
       <Modal.Header closeButton={!isLoading}>
         <Modal.Title>
@@ -207,6 +282,18 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
                                 </>
                               )}
                             </button>
+                            {onUseInCurrentForm && (
+                              <button
+                                type='button'
+                                className='btn btn-sm btn-info'
+                                onClick={() => onUseInCurrentForm(question)}
+                                disabled={isLoading || isCreating}
+                                title='Use this content in the current form instead of creating a new question'
+                              >
+                                <KTIcon iconName='edit' className='fs-6 me-1' />
+                                Use in Form
+                              </button>
+                            )}
                             <button
                               type='button'
                               className='btn btn-sm btn-secondary'
@@ -223,22 +310,50 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
                         {/* Question Content */}
                         <div className='mb-3'>
                           <label className='form-label fw-bold'>Question:</label>
-                          <TinyMCEEditor
-                            value={question.question_content}
-                            onChange={(content: string) => handleQuestionContentChange(index, content)}
-                            height={200}
-                          />
+                          {(() => {
+                            const currentQuestionId = questionIds.get(index);
+                            console.log('🎨 Rendering Question Content Editor for index', index, 'with questionId prop:', currentQuestionId, 'content length:', question.question_content?.length);
+                            return (
+                              <TinyMCEEditor
+                                value={question.question_content}
+                                onChange={(content: string) => handleQuestionContentChange(index, content)}
+                                questionType={questionType || question.type}
+                                questionId={currentQuestionId}
+                                isQuestionBank={true}
+                                onImageUpload={(fileId: string, url: string, questionId?: string) => {
+                                  console.log('🖼️ Question Content Editor upload for index', index, 'received questionId:', questionId, 'current stored questionId:', questionIds.get(index))
+                                  handleImageUpload(fileId, url, questionId, index)
+                                }}
+                                height={200}
+                                key={`question-content-${index}`} // Stable key
+                              />
+                            );
+                          })()}
                         </div>
 
                         {/* Answer Content (for LQ questions) */}
                         {question.lq_question?.answer_content && (
                           <div className='mb-3'>
                             <label className='form-label fw-bold'>Answer:</label>
-                            <TinyMCEEditor
-                              value={question.lq_question.answer_content}
-                              onChange={(content: string) => handleAnswerContentChange(index, content)}
-                              height={300}
-                            />
+                            {(() => {
+                              const currentQuestionId = questionIds.get(index);
+                              console.log('🎨 Rendering Answer Content Editor for index', index, 'with questionId prop:', currentQuestionId);
+                              return (
+                                <TinyMCEEditor
+                                  value={question.lq_question.answer_content}
+                                  onChange={(content: string) => handleAnswerContentChange(index, content)}
+                                  questionType={questionType || question.type}
+                                  questionId={currentQuestionId}
+                                  isQuestionBank={true}
+                                  onImageUpload={(fileId: string, url: string, questionId?: string) => {
+                                    console.log('🖼️ Answer Content Editor upload for index', index, 'received questionId:', questionId, 'current stored questionId:', questionIds.get(index))
+                                    handleImageUpload(fileId, url, questionId, index)
+                                  }}
+                                  height={300}
+                                  key={`answer-content-${index}`} // Stable key
+                                />
+                              );
+                            })()}
                           </div>
                         )}
 
@@ -315,7 +430,15 @@ const AIGeneratedQuestionsModal: FC<AIGeneratedQuestionsModalProps> = ({
                                       setEditedQuestions(updated)
                                     }
                                   }}
+                                  questionType={questionType || question.type}
+                                  questionId={questionIds.get(index)}
+                                  isQuestionBank={true}
+                                  onImageUpload={(fileId: string, url: string, questionId?: string) => {
+                                    console.log('🖼️ MC Explanation Editor upload for index', index, 'received questionId:', questionId, 'current stored questionId:', questionIds.get(index))
+                                    handleImageUpload(fileId, url, questionId, index)
+                                  }}
                                   height={200}
+                                  key={`mc-explanation-${index}`} // Stable key to prevent re-creation
                                 />
                               </div>
                             )}
