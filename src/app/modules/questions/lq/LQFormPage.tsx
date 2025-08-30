@@ -21,6 +21,25 @@ import AIGeneratedQuestionsModal from '../components/AIGeneratedQuestionsModal'
 import {useAIImageToText} from '../../../../hooks/useAIImageToText'
 import {transformLQQuestionForBackend} from '../components/questionTransformers'
 
+// Define GeneratedQuestion interface to match the modal's expectations
+interface GeneratedQuestion {
+  type: 'mc' | 'lq'
+  name?: string
+  question_content: string
+  teacher_remark: string
+  lq_question?: {
+    answer_content: string
+  }
+  mc_question?: {
+    options: Array<{
+      option_letter: string
+      option_text: string
+    }>
+    correct_option: string
+    answer_content?: string
+  }
+}
+
 const lqValidationSchema = Yup.object().shape({
   teacherRemark: Yup.string()
     .max(500, 'Maximum 500 characters'),
@@ -198,10 +217,7 @@ const LQFormPage: FC = () => {
       })) as TagWithScoreData[]
 
       // Delay setting form values to ensure TinyMCE editors are ready
-      console.log('🔄 LQ Form: Setting form values with delay to ensure editors are ready')
       setTimeout(() => {
-        console.log('📝 LQ Form: Setting question content:', currentQuestion.question_content)
-        console.log('📝 LQ Form: Setting answer content:', currentQuestion.lq_question?.answer_content)
         formik.setValues({
           question: currentQuestion.question_content || '',
           teacherRemark: currentQuestion.teacher_remark || '',
@@ -237,14 +253,12 @@ const LQFormPage: FC = () => {
   }
 
   // Handle accepting generated questions
-  const handleAcceptGeneratedQuestions = async (questions: any[], questionId?: string) => {
+  const handleAcceptGeneratedQuestions = (questions: GeneratedQuestion[], questionIds?: Map<number, string>) => {
     try {
       // This would typically create multiple questions
-      console.log('Accepting generated questions:', questions, 'with question_id:', questionId)
       toast.success(`${questions.length} questions accepted!`, 'Success')
       setShowAIGeneratedQuestionsModal(false)
     } catch (error) {
-      console.error('Error accepting generated questions:', error)
       toast.error('Failed to accept generated questions', 'Error')
     }
   }
@@ -253,10 +267,8 @@ const LQFormPage: FC = () => {
   const handleAcceptSingleQuestion = async (question: any, questionId?: string) => {
     try {
       // This would typically create a single question
-      console.log('Accepting single question:', question, 'with question_id:', questionId)
       toast.success('Question accepted!', 'Success')
     } catch (error) {
-      console.error('Error accepting single question:', error)
       toast.error('Failed to accept question', 'Error')
     }
   }
@@ -264,36 +276,27 @@ const LQFormPage: FC = () => {
   // Handle using generated question in current form
   const handleUseInCurrentForm = (question: any) => {
     try {
-      console.log('🔄 Using question in current form:', question)
-      
       // Populate the current form with the generated content
       if (question.question_content) {
-        console.log('📝 Setting question content:', question.question_content)
         formik.setFieldValue('question', question.question_content)
         formik.setFieldTouched('question', true)
       }
       
       if (question.lq_question?.answer_content) {
-        console.log('📝 Setting answer content:', question.lq_question.answer_content)
         formik.setFieldValue('answer', question.lq_question.answer_content)
         formik.setFieldTouched('answer', true)
       }
       
       if (question.teacher_remark) {
-        console.log('📝 Setting teacher remark:', question.teacher_remark)
         formik.setFieldValue('teacherRemark', question.teacher_remark)
         formik.setFieldTouched('teacherRemark', true)
       }
-      
-      // Force a re-render by updating the form values
-      console.log('🔄 Current form values after update:', formik.values)
       
       // Close the modal
       setShowAIGeneratedQuestionsModal(false)
       
       toast.success('Generated content applied to current form!', 'Success')
     } catch (error) {
-      console.error('Error using question in current form:', error)
       toast.error('Failed to apply generated content to form', 'Error')
     }
   }
