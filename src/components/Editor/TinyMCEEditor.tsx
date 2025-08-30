@@ -1,7 +1,8 @@
 import { Editor } from '@tinymce/tinymce-react';
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { getHeadersWithSchoolSubject } from '../../_metronic/helpers/axios';
+import './TinyMCEEditor.css'; // Import CSS for z-index fixes
 
 interface TinyMCEEditorProps {
   initialValue?: string;
@@ -11,22 +12,56 @@ interface TinyMCEEditorProps {
   height?: number;
   placeholder?: string;
   onImageUpload?: (fileId: string, url: string, questionId?: string) => void;
-  questionType?: 'mc' | 'lq';
+  questionType?: 'mc' | 'lq' | 'tf' | 'matching'; // Ready for future question types
   questionId?: string; // For edit mode
   isQuestionBank?: boolean; // Indicates this is from question bank
+  language?: string; // TinyMCE language code (e.g., 'en', 'zh_CN', 'es')
+  disabled?: boolean; // Add disabled state
+  customTexts?: Record<string, string>; // For localization
 }
+
+interface ImageUploadResponse {
+  status: string;
+  data: {
+    file_id: string;
+    question_id: string;
+    public_url: string;
+  };
+}
+
+// Constants
+const DEFAULT_CONFIG = {
+  height: 500,
+  placeholder: 'Start typing...',
+  language: 'en',
+  isQuestionBank: true,
+} as const;
+
+const EDITOR_PLUGINS = [
+  'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+  'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+  'insertdatetime', 'media', 'table', 'help', 'wordcount'
+];
+
+const EDITOR_TOOLBAR = 'undo redo | blocks | ' +
+  'bold italic forecolor | alignleft aligncenter ' +
+  'alignright alignjustify | bullist numlist outdent indent | ' +
+  'removeformat | image | help';
 
 const TinyMCEEditor = ({
   initialValue = '',
   value,
   onChange,
   onBlur,
-  height = 500,
-  placeholder = 'Start typing...',
+  height = DEFAULT_CONFIG.height,
+  placeholder = DEFAULT_CONFIG.placeholder,
   onImageUpload,
   questionType,
   questionId,
-  isQuestionBank = true, // Default to true for question bank
+  isQuestionBank = DEFAULT_CONFIG.isQuestionBank,
+  language = DEFAULT_CONFIG.language,
+  disabled = false,
+  customTexts = {},
 }: TinyMCEEditorProps) => {
   const editorRef = useRef<any>(null);
   const editorId = useRef<string>(`editor-${Math.random().toString(36).substr(2, 9)}`);
@@ -38,122 +73,87 @@ const TinyMCEEditor = ({
   const [isEditorReady, setIsEditorReady] = useState(false);
   // Ref to store current question ID for immediate access in uploads
   const currentQuestionIdRef = useRef<string | undefined>(questionId);
+  // Track blob URLs for cleanup
+  const blobUrls = useRef<Set<string>>(new Set());
 
-  // Update local question ID when prop changes
+  // Always sync with prop - prop takes absolute precedence
   useEffect(() => {
-    if (questionId && questionId !== localQuestionId) {
-      setLocalQuestionId(questionId);
-      currentQuestionIdRef.current = questionId;
-      console.log('🔄 TinyMCEEditor: questionId prop updated to:', questionId);
+    // If prop is provided, always use it (overrides internal state)
+    if (questionId) {
+      if (questionId !== localQuestionId || questionId !== currentQuestionIdRef.current) {
+        setLocalQuestionId(questionId);
+        currentQuestionIdRef.current = questionId;
+      }
     }
-  }, [questionId, localQuestionId]);
+    // If prop becomes undefined, keep internal state (don't clear it)
+  }, [questionId]); // Only depend on questionId prop, not local state
   
-  // Update editor content when value prop changes, but only if it's different
+  // Simplified content update - only for dynamic changes after initialization
   useEffect(() => {
-    console.log('🔄 TinyMCE value effect triggered:', { 
-      isEditorReady, 
-      hasEditorRef: !!editorRef.current, 
-      hasGetContent: !!editorRef.current?.getContent,
-      value, 
-      lastValue: lastValueRef.current,
-      valueChanged: value !== lastValueRef.current
-    })
-    
-    if (isEditorReady && editorRef.current && editorRef.current.getContent && value !== undefined) {
-      try {
-        console.log('📝 Setting TinyMCE content:', value)
-        
-        // Always set the content when value changes, regardless of lastValue
-        // This ensures content is displayed even if it was set before editor was ready
-        editorRef.current.setContent(value);
-        lastValueRef.current = value;
-        console.log('✅ TinyMCE content set successfully')
-        
-      } catch (error) {
-        console.error('❌ Error setting TinyMCE content:', error)
-        // If editor is not ready, try again after a short delay
-        setTimeout(() => {
-          if (editorRef.current && editorRef.current.getContent) {
-            try {
-              editorRef.current.setContent(value);
-              lastValueRef.current = value;
-              console.log('✅ TinyMCE content set successfully after retry')
-            } catch (retryError) {
-              console.warn('Editor still not ready after retry:', retryError);
-            }
-          }
-        }, 100);
-      }
-    } else {
-      console.log('⚠️ TinyMCE not ready for content update:', { 
-        isEditorReady, 
-        hasEditorRef: !!editorRef.current, 
-        hasGetContent: !!editorRef.current?.getContent,
-        valueDefined: value !== undefined,
-        valueChanged: value !== lastValueRef.current
-      })
-      
-      // If editor is not ready but we have a value, schedule it for later
-      if (value !== undefined && value !== lastValueRef.current) {
-        console.log('⏰ Scheduling content update for when editor is ready')
-        const timer = setTimeout(() => {
-          if (isEditorReady && editorRef.current && editorRef.current.getContent) {
-            try {
-              editorRef.current.setContent(value);
-              lastValueRef.current = value;
-              console.log('✅ TinyMCE content set successfully after delay')
-            } catch (retryError) {
-              console.warn('Editor still not ready after delay:', retryError);
-            }
-          }
-        }, 500); // Wait 500ms for editor to be ready
-        
-        return () => clearTimeout(timer);
-      }
+    // Skip if using initialValue approach or editor not ready
+    if (!isEditorReady || !editorRef.current?.setContent || !value) {
+      return;
+    }
+
+    // Only update if content actually changed and we have a value
+    if (value === lastValueRef.current) {
+      return;
+    }
+
+    console.log('🔄 TinyMCE Dynamic Update:', {
+      valueLength: value.length,
+      lastValueLength: lastValueRef.current?.length || 0,
+      preview: value.substring(0, 50) + (value.length > 50 ? '...' : '')
+    });
+
+    // Update content for dynamic changes (like user edits in forms)
+    try {
+      editorRef.current.setContent(value);
+      lastValueRef.current = value;
+      console.log('✅ TinyMCE Dynamic Update: Success');
+    } catch (error) {
+      console.log('❌ TinyMCE Dynamic Update: Failed', error);
     }
   }, [value, isEditorReady]);
 
-  // Custom image upload handler - using useCallback to maintain stable reference
-  const handleImageUpload = useCallback(async (blobInfo: any, progress: (percent: number) => void): Promise<string> => {
-    console.log('🖼️ handleImageUpload called with:', { localQuestionId, questionId, questionType });
-    
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      blobUrls.current.forEach(url => URL.revokeObjectURL(url));
+      blobUrls.current.clear();
+    };
+  }, []);
+
+  // Memoized image upload handler with better error handling
+  const handleImageUpload = useCallback(async (
+    blobInfo: any, 
+    progress: (percent: number) => void
+  ): Promise<string> => {
     try {
       const formData = new FormData();
-      
-      // Use 'file' as the field name
-      const fieldName = 'file';
-      formData.append(fieldName, blobInfo.blob(), blobInfo.filename());
-      
-      // Add metadata about the image source and question type
+      formData.append('file', blobInfo.blob(), blobInfo.filename());
       formData.append('source', 'question_bank');
+      
       if (questionType) {
         formData.append('question_type', questionType);
       }
       
-      // Always send question_id if we have one (either from local state, ref, or props)
-      const currentQuestionId = currentQuestionIdRef.current || localQuestionId || questionId;
-      
+      // STRICT PRIORITY: prop > ref > local state
+      const currentQuestionId = questionId || currentQuestionIdRef.current || localQuestionId;
       if (currentQuestionId) {
         formData.append('question_id', currentQuestionId);
-        console.log('📤 Sending question_id to image upload API:', currentQuestionId);
-      } else {
-        console.log('⚠️ No question_id available for image upload');
       }
 
       const API_URL = import.meta.env.VITE_APP_API_URL;
-      
-      // Check if API URL is available
       if (!API_URL) {
         throw new Error('API URL is not configured');
       }
       
       const endpoint = `${API_URL}/questions/imageupload`;
-      const headers = getHeadersWithSchoolSubject(endpoint);
-      
-      // Remove content-type header to let browser set it with boundary for multipart/form-data
-      delete headers['Content-Type'];
+      const headers = { ...getHeadersWithSchoolSubject(endpoint) };
+      delete headers['Content-Type']; // Let browser set boundary
 
-      const response = await axios.post(endpoint, formData, {
+      const response = await axios.post<ImageUploadResponse>(endpoint, formData, {
         headers,
         withCredentials: true,
         onUploadProgress: (progressEvent) => {
@@ -164,226 +164,211 @@ const TinyMCEEditor = ({
         },
       });
 
-      if (response.data.status === 'success' && response.data.data?.public_url) {
-        // Extract file ID and question ID, then notify parent component
-        const fileId = response.data.data.file_id;
-        const returnedQuestionId = response.data.data.question_id;
-        
-        // Always store the returned question ID for future uploads
-        if (returnedQuestionId) {
-          // Update both state and ref immediately for next uploads
-          setLocalQuestionId(returnedQuestionId);
-          currentQuestionIdRef.current = returnedQuestionId;
-          
-          if (returnedQuestionId !== localQuestionId) {
-            console.log('💾 Stored new question_id from API response:', returnedQuestionId);
-          } else {
-            console.log('✅ Using existing question_id:', returnedQuestionId);
-          }
-        } else {
-          console.log('⚠️ No question_id returned from API response');
+      const { data } = response.data;
+      if (response.data.status === 'success' && data?.public_url) {
+        // Update local question ID only if we don't have a prop
+        if (data.question_id && !questionId) {
+          setLocalQuestionId(data.question_id);
+          currentQuestionIdRef.current = data.question_id;
         }
         
-        if (fileId && onImageUpload) {
-          onImageUpload(fileId, response.data.data.public_url, returnedQuestionId);
-        }
+        // Notify parent component
+        onImageUpload?.(data.file_id, data.public_url, data.question_id);
         
-        return response.data.data.public_url;
-      } else {
-        throw new Error('Upload failed: Invalid response format');
-      }
-    } catch (error: any) {
-      // Check if it's a network error (endpoint doesn't exist)
-      if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
-        // Return a blob URL as fallback for development/testing
-        const blobUrl = URL.createObjectURL(blobInfo.blob());
-        return blobUrl;
+        return data.public_url;
       }
       
-      // Check if it's a validation error (422)
-      if (error.response?.status === 422) {
-        // Return a blob URL as fallback for development/testing
+      throw new Error('Upload failed: Invalid response format');
+    } catch (error: any) {
+      // Handle different error types with fallbacks
+      const shouldUseFallback = 
+        error.code === 'ERR_NETWORK' || 
+        error.response?.status === 404 || 
+        error.response?.status === 422;
+      
+      if (shouldUseFallback) {
+        // Return blob URL as fallback for development/testing
         const blobUrl = URL.createObjectURL(blobInfo.blob());
+        blobUrls.current.add(blobUrl);
         return blobUrl;
       }
       
       const errorMessage = error.response?.data?.message || 'Image upload failed';
       throw new Error(errorMessage);
     }
-  }, [localQuestionId, questionType, onImageUpload]);
+  }, [questionType, questionId, localQuestionId, onImageUpload]);
 
-  const editorConfig = {
+  // Memoized editor configuration for better performance
+  const editorConfig = useMemo(() => ({
     height,
     menubar: true,
-    plugins: [
-      'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-      'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-      'insertdatetime', 'media', 'table', 'help', 'wordcount'
-    ],
-    toolbar: 'undo redo | blocks | ' +
-      'bold italic forecolor | alignleft aligncenter ' +
-      'alignright alignjustify | bullist numlist outdent indent | ' +
-      'removeformat | image | help',
+    language,
+    plugins: EDITOR_PLUGINS,
+    toolbar: EDITOR_TOOLBAR,
     content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
     placeholder,
     branding: false,
     promotion: false,
-    // Custom image upload handler - this is the key setting
+    
+    // Image upload configuration
     images_upload_handler: handleImageUpload,
-    // Enable automatic image uploads
     automatic_uploads: true,
-    // Image upload settings
     images_upload_credentials: true,
-    // Image file types
     images_file_types: 'jpeg,jpg,png,gif,webp',
-    // Replace blob URIs with uploaded URLs
     images_replace_blob_uris: true,
-    // Disable image tools that create unwanted tabs
     image_advtab: false,
-    // Disable image dimensions
     image_dimensions: false,
-    // Disable image description
     image_description: false,
-    // Disable image title
     image_title: false,
-    // Disable image caption
     image_caption: false,
-    // Enable image upload tab in image dialog
-    images_upload_url: '', // Empty to force use of upload handler
-    // Force image plugin to show upload tab
+    images_upload_url: '',
     image_uploadtab: true,
-    // Enable image upload in image dialog
     image_upload: true,
-    // Show image upload tab
     image_upload_tab: true,
-     // Setup callback - simplified
-     setup: (editor: any) => {
-       // Store reference to editor
-       editorRef.current = editor;
-       
-       // Set initial content when editor is ready
-       editor.on('init', () => {
-         setIsEditorReady(true);
-         if (value !== undefined && lastValueRef.current !== value) {
-           try {
-             editor.setContent(value);
-             lastValueRef.current = value;
-           } catch (error) {
-             // If initial content setting fails, try again after a short delay
-             setTimeout(() => {
-               try {
-                 if (value !== undefined && lastValueRef.current !== value) {
-                   editor.setContent(value);
-                   lastValueRef.current = value;
-                 }
-               } catch (retryError) {
-                 console.warn('Could not set initial content after retry:', retryError);
-               }
-             }, 200);
-           }
-         }
-       });
-       
-       // Customize the image dialog to only show upload tab
-       editor.on('BeforeOpenWindow', (e: any) => {
-         if (e.target?.settings?.title === 'Insert/edit image') {
-           console.log('🚪 Image dialog opening, customizing tabs');
-           
-           // Override the dialog configuration to only show upload tab
-           e.target.settings.image_uploadtab = true;
-           e.target.settings.image_upload = true;
-           
-           // Hide general and advanced tabs by customizing the dialog
-           e.target.settings.image_advtab = false;
-           e.target.settings.image_dimensions = false;
-           e.target.settings.image_description = false;
-           e.target.settings.image_title = false;
-           e.target.settings.image_caption = false;
-         }
-       });
-       
-       // After dialog opens, hide the unwanted tabs
-       editor.on('OpenWindow', (e: any) => {
-         if (e.target?.settings?.title === 'Insert/edit image') {
-           console.log('🚪 Image dialog opened, hiding unwanted tabs');
-           
-           setTimeout(() => {
-             try {
-               // Hide General tab
-               const generalTab = document.querySelector('.tox-dialog .tox-tab[aria-label="General"]');
-               if (generalTab) {
-                 (generalTab as HTMLElement).style.display = 'none';
-                 console.log('✅ Hidden General tab');
-               }
-               
-               // Hide Advanced tab
-               const advancedTab = document.querySelector('.tox-dialog .tox-tab[aria-label="Advanced"]');
-               if (advancedTab) {
-                 (advancedTab as HTMLElement).style.display = 'none';
-                 console.log('✅ Hidden Advanced tab');
-               }
-               
-               // Show only Upload tab
-               const uploadTab = document.querySelector('.tox-dialog .tox-tab[aria-label="Upload"]');
-               if (uploadTab) {
-                 (uploadTab as HTMLElement).click();
-                 console.log('✅ Activated Upload tab');
-               }
-               
-               // Hide any other unwanted elements
-               const generalContent = document.querySelector('.tox-dialog .tox-tab-panel[aria-labelledby*="general"]');
-               if (generalContent) {
-                 (generalContent as HTMLElement).style.display = 'none';
-               }
-               
-               const advancedContent = document.querySelector('.tox-dialog .tox-tab-panel[aria-labelledby*="advanced"]');
-               if (advancedContent) {
-                 (advancedContent as HTMLElement).style.display = 'none';
-               }
-               
-             } catch (error) {
-               console.error('Error customizing image dialog:', error);
-             }
-           }, 100);
-         }
-       });
-     },
-  };
+    // Setup callback
+    setup: (editor: any) => {
+      editorRef.current = editor;
+      
+      // Add custom translations if provided
+      if (Object.keys(customTexts).length > 0) {
+        editor.on('init', () => {
+          try {
+            editor.translate.add(customTexts);
+          } catch (error) {
+            // Silent failure
+          }
+        });
+      }
+      
+      editor.on('init', () => {
+        console.log('🚀 TinyMCE Editor initialized:', {
+          hasValue: !!value,
+          valueLength: value?.length || 0,
+          valuePreview: value?.substring(0, 100) + (value && value.length > 100 ? '...' : ''),
+          lastValueLength: lastValueRef.current?.length || 0
+        });
+        
+        setIsEditorReady(true);
+        
+        // Handle modal z-index issues
+        try {
+          const container = editor.getContainer();
+          if (container?.closest('.modal')) {
+            container.style.zIndex = '1060';
+            
+            setTimeout(() => {
+              const elements = container.querySelectorAll('.tox-menu, .tox-dialog');
+              elements.forEach((element: any) => {
+                element.style.zIndex = '1070';
+              });
+            }, 100);
+          }
+        } catch (error) {
+          // Silent failure
+        }
+        
+        // Track the initial content that was set via initialValue
+        const currentContent = editor.getContent();
+        if (currentContent) {
+          lastValueRef.current = currentContent;
+          console.log('✅ TinyMCE Setup: Tracked initial content:', {
+            length: currentContent.length,
+            preview: currentContent.substring(0, 50) + (currentContent.length > 50 ? '...' : '')
+          });
+        } else {
+          console.log('⚠️ TinyMCE Setup: No initial content found');
+        }
+      });
+      
+      // Customize image dialog
+      editor.on('BeforeOpenWindow', (e: any) => {
+        if (e.target?.settings?.title === 'Insert/edit image') {
+          Object.assign(e.target.settings, {
+            image_uploadtab: true,
+            image_upload: true,
+            image_advtab: false,
+            image_dimensions: false,
+            image_description: false,
+            image_title: false,
+            image_caption: false,
+          });
+        }
+      });
+      
+      editor.on('OpenWindow', (e: any) => {
+        if (e.target?.settings?.title === 'Insert/edit image') {
+          setTimeout(() => {
+            try {
+              const selectors = [
+                '.tox-dialog .tox-tab[aria-label="General"]',
+                '.tox-dialog .tox-tab[aria-label="Advanced"]',
+                '.tox-dialog .tox-tab-panel[aria-labelledby*="general"]',
+                '.tox-dialog .tox-tab-panel[aria-labelledby*="advanced"]'
+              ];
+              
+              selectors.forEach(selector => {
+                const element = document.querySelector(selector) as HTMLElement;
+                if (element) element.style.display = 'none';
+              });
+              
+              const uploadTab = document.querySelector('.tox-dialog .tox-tab[aria-label="Upload"]') as HTMLElement;
+              uploadTab?.click();
+            } catch (error) {
+              // Silent failure
+            }
+          }, 100);
+        }
+      });
+    },
+  }), [height, language, placeholder, disabled, handleImageUpload, customTexts, value]);
   
 
+
+  // Memoized event handlers for better performance
+  const handleEditorInit = useCallback((evt: any, editor: any) => {
+    editorRef.current = editor;
+    if (value !== undefined) {
+      lastValueRef.current = value;
+    }
+  }, [value]);
+
+  const handleEditorChange = useCallback((content: string) => {
+    if (onChange && content !== undefined) {
+      onChange(content);
+    }
+  }, [onChange]);
+
+  const handleEditorBlur = useCallback((evt: any) => {
+    if (onBlur && evt.target?.getContent) {
+      try {
+        const content = evt.target.getContent();
+        onBlur(content);
+      } catch (error) {
+        // Silent failure
+      }
+    }
+  }, [onBlur]);
+
+  // For AI modal with pre-populated content, use initialValue instead of value
+  const effectiveInitialValue = value || initialValue || '';
+  
+  console.log('🎛️ TinyMCE Render Setup:', {
+    hasValue: !!value,
+    valueLength: value?.length || 0,
+    hasInitialValue: !!initialValue,
+    initialValueLength: initialValue?.length || 0,
+    effectiveInitialValue: effectiveInitialValue.substring(0, 50) + (effectiveInitialValue.length > 50 ? '...' : '')
+  });
 
   return (
     <Editor
       tinymceScriptSrc="/tinymce/tinymce/js/tinymce/tinymce.min.js"
-
-      onInit={(evt, editor) => {
-        // Store editor reference
-        editorRef.current = editor;
-        
-
-        
-        // Content will be set in the setup callback when editor is fully ready
-        if (value !== undefined) {
-          lastValueRef.current = value;
-        }
-      }}
-      initialValue={initialValue}
+      onInit={handleEditorInit}
+      initialValue={effectiveInitialValue}
       init={editorConfig}
-      onEditorChange={(content) => {
-        if (onChange && content !== undefined) {
-          onChange(content);
-        }
-      }}
-      onBlur={(evt) => {
-        if (onBlur && evt.target && evt.target.getContent) {
-          try {
-            const content = evt.target.getContent();
-            onBlur(content);
-          } catch (error) {
-            console.warn('Editor not ready for blur event:', error);
-          }
-        }
-      }}
+      onEditorChange={handleEditorChange}
+      onBlur={handleEditorBlur}
+      disabled={disabled}
     />
   );
 };

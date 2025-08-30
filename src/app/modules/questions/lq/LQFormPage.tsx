@@ -237,10 +237,10 @@ const LQFormPage: FC = () => {
   }
 
   // Handle accepting generated questions
-  const handleAcceptGeneratedQuestions = async (questions: any[]) => {
+  const handleAcceptGeneratedQuestions = async (questions: any[], questionId?: string) => {
     try {
       // This would typically create multiple questions
-      console.log('Accepting generated questions:', questions)
+      console.log('Accepting generated questions:', questions, 'with question_id:', questionId)
       toast.success(`${questions.length} questions accepted!`, 'Success')
       setShowAIGeneratedQuestionsModal(false)
     } catch (error) {
@@ -250,10 +250,10 @@ const LQFormPage: FC = () => {
   }
 
   // Handle accepting single generated question
-  const handleAcceptSingleQuestion = async (question: any) => {
+  const handleAcceptSingleQuestion = async (question: any, questionId?: string) => {
     try {
       // This would typically create a single question
-      console.log('Accepting single question:', question)
+      console.log('Accepting single question:', question, 'with question_id:', questionId)
       toast.success('Question accepted!', 'Success')
     } catch (error) {
       console.error('Error accepting single question:', error)
@@ -634,6 +634,7 @@ const LQFormPage: FC = () => {
         onUseInCurrentForm={handleUseInCurrentForm}
         questions={generatedQuestions}
         isLoading={generatingSimilarQuestions || creatingMultipleQuestions || creating}
+        questionType="lq"
       />
     </>
   )
