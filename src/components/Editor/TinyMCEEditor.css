@@ -1,0 +1,42 @@
+/* TinyMCE Modal Z-Index Fixes */
+.modal .tox-tinymce {
+  z-index: 1060 !important;
+}
+
+.modal .tox-toolbar,
+.modal .tox-toolbar__group,
+.modal .tox-toolbar__primary {
+  z-index: 1065 !important;
+}
+
+/* TinyMCE Dropdowns and Dialogs in Modals */
+.modal .tox-menu,
+.modal .tox-dropzone,
+.modal .tox-dialog-wrap,
+.modal .tox-dialog,
+.modal .tox-collection__item,
+.modal .tox-selected-menu,
+.modal .tox-pop {
+  z-index: 9999 !important;
+}
+
+/* Global TinyMCE fixes (outside modals too) */
+.tox-menu,
+.tox-dropzone,
+.tox-dialog-wrap,
+.tox-dialog,
+.tox-collection__item,
+.tox-selected-menu,
+.tox-pop {
+  z-index: 9999 !important;
+}
+
+/* Ensure modal backdrop doesn't interfere */
+.modal-backdrop {
+  z-index: 1040 !important;
+}
+
+/* Bootstrap modal z-index */
+.modal {
+  z-index: 1050 !important;
+}

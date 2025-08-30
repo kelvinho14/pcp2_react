@@ -17,8 +17,28 @@ import Select from 'react-select'
 import TagWithScore, {TagWithScoreData} from '../components/TagWithScore'
 import AIEditorWithButton from '../../../../components/AI/AIEditorWithButton'
 import AIProcessedContentModal from '../../../../components/AI/AIProcessedContentModal'
+import AIGeneratedQuestionsModal from '../components/AIGeneratedQuestionsModal'
 import {useAIImageToText} from '../../../../hooks/useAIImageToText'
 import {transformLQQuestionForBackend} from '../components/questionTransformers'
+
+// Define GeneratedQuestion interface to match the modal's expectations
+interface GeneratedQuestion {
+  type: 'mc' | 'lq'
+  name?: string
+  question_content: string
+  teacher_remark: string
+  lq_question?: {
+    answer_content: string
+  }
+  mc_question?: {
+    options: Array<{
+      option_letter: string
+      option_text: string
+    }>
+    correct_option: string
+    answer_content?: string
+  }
+}
 
 const lqValidationSchema = Yup.object().shape({
   teacherRemark: Yup.string()
@@ -43,12 +63,27 @@ interface LQFormData {
   selectedTags: TagWithScoreData[]
 }
 
+
+
 const LQFormPage: FC = () => {
   const navigate = useNavigate()
   const { qId } = useParams<{ qId: string }>()
   const dispatch = useDispatch<AppDispatch>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isEditMode = !!qId
+  
+  // State for storing the question ID returned from image uploads
+  const [currentQuestionId, setCurrentQuestionId] = useState<string | undefined>(qId)
+  
+  // State for AI generated questions modal
+  const [showAIGeneratedQuestionsModal, setShowAIGeneratedQuestionsModal] = useState(false)
+  const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([])
+  const [generatingSimilarQuestions, setGeneratingSimilarQuestions] = useState(false)
+  const [creatingMultipleQuestions, setCreatingMultipleQuestions] = useState(false)
+  
+
+  
+
 
   // Custom hook for AI functionality
   const { processingField, handleAIImageToText } = useAIImageToText('lq')
@@ -73,6 +108,8 @@ const LQFormPage: FC = () => {
     })
     return result
   }
+  
+
 
   // Fetch tags on component mount
   useEffect(() => {
@@ -130,18 +167,28 @@ const LQFormPage: FC = () => {
       try {
         const transformedTags = transformTags(values.selectedTags)
 
-        const questionData = transformLQQuestionForBackend(
-          'lq',
-          values.question,
-          values.teacherRemark,
-          values.answer,
-          transformedTags
-        )
-        
         if (isEditMode) {
+          const questionData = transformLQQuestionForBackend(
+            'lq',
+            values.question,
+            values.teacherRemark,
+            values.answer,
+            transformedTags
+          )
+          
           await dispatch(updateQuestion({qId, questionData})).unwrap()
           toast.success('Long Question updated successfully!', 'Success')
         } else {
+          // Create mode - create questionData with question_id if available
+          const questionData = transformLQQuestionForBackend(
+            'lq',
+            values.question,
+            values.teacherRemark,
+            values.answer,
+            transformedTags,
+            currentQuestionId
+          )
+          
           await dispatch(createQuestion(questionData)).unwrap()
           toast.success('Long Question created successfully!', 'Success')
         }
@@ -159,6 +206,9 @@ const LQFormPage: FC = () => {
   // Update form values when question data is loaded (edit mode)
   useEffect(() => {
     if (isEditMode && currentQuestion) {
+      // Set the current question ID for edit mode
+      setCurrentQuestionId(currentQuestion.q_id)
+      
       // Transform the tags from API format to our component format
       const transformedTags: TagWithScoreData[] = (currentQuestion.tags || []).map(tag => ({
         id: tag.tag_id || '',
@@ -166,20 +216,89 @@ const LQFormPage: FC = () => {
         score: tag.score !== undefined ? tag.score : 0
       })) as TagWithScoreData[]
 
-      formik.setValues({
-        question: currentQuestion.question_content || '',
-        teacherRemark: currentQuestion.teacher_remark || '',
-        answer: currentQuestion.lq_question?.answer_content || '',
-        selectedTags: transformedTags,
-      }, false) // Set validateOnChange to false to prevent validation during load
+      // Delay setting form values to ensure TinyMCE editors are ready
+      setTimeout(() => {
+        formik.setValues({
+          question: currentQuestion.question_content || '',
+          teacherRemark: currentQuestion.teacher_remark || '',
+          answer: currentQuestion.lq_question?.answer_content || '',
+          selectedTags: transformedTags,
+        }, false) // Set validateOnChange to false to prevent validation during load
+      }, 500) // 500ms delay to ensure editors are initialized
     }
   }, [currentQuestion, isEditMode])
+
+  // Update currentQuestionId when questionId prop changes
+  useEffect(() => {
+    if (qId) {
+      setCurrentQuestionId(qId)
+    }
+  }, [qId])
+
+  // Handle image uploads to update currentQuestionId when question_id is returned
+  const handleImageUpload = (fileId: string, url: string, field: 'question' | 'answer', questionId?: string) => {
+    // If we received a question ID from the image upload, update our state
+    if (questionId) {
+      setCurrentQuestionId(questionId)
+    }
+  }
+
+
 
   // Handle accepting processed content from modal
   const handleAcceptProcessedContent = (content: string, field: 'question' | 'answer') => {
     formik.setFieldValue(field, content)
     formik.setFieldTouched(field, true)
     toast.success('AI processed content applied successfully!', 'Success')
+  }
+
+  // Handle accepting generated questions
+  const handleAcceptGeneratedQuestions = (questions: GeneratedQuestion[], questionIds?: Map<number, string>) => {
+    try {
+      // This would typically create multiple questions
+      toast.success(`${questions.length} questions accepted!`, 'Success')
+      setShowAIGeneratedQuestionsModal(false)
+    } catch (error) {
+      toast.error('Failed to accept generated questions', 'Error')
+    }
+  }
+
+  // Handle accepting single generated question
+  const handleAcceptSingleQuestion = async (question: any, questionId?: string) => {
+    try {
+      // This would typically create a single question
+      toast.success('Question accepted!', 'Success')
+    } catch (error) {
+      toast.error('Failed to accept question', 'Error')
+    }
+  }
+
+  // Handle using generated question in current form
+  const handleUseInCurrentForm = (question: any) => {
+    try {
+      // Populate the current form with the generated content
+      if (question.question_content) {
+        formik.setFieldValue('question', question.question_content)
+        formik.setFieldTouched('question', true)
+      }
+      
+      if (question.lq_question?.answer_content) {
+        formik.setFieldValue('answer', question.lq_question.answer_content)
+        formik.setFieldTouched('answer', true)
+      }
+      
+      if (question.teacher_remark) {
+        formik.setFieldValue('teacherRemark', question.teacher_remark)
+        formik.setFieldTouched('teacherRemark', true)
+      }
+      
+      // Close the modal
+      setShowAIGeneratedQuestionsModal(false)
+      
+      toast.success('Generated content applied to current form!', 'Success')
+    } catch (error) {
+      toast.error('Failed to apply generated content to form', 'Error')
+    }
   }
 
   if (tagsLoading || (isEditMode && questionLoading)) {
@@ -234,6 +353,9 @@ const LQFormPage: FC = () => {
                   isProcessing={processingField !== null}
                   processingField={processingField}
                   onAIClick={handleAIImageToText}
+                  onImageUpload={handleImageUpload}
+                  questionType='lq'
+                  questionId={currentQuestionId || qId}
                   height={400}
                   placeholder='Enter the question content...'
                   editorKey={`question-editor-${isEditMode ? qId : 'create'}`}
@@ -262,6 +384,9 @@ const LQFormPage: FC = () => {
                   isProcessing={processingField !== null}
                   processingField={processingField}
                   onAIClick={handleAIImageToText}
+                  onImageUpload={handleImageUpload}
+                  questionType='lq'
+                  questionId={currentQuestionId || qId}
                   height={400}
                   placeholder='Enter the answer content...'
                   editorKey={`answer-editor-${isEditMode ? qId : 'create'}`}
@@ -337,7 +462,8 @@ const LQFormPage: FC = () => {
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
-                                transformedTags
+                                transformedTags,
+                                currentQuestionId
                               )
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -377,7 +503,8 @@ const LQFormPage: FC = () => {
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
-                                transformedTags
+                                transformedTags,
+                                currentQuestionId
                               )
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -418,7 +545,8 @@ const LQFormPage: FC = () => {
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
-                                transformedTags
+                                transformedTags,
+                                currentQuestionId
                               )
                               const createdQuestion = await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Long Question created successfully!', 'Success')
@@ -455,7 +583,8 @@ const LQFormPage: FC = () => {
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
-                                transformedTags
+                                transformedTags,
+                                currentQuestionId
                               )
                               await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Long Question created successfully!', 'Success')
@@ -498,6 +627,18 @@ const LQFormPage: FC = () => {
 
       {/* AI Processed Content Modal */}
       <AIProcessedContentModal onAccept={handleAcceptProcessedContent} />
+      
+      {/* AI Generated Questions Modal */}
+      <AIGeneratedQuestionsModal
+        show={showAIGeneratedQuestionsModal}
+        onHide={() => setShowAIGeneratedQuestionsModal(false)}
+        onAccept={handleAcceptGeneratedQuestions}
+        onAcceptSingle={handleAcceptSingleQuestion}
+        onUseInCurrentForm={handleUseInCurrentForm}
+        questions={generatedQuestions}
+        isLoading={generatingSimilarQuestions || creatingMultipleQuestions || creating}
+        questionType="lq"
+      />
     </>
   )
 }

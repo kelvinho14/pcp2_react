@@ -27,6 +27,7 @@ export interface QuestionFormData {
   name?: string
   question_content: string
   teacher_remark?: string
+  question_id?: string // ID generated from image uploads
   lq_question?: LQQuestion
   mc_question?: MCQuestion
   tags?: Array<{ tag_id?: string; name?: string; score?: number }>
@@ -51,6 +52,8 @@ export const createQuestion = createAsyncThunk(
   'questions/createQuestion',
   async (questionData: QuestionFormData) => {
     try {
+
+      
       const headers = getHeadersWithSchoolSubject(`${API_URL}/questions`)
       const response = await axios.post(`${API_URL}/questions`, questionData, { 
         headers,
