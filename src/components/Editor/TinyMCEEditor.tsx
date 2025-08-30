@@ -279,46 +279,6 @@ const TinyMCEEditor = ({
           console.log('⚠️ TinyMCE Setup: No initial content found');
         }
       });
-      
-      // Customize image dialog
-      editor.on('BeforeOpenWindow', (e: any) => {
-        if (e.target?.settings?.title === 'Insert/edit image') {
-          Object.assign(e.target.settings, {
-            image_uploadtab: true,
-            image_upload: true,
-            image_advtab: false,
-            image_dimensions: false,
-            image_description: false,
-            image_title: false,
-            image_caption: false,
-          });
-        }
-      });
-      
-      editor.on('OpenWindow', (e: any) => {
-        if (e.target?.settings?.title === 'Insert/edit image') {
-          setTimeout(() => {
-            try {
-              const selectors = [
-                '.tox-dialog .tox-tab[aria-label="General"]',
-                '.tox-dialog .tox-tab[aria-label="Advanced"]',
-                '.tox-dialog .tox-tab-panel[aria-labelledby*="general"]',
-                '.tox-dialog .tox-tab-panel[aria-labelledby*="advanced"]'
-              ];
-              
-              selectors.forEach(selector => {
-                const element = document.querySelector(selector) as HTMLElement;
-                if (element) element.style.display = 'none';
-              });
-              
-              const uploadTab = document.querySelector('.tox-dialog .tox-tab[aria-label="Upload"]') as HTMLElement;
-              uploadTab?.click();
-            } catch (error) {
-              // Silent failure
-            }
-          }, 100);
-        }
-      });
     },
   }), [height, language, placeholder, disabled, handleImageUpload, customTexts, value]);
   
