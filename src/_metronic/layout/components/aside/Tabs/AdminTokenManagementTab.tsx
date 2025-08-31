@@ -53,6 +53,7 @@ const AdminTokenManagementTab = () => {
           {currentUser?.role?.role_type === ROLES.ADMIN && (
             <>
               <AsideMenuItem to='/admin/token/request-log' title='AI request log' hasBullet={true} />
+              <AsideMenuItem to='/admin/migrations' title='Migrations' hasBullet={true} />
             </>
           )}
         </div>

@@ -50,18 +50,36 @@ export const renderHtmlSafely = (
   options: {
     maxImageWidth?: number
     maxImageHeight?: number
+    nl2br?: boolean // Convert \n to <br> tags
   } = {}
 ): string => {
   if (!html) return ''
   
   const {
     maxImageWidth = 100,
-    maxImageHeight = 60
+    maxImageHeight = 60,
+    nl2br = false
   } = options
+  
+  let processedHtml = html
+  
+  // Convert newlines to <br> tags if nl2br is enabled
+  if (nl2br) {
+    processedHtml = processedHtml
+      .replace(/&/g, '&amp;')      // Escape ampersands first
+      .replace(/</g, '&lt;')       // Escape less than
+      .replace(/>/g, '&gt;')       // Escape greater than
+      .replace(/"/g, '&quot;')     // Escape quotes
+      .replace(/'/g, '&#39;')      // Escape single quotes
+      .replace(/\\n/g, '<br />')   // Convert escaped \n literals
+      .replace(/\r\n/g, '<br />')  // Windows line endings
+      .replace(/\n/g, '<br />')    // Unix line endings
+      .replace(/\r/g, '<br />')    // Old Mac line endings
+  }
   
   // Create a temporary div to parse and sanitize HTML
   const tempDiv = document.createElement('div')
-  tempDiv.innerHTML = html
+  tempDiv.innerHTML = processedHtml
   
   // Remove potentially dangerous elements and attributes
   const dangerousElements = tempDiv.querySelectorAll('script, style, iframe, object, embed, form, input, button, select, textarea')
@@ -105,4 +123,24 @@ export const hasImages = (html: string): boolean => {
 export const getTextPreview = (html: string, maxLength: number = 80): string => {
   const text = stripHtml(html)
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
+}
+
+/**
+ * Converts plain text with newlines to HTML with <br> tags (nl2br)
+ * @param text - The plain text with newlines
+ * @returns HTML string with <br> tags
+ */
+export const nl2br = (text: string): string => {
+  if (!text) return ''
+  
+  return text
+    .replace(/&/g, '&amp;')      // Escape ampersands first
+    .replace(/</g, '&lt;')       // Escape less than
+    .replace(/>/g, '&gt;')       // Escape greater than
+    .replace(/"/g, '&quot;')     // Escape quotes
+    .replace(/'/g, '&#39;')      // Escape single quotes
+    .replace(/\\n/g, '<br />')   // Convert escaped \n literals
+    .replace(/\r\n/g, '<br />')  // Windows line endings
+    .replace(/\n/g, '<br />')    // Unix line endings
+    .replace(/\r/g, '<br />')    // Old Mac line endings
 } 
