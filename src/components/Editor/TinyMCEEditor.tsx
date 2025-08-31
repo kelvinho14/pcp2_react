@@ -153,16 +153,21 @@ const TinyMCEEditor = ({
       const headers = { ...getHeadersWithSchoolSubject(endpoint) };
       delete headers['Content-Type']; // Let browser set boundary
 
-      const response = await axios.post<ImageUploadResponse>(endpoint, formData, {
+      // Mobile-specific configuration
+      const isMobile = /iPad|iPhone|Android/i.test(navigator.userAgent);
+      const uploadConfig = {
         headers,
         withCredentials: true,
-        onUploadProgress: (progressEvent) => {
+        timeout: isMobile ? 60000 : 30000, // Longer timeout for mobile
+        onUploadProgress: (progressEvent: any) => {
           if (progressEvent.total) {
             const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             progress(percent);
           }
         },
-      });
+      };
+
+      const response = await axios.post<ImageUploadResponse>(endpoint, formData, uploadConfig);
 
       const { data } = response.data;
       if (response.data.status === 'success' && data?.public_url) {
@@ -180,14 +185,27 @@ const TinyMCEEditor = ({
       
       throw new Error('Upload failed: Invalid response format');
     } catch (error: any) {
-      // Handle different error types with fallbacks
-      const shouldUseFallback = 
+      // Add detailed logging for debugging
+      console.error('🚨 TinyMCE Upload Error:', {
+        errorCode: error.code,
+        status: error.response?.status,
+        message: error.response?.data?.message || error.message,
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        isMobile: /iPad|iPhone|Android/i.test(navigator.userAgent)
+      });
+      
+      // Handle different error types with fallbacks (only in development)
+      const isDevelopment = import.meta.env.MODE === 'development';
+      const shouldUseFallback = isDevelopment && (
         error.code === 'ERR_NETWORK' || 
         error.response?.status === 404 || 
-        error.response?.status === 422;
+        error.response?.status === 422
+      );
       
       if (shouldUseFallback) {
-        // Return blob URL as fallback for development/testing
+        console.warn('⚠️ Using blob fallback in development mode due to upload error');
+        // Return blob URL as fallback for development/testing only
         const blobUrl = URL.createObjectURL(blobInfo.blob());
         blobUrls.current.add(blobUrl);
         return blobUrl;
