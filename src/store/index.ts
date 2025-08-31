@@ -12,6 +12,7 @@ import groupsReducer from './groups/groupsSlice'
 import videosReducer from './videos/videosSlice'
 import assignedVideosReducer from './videos/assignedVideosSlice'
 import studentAssignedVideosReducer from './videos/studentAssignedVideosSlice'
+import migrationsReducer from './admin/migrationsSlice'
 
 export const store = configureStore({
   reducer: {
@@ -28,6 +29,7 @@ export const store = configureStore({
     videos: videosReducer,
     assignedVideos: assignedVideosReducer,
     studentAssignedVideos: studentAssignedVideosReducer,
+    migrations: migrationsReducer,
   },
 })
 

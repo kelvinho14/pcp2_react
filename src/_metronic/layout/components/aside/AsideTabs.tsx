@@ -38,7 +38,7 @@ const tabsForAdmin: ReadonlyArray<Tab> = [
     link: 'token',
     icon: 'fa-solid fa-coins',
     tooltip: 'Token',
-    paths: ['/admin/token'],
+    paths: ['/admin/token', '/admin/migrations'],
   },
 ]
 
