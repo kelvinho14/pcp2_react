@@ -11,6 +11,7 @@ import SchoolSubjectCreatePage from './subjects/SchoolSubjectCreatePage'
 import AdminUsersPage from './AdminUsersPage'
 import UserAddPage from '../users/UserAddPage'
 import UserEditPage from '../users/UserEditPage'
+import MigrationsPage from './migrations/MigrationsPage'
 
 const adminBreadcrumbs: Array<PageLink> = [
   {
@@ -149,6 +150,12 @@ const AdminPage = () => {
                 <UserEditPage />
               </>
             }
+          />
+          
+          {/* Migrations Routes */}
+          <Route
+            path='migrations'
+            element={<MigrationsPage />}
           />
           
           {/* Default redirect */}
