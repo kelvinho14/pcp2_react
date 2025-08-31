@@ -2,6 +2,7 @@ import { Editor } from '@tinymce/tinymce-react';
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { getHeadersWithSchoolSubject } from '../../_metronic/helpers/axios';
+import { config } from '../../_metronic/helpers/config';
 import './TinyMCEEditor.css'; // Import CSS for z-index fixes
 
 interface TinyMCEEditorProps {
@@ -47,6 +48,21 @@ const EDITOR_TOOLBAR = 'undo redo | blocks | ' +
   'bold italic forecolor | alignleft aligncenter ' +
   'alignright alignjustify | bullist numlist outdent indent | ' +
   'removeformat | image | help';
+
+// File size limits based on context
+const getFileSizeLimit = (context: string): number => {
+  return config.fileUpload.maxFileSizes[context as keyof typeof config.fileUpload.maxFileSizes] || 
+         config.fileUpload.maxFileSizes.default;
+};
+
+// Helper function to format file size for user-friendly messages
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+};
 
 const TinyMCEEditor = ({
   initialValue = '',
@@ -130,8 +146,23 @@ const TinyMCEEditor = ({
     progress: (percent: number) => void
   ): Promise<string> => {
     try {
+      // Validate file size before upload
+      const fileBlob = blobInfo.blob();
+      const maxSize = getFileSizeLimit('question_bank');
+      
+      if (fileBlob.size > maxSize) {
+        const actualSize = formatFileSize(fileBlob.size);
+        const maxSizeFormatted = formatFileSize(maxSize);
+        throw new Error(`Image size (${actualSize}) exceeds the ${maxSizeFormatted} limit. Please use a smaller image or compress it first.`);
+      }
+
+      // Validate file type
+      if (!config.fileUpload.allowedImageTypes.includes(fileBlob.type)) {
+        throw new Error('Please upload a valid image file (JPEG, PNG, GIF, or WebP).');
+      }
+
       const formData = new FormData();
-      formData.append('file', blobInfo.blob(), blobInfo.filename());
+      formData.append('file', fileBlob, blobInfo.filename());
       formData.append('source', 'question_bank');
       
       if (questionType) {
@@ -158,7 +189,7 @@ const TinyMCEEditor = ({
       const uploadConfig = {
         headers,
         withCredentials: true,
-        timeout: isMobile ? 60000 : 30000, // Longer timeout for mobile
+        timeout: isMobile ? config.fileUpload.timeouts.mobile : config.fileUpload.timeouts.desktop,
         onUploadProgress: (progressEvent: any) => {
           if (progressEvent.total) {
             const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -195,6 +226,16 @@ const TinyMCEEditor = ({
         isMobile: /iPad|iPhone|Android/i.test(navigator.userAgent)
       });
       
+      // Handle specific error cases with user-friendly messages
+      if (error.response?.status === 413) {
+        const maxSizeFormatted = formatFileSize(getFileSizeLimit('question_bank'));
+        throw new Error(`Image file is too large for the server. Please use an image smaller than ${maxSizeFormatted}.`);
+      }
+      
+      if (error.message?.includes('CORS') || error.message?.includes('access-control-allow-origin')) {
+        throw new Error('Upload blocked by security policy. Please contact support if this persists.');
+      }
+      
       // Handle different error types with fallbacks (only in development)
       const isDevelopment = import.meta.env.MODE === 'development';
       const shouldUseFallback = isDevelopment && (
@@ -211,8 +252,8 @@ const TinyMCEEditor = ({
         return blobUrl;
       }
       
-      const errorMessage = error.response?.data?.message || 'Image upload failed';
-      throw new Error(errorMessage);
+      // Re-throw the original error to preserve the custom message
+      throw error;
     }
   }, [questionType, questionId, localQuestionId, onImageUpload]);
 
@@ -243,6 +284,12 @@ const TinyMCEEditor = ({
     image_uploadtab: true,
     image_upload: true,
     image_upload_tab: true,
+    // Show detailed error messages
+    images_upload_error_handler: (error: any) => {
+      console.error('TinyMCE Image Upload Error Handler:', error);
+      // Return the error message to be displayed to the user
+      return error.message || 'Image upload failed';
+    },
     // Setup callback
     setup: (editor: any) => {
       editorRef.current = editor;
@@ -293,8 +340,6 @@ const TinyMCEEditor = ({
             length: currentContent.length,
             preview: currentContent.substring(0, 50) + (currentContent.length > 50 ? '...' : '')
           });
-        } else {
-          console.log('⚠️ TinyMCE Setup: No initial content found');
         }
       });
     },
@@ -329,14 +374,6 @@ const TinyMCEEditor = ({
 
   // For AI modal with pre-populated content, use initialValue instead of value
   const effectiveInitialValue = value || initialValue || '';
-  
-  console.log('🎛️ TinyMCE Render Setup:', {
-    hasValue: !!value,
-    valueLength: value?.length || 0,
-    hasInitialValue: !!initialValue,
-    initialValueLength: initialValue?.length || 0,
-    effectiveInitialValue: effectiveInitialValue.substring(0, 50) + (effectiveInitialValue.length > 50 ? '...' : '')
-  });
 
   return (
     <Editor
