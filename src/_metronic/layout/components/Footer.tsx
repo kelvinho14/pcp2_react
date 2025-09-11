@@ -23,7 +23,7 @@ const Footer: FC = () => {
         </div>
         {/*end::Copyright*/}
 
-        {/*begin::Menu*/}
+        {/*begin::Menu}
         <ul className='menu menu-gray-600 menu-hover-primary fw-bold order-1'>
           <li className='menu-item'>
             <a href='https://keenthemes.com/metronic' target='_blank' className='menu-link px-2'>

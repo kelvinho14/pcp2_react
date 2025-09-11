@@ -28,6 +28,13 @@ type Subject = {
   custom_name: string | null
 }
 
+type UserSettings = {
+  avatar_url?: string
+  preferred_language?: string
+  timezone?: string
+  theme?: string
+}
+
 export const fetchUsers = createAsyncThunk(
   'users/fetchUsers',
   async ({ page, items_per_page, sort, order, search, role_type, school, subject, all }: FetchUsersParams) => {
@@ -173,6 +180,64 @@ export const fetchSubjects = createAsyncThunk(
   }
 )
 
+export const fetchUserSettings = createAsyncThunk(
+  'users/fetchUserSettings',
+  async (_, { rejectWithValue }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/users/mysettings`)
+      const response = await axios.get(`${API_URL}/users/mysettings`, {
+        headers,
+        withCredentials: true
+      })
+      return response.data.data
+    } catch (error: any) {
+      // Extract error message safely
+      let errorMessage = 'Failed to fetch user settings'
+      if (error.response?.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message
+        } else if (error.response.data.error) {
+          errorMessage = error.response.data.error
+        }
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      return rejectWithValue(errorMessage)
+    }
+  }
+)
+
+export const updateUserSettings = createAsyncThunk(
+  'users/updateUserSettings',
+  async (settings: any, { rejectWithValue }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/users/mysettings`)
+      const response = await axios.post(`${API_URL}/users/mysettings`, settings, {
+        headers,
+        withCredentials: true
+      })
+      return response.data.data
+    } catch (error: any) {
+      // Extract error message safely
+      let errorMessage = 'Failed to update user settings'
+      if (error.response?.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message
+        } else if (error.response.data.error) {
+          errorMessage = error.response.data.error
+        }
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      return rejectWithValue(errorMessage)
+    }
+  }
+)
+
 const userSlice = createSlice({
   name: 'users',
   initialState: {
@@ -186,10 +251,16 @@ const userSlice = createSlice({
     subjects: [] as Subject[],
     schoolsLoading: false,
     subjectsLoading: false,
+    userSettings: null as UserSettings | null,
+    userSettingsLoading: false,
+    userSettingsError: null as string | null,
   },
   reducers: {
     clearSelectedUser: (state) => {
       state.selectedUser = null
+    },
+    updateUserSettingsLocal: (state, action) => {
+      state.userSettings = { ...state.userSettings, ...action.payload }
     }
   },
   extraReducers: (builder) => {
@@ -245,8 +316,34 @@ const userSlice = createSlice({
       .addCase(fetchSubjects.rejected, (state) => {
         state.subjectsLoading = false
       })
+      .addCase(fetchUserSettings.pending, (state) => {
+        state.userSettingsLoading = true
+        state.userSettingsError = null
+      })
+      .addCase(fetchUserSettings.fulfilled, (state, action) => {
+        state.userSettingsLoading = false
+        state.userSettings = action.payload
+        state.userSettingsError = null
+      })
+      .addCase(fetchUserSettings.rejected, (state, action) => {
+        state.userSettingsLoading = false
+        state.userSettingsError = typeof action.payload === 'string' ? action.payload : 'Failed to fetch user settings'
+      })
+      .addCase(updateUserSettings.pending, (state) => {
+        state.userSettingsLoading = true
+        state.userSettingsError = null
+      })
+      .addCase(updateUserSettings.fulfilled, (state, action) => {
+        state.userSettingsLoading = false
+        state.userSettings = action.payload
+        state.userSettingsError = null
+      })
+      .addCase(updateUserSettings.rejected, (state, action) => {
+        state.userSettingsLoading = false
+        state.userSettingsError = typeof action.payload === 'string' ? action.payload : 'Failed to update user settings'
+      })
   }
 })
 
-export const { clearSelectedUser } = userSlice.actions
+export const { clearSelectedUser, updateUserSettingsLocal } = userSlice.actions
 export default userSlice.reducer

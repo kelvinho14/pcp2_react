@@ -1,4 +1,3 @@
-export * from './layout/quick-links/QuicLinks'
 export * from './layout/search/Search'
 export * from './layout/SearchModal'
 export * from './layout/InboxCompose'

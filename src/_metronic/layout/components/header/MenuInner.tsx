@@ -66,7 +66,7 @@ export function MenuInner() {
           menuTrigger={`{default:'click', lg: 'hover'}`}
         >
           <MenuItem to='/crafted/account/overview' title='Overview' hasBullet={true} />
-          <MenuItem to='/crafted/account/settings' title='Settings' hasBullet={true} />
+
         </MenuInnerWithSub>
 
         {/* ERRORS */}

@@ -1,4 +1,5 @@
 import {FC} from 'react'
+import { formatApiTimestamp } from '../../../../../../_metronic/helpers/dateUtils'
 
 type Props = {
   lastseen_at?: string
@@ -9,21 +10,10 @@ const UserLastLoginCell: FC<Props> = ({lastseen_at}) => {
     return <span className='text-muted'>Never</span>
   }
 
-  // Format the date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
+  
   return (
-    <div className='badge badge-light fw-bolder'>
-      {formatDate(lastseen_at)}
+    <div className='text-gray-600 fw-bold'>
+      {formatApiTimestamp(lastseen_at, { format: 'custom' })}
     </div>
   )
 }

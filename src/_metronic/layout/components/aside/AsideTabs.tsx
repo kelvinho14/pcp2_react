@@ -69,11 +69,6 @@ const tabsForTeachers: ReadonlyArray<Tab> = [
     //path: '/draw',
     paths: ['/draw'],
   },
-  {
-    link: 'projects',
-    icon: 'fa-solid fa-magnifying-glass',
-    tooltip: 'Projects',
-  },
 ]
 
 // Tabs for students
@@ -89,11 +84,6 @@ const tabsForStudents: ReadonlyArray<Tab> = [
     icon: 'fa-solid fa-video',
     tooltip: 'Video',
     paths: ['/videos'],
-  },
-  {
-    link: 'projects',
-    icon: 'fa-solid fa-magnifying-glass',
-    tooltip: 'Projects',
   },
   {
     link: 'tasks',
