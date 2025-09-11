@@ -8,7 +8,7 @@ import {AdminSubjectManagementTab} from './AdminSubjectManagementTab.tsx'
 import {AdminTokenManagementTab} from './AdminTokenManagementTab.tsx'
 import {TeacherUserManagementTab} from './TeacherUserManagementTab.tsx'
 import {NotificationsTab} from './NotificationsTab'
-import {ProjectsTab} from './ProjectsTab'
+
 import {VideoTab} from './VideoTab'
 import {TeacherVideoTab} from './TeacherVideoTab'
 import {TasksTab} from './TasksTab'
@@ -30,8 +30,6 @@ const SelectedTab: FC<Props> = ({link}) => {
         return <StudentExerciseTab />
       case 'video':
         return <VideoTab />
-      case 'projects':
-        return <ProjectsTab />
     }
   } else if (roleType === ROLES.ADMIN) {
     switch (link) {
@@ -53,8 +51,6 @@ const SelectedTab: FC<Props> = ({link}) => {
         return <TeacherExerciseTab />
       case 'video':
         return <TeacherVideoTab />
-      case 'projects':
-        return <ProjectsTab />
     }
   }
 }

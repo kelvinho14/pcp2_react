@@ -19,7 +19,7 @@ const UsersListHeader: React.FC<Props> = ({ setSearch, setRoleFilter, setSchoolF
       {/* ✅ This is YOUR custom Search Component */}
       <UsersListSearchComponent setSearch={setSearch} />
       <div className='card-toolbar'>
-        {selected.length > 0 ? <UsersListGrouping /> : <UsersListToolbar setRoleFilter={setRoleFilter} setSchoolFilter={setSchoolFilter} setSubjectFilter={setSubjectFilter} />}
+        {selected.length > 0 && <UsersListGrouping />}
       </div>
     </div>
   )
