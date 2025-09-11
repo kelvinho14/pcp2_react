@@ -73,3 +73,4 @@ const migrationsColumns: ReadonlyArray<Column<Migration>> = [
 
 export { migrationsColumns }
 
+

@@ -21,3 +21,4 @@ const MigrationsListSearchComponent = ({ setSearch }: Props) => {
 
 export { MigrationsListSearchComponent }
 
+
