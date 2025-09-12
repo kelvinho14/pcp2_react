@@ -1683,21 +1683,23 @@ const TeacherVideoListPage: FC = () => {
               </>
             )}
           </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={resetModal}>
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={handleSubmit} disabled={creating || updating}>
-              {creating || updating ? (
-                <>
-                  <span className='spinner-border spinner-border-sm me-2' role='status'></span>
-                  {creating ? 'Creating...' : 'Updating...'}
-                </>
-              ) : (
-                'Save Changes'
-              )}
-            </Button>
-          </Modal.Footer>
+          {editingVideo && (
+            <Modal.Footer>
+              <Button variant="secondary" onClick={resetModal}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={handleSubmit} disabled={creating || updating}>
+                {updating ? (
+                  <>
+                    <span className='spinner-border spinner-border-sm me-2' role='status'></span>
+                    Updating...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
+            </Modal.Footer>
+          )}
         </Modal>
       )}
 
