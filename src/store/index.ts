@@ -13,6 +13,7 @@ import videosReducer from './videos/videosSlice'
 import assignedVideosReducer from './videos/assignedVideosSlice'
 import studentAssignedVideosReducer from './videos/studentAssignedVideosSlice'
 import migrationsReducer from './admin/migrationsSlice'
+import notificationsReducer from './notifications/notificationsSlice'
 
 export const store = configureStore({
   reducer: {
@@ -30,6 +31,7 @@ export const store = configureStore({
     assignedVideos: assignedVideosReducer,
     studentAssignedVideos: studentAssignedVideosReducer,
     migrations: migrationsReducer,
+    notifications: notificationsReducer,
   },
 })
 
