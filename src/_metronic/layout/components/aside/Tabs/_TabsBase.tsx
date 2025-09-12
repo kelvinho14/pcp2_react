@@ -7,6 +7,7 @@ import {AdminSchoolManagementTab} from './AdminSchoolManagementTab.tsx'
 import {AdminSubjectManagementTab} from './AdminSubjectManagementTab.tsx'
 import {AdminTokenManagementTab} from './AdminTokenManagementTab.tsx'
 import {TeacherUserManagementTab} from './TeacherUserManagementTab.tsx'
+import {TeacherSettingsTab} from './TeacherSettingsTab.tsx'
 import {NotificationsTab} from './NotificationsTab'
 
 import {VideoTab} from './VideoTab'
@@ -51,6 +52,8 @@ const SelectedTab: FC<Props> = ({link}) => {
         return <TeacherExerciseTab />
       case 'video':
         return <TeacherVideoTab />
+      case 'settings':
+        return <TeacherSettingsTab />
     }
   }
 }

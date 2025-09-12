@@ -69,6 +69,12 @@ const tabsForTeachers: ReadonlyArray<Tab> = [
     //path: '/draw',
     paths: ['/draw'],
   },
+  {
+    link: 'settings',
+    icon: 'fa-solid fa-gear',
+    tooltip: 'Settings',
+    paths: ['/settings'],
+  },
 ]
 
 // Tabs for students
