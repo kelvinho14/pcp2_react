@@ -1,12 +1,39 @@
 
-import {FC} from 'react'
+import {FC, useEffect, useRef} from 'react'
 import {KTIcon, toAbsoluteUrl} from '../../../helpers'
 import {ThemeModeSwitcher,HeaderUserMenu,HeaderNotificationsMenu} from '../../../partials'
 import {HeaderSchoolSubjectMenu} from '../../../partials/layout/header-menus/HeaderSchoolSubjectMenu'
 import {useAuth} from '../../../../app/modules/auth'
+import {useDispatch, useSelector} from 'react-redux'
+import {AppDispatch, RootState} from '../../../../store'
+import {fetchNotifications, markAllNotificationsAsRead} from '../../../../store/notifications/notificationsSlice'
 
 const Topbar: FC = () => {
   const {currentUser} = useAuth()
+  const dispatch = useDispatch<AppDispatch>()
+  const {notifications} = useSelector((state: RootState) => state.notifications)
+  const hasInitializedRef = useRef(false)
+
+  // Fetch notifications when component mounts (only once)
+  useEffect(() => {
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true
+      dispatch(fetchNotifications({ page: 1, limit: 10 }))
+    }
+  }, [dispatch])
+
+  // Calculate unread count
+  const unreadCount = notifications.filter(n => !n.isRead).length
+
+  // Handle bell icon click to mark all notifications as read
+  const handleBellClick = () => {
+    if (unreadCount > 0) {
+      dispatch(markAllNotificationsAsRead()).then(() => {
+        // Refresh notifications to show updated read status
+        dispatch(fetchNotifications({ page: 1, limit: 10 }))
+      })
+    }
+  }
 /*
  <div className='d-flex align-items-center ms-3'>
  <div
@@ -49,7 +76,7 @@ const Topbar: FC = () => {
     <div className='d-flex align-items-center ms-3'>
         {/* begin::Menu wrapper */}
         <div
-          className='btn btn-icon btn-active-color-primary btn-color-gray-500 btn-active-light'
+          className='btn btn-icon btn-active-color-primary btn-color-gray-500 btn-active-light position-relative'
           data-kt-menu-trigger='click'
           data-kt-menu-overflow='true'
           data-kt-menu-placement='top-start'
@@ -57,8 +84,14 @@ const Topbar: FC = () => {
           data-bs-placement='right'
           data-bs-dismiss='click'
           title='Notifications'
+          onClick={handleBellClick}
         >
           <i className="fa-solid fa-bell fs-2"></i>
+          {unreadCount > 0 && (
+            <span className='position-absolute top-0 start-100 translate-middle badge badge-danger badge-circle badge-sm' style={{transform: 'translate(-80px, -20px)'}}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
         </div>
         {/* end::Menu wrapper */}
         <HeaderNotificationsMenu backgrounUrl='media/misc/pattern-1.jpg' />

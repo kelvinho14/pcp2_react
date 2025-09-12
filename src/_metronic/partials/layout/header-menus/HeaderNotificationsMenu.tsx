@@ -1,157 +1,116 @@
 
 import clsx from 'clsx'
 import {FC} from 'react'
-import {Link} from 'react-router-dom'
+import {Link, useNavigate} from 'react-router-dom'
+import {useSelector} from 'react-redux'
 import {
-  defaultAlerts,
-  defaultLogs,
   KTIcon,
   toAbsoluteUrl,
-  useIllustrationsPath,
 } from '../../../helpers'
+import {RootState} from '../../../../store'
 
 type Props = {
   backgrounUrl: string
 }
 
-const HeaderNotificationsMenu: FC<Props> = ({backgrounUrl}) => (
-  <div
-    className='menu menu-sub menu-sub-dropdown menu-column w-350px w-lg-375px'
-    data-kt-menu='true'
-  >
+const HeaderNotificationsMenu: FC<Props> = ({backgrounUrl}) => {
+  const {notifications, loading} = useSelector((state: RootState) => state.notifications)
+  const navigate = useNavigate()
+
+  // Ensure notifications is always an array
+  const safeNotifications = Array.isArray(notifications) ? notifications : []
+
+  const handleNotificationClick = (notification: any, event: React.MouseEvent) => {
+    console.log('a');
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (notification.url_path) {
+      navigate(notification.url_path)
+    }
+  }
+
+  return (
     <div
-      className='d-flex flex-column bgi-no-repeat rounded-top'
-      style={{backgroundImage: `url('${toAbsoluteUrl(backgrounUrl)}')`}}
+      className='menu menu-sub menu-sub-dropdown menu-column w-350px w-lg-375px'
+      data-kt-menu='true'
     >
-      <h3 className='text-white fw-bold px-9 mt-10 mb-6'>
-        Notifications <span className='fs-8 opacity-75 ps-3'>24 reports</span>
-      </h3>
+      <div
+        className='d-flex flex-column bgi-no-repeat rounded-top'
+        style={{backgroundImage: `url('${toAbsoluteUrl(backgrounUrl)}')`}}
+      >
+        <h3 className='text-white fw-bold px-9 mt-4 mb-4'>
+          Notifications
+        </h3>
+      </div>
 
-      <ul className='nav nav-line-tabs nav-line-tabs-2x nav-stretch fw-bold px-9'>
-        <li className='nav-item'>
-          <a
-            className='nav-link text-white opacity-75 opacity-state-100 pb-4'
-            data-bs-toggle='tab'
-            href='#kt_topbar_notifications_1'
-          >
-            Alerts
-          </a>
-        </li>
-
-        <li className='nav-item'>
-          <a
-            className='nav-link text-white opacity-75 opacity-state-100 pb-4 active'
-            data-bs-toggle='tab'
-            href='#kt_topbar_notifications_2'
-          >
-            Updates
-          </a>
-        </li>
-
-        <li className='nav-item'>
-          <a
-            className='nav-link text-white opacity-75 opacity-state-100 pb-4'
-            data-bs-toggle='tab'
-            href='#kt_topbar_notifications_3'
-          >
-            Logs
-          </a>
-        </li>
-      </ul>
-    </div>
-
-    <div className='tab-content'>
-      <div className='tab-pane fade' id='kt_topbar_notifications_1' role='tabpanel'>
-        <div className='scroll-y mh-325px my-5 px-8'>
-          {defaultAlerts.map((alert, index) => (
-            <div key={`alert${index}`} className='d-flex flex-stack py-4'>
+      <div className='scroll-y mh-325px '>
+        {loading ? (
+          <div className='d-flex justify-content-center align-items-center py-10'>
+            <div className='spinner-border text-primary' role='status'>
+              <span className='visually-hidden'>Loading...</span>
+            </div>
+          </div>
+        ) : safeNotifications.length > 0 ? (
+          safeNotifications.map((notification) => (
+            <a 
+              key={notification.notification_id} 
+              href={notification.url_path || '#'}
+              className={clsx(
+                'd-flex flex-stack py-4 px-2 text-decoration-none',
+                !notification.isRead && 'bg-light-primary',
+                notification.url_path && 'cursor-pointer'
+              )}
+              onClick={(event) => {
+                console.log('ANCHOR CLICKED!');
+                handleNotificationClick(notification, event);
+              }}
+              onMouseDown={(event) => {
+                console.log('ANCHOR MOUSE DOWN!');
+                handleNotificationClick(notification, event);
+              }}
+              style={{ 
+                cursor: notification.url_path ? 'pointer' : 'default',
+                display: 'block'
+              }}
+            >
               <div className='d-flex align-items-center'>
                 <div className='symbol symbol-35px me-4'>
-                  <span className={clsx('symbol-label', `bg-light-${alert.state}`)}>
-                    {' '}
-                    <KTIcon iconName={alert.icon} className={`fs-2 text-${alert.state}`} />
+                  <span className={clsx('symbol-label', `bg-light-${notification.state}`)}>
+                    <i className={`fa-solid fa-${notification.icon} fs-2 text-${notification.state}`}></i>
                   </span>
                 </div>
 
                 <div className='mb-0 me-2'>
-                  <a href='#' className='fs-6 text-gray-800 text-hover-primary fw-bolder'>
-                    {alert.title}
-                  </a>
-                  <div className='text-gray-500 fs-7'>{alert.description}</div>
+                  <div className={clsx('fs-6 text-gray-800 text-hover-primary fw-bolder', !notification.isRead && 'fw-bold')}>
+                    {notification.title}
+                  </div>
+                  <div className='text-gray-500 fs-7'>{notification.message}</div>
                 </div>
               </div>
 
-              <span className='badge badge-light fs-8'>{alert.time}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className='py-3 text-center border-top'>
-          <Link
-            to='/crafted/pages/profile'
-            className='btn btn-color-gray-600 btn-active-color-primary'
-          >
-            View All <KTIcon iconName='arrow-right' className='fs-5' />
-          </Link>
-        </div>
-      </div>
-
-      <div className='tab-pane fade show active' id='kt_topbar_notifications_2' role='tabpanel'>
-        <div className='d-flex flex-column px-9'>
-          <div className='pt-10 pb-0'>
-            <h3 className='text-gray-900 text-center fw-bolder'>Get Pro Access</h3>
-
-            <div className='text-center text-gray-600 fw-bold pt-1'>
-              Outlines keep you honest. They stoping you from amazing poorly about drive
-            </div>
-
-            <div className='text-center mt-5 mb-9'>
-              <a
-                href='#'
-                className='btn btn-sm btn-primary px-6'
-                data-bs-toggle='modal'
-                data-bs-target='#kt_modal_upgrade_plan'
-              >
-                Upgrade
-              </a>
-            </div>
-          </div>
-
-          <div className='text-center px-4'>
-            <img className='mw-100 mh-200px' alt='metronic' src={useIllustrationsPath('1.png')} />
-          </div>
-        </div>
-      </div>
-
-      <div className='tab-pane fade' id='kt_topbar_notifications_3' role='tabpanel'>
-        <div className='scroll-y mh-325px my-5 px-8'>
-          {defaultLogs.map((log, index) => (
-            <div key={`log${index}`} className='d-flex flex-stack py-4'>
-              <div className='d-flex align-items-center me-2'>
-                <span className={clsx('w-70px badge', `badge-light-${log.state}`, 'me-4')}>
-                  {log.code}
-                </span>
-
-                <a href='#' className='text-gray-800 text-hover-primary fw-bold'>
-                  {log.message}
-                </a>
-
-                <span className='badge badge-light fs-8'>{log.time}</span>
+              <div className='d-flex flex-column align-items-end'>
+                <span className='badge badge-light fs-8'>{notification.time}</span>
               </div>
-            </div>
-          ))}
-        </div>
-        <div className='py-3 text-center border-top'>
-          <Link
-            to='/crafted/pages/profile'
-            className='btn btn-color-gray-600 btn-active-color-primary'
-          >
-            View All <KTIcon iconName='arrow-right' className='fs-5' />
-          </Link>
-        </div>
+            </a>
+          ))
+        ) : (
+          <div className='d-flex text-center w-100 align-content-center justify-content-center py-10'>
+            <div className='text-gray-500 fs-7'>No notifications found</div>
+          </div>
+        )}
+      </div>
+
+      <div className='py-3 text-center border-top'>
+        <Link
+          to='/notifications/list'
+          className='btn btn-color-gray-600 btn-active-color-primary'
+        >
+          View All <KTIcon iconName='arrow-right' className='fs-5' />
+        </Link>
       </div>
     </div>
-  </div>
-)
+  )
+}
 
 export {HeaderNotificationsMenu}
