@@ -5,6 +5,11 @@ export const getSchoolSubjectId = (): string | null => {
   return sessionStorage.getItem('subject_id')
 }
 
+// Function to get the school_id from sessionStorage
+export const getSchoolId = (): string | null => {
+  return sessionStorage.getItem('school_id')
+}
+
 // Function to check if the current request is from admin slice
 export const isAdminRequest = (url: string): boolean => {
   // Check if the URL contains admin-related endpoints

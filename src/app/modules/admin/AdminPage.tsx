@@ -12,7 +12,8 @@ import AdminUsersPage from './AdminUsersPage'
 import UserAddPage from '../users/UserAddPage'
 import UserEditPage from '../users/UserEditPage'
 import MigrationsPage from './migrations/MigrationsPage'
-import TokenUsagePage from './TokenUsagePage'
+import TokenUsagePage from './token/TokenUsagePage'
+import TokenPlanPage from './token/TokenPlanPage'
 
 const adminBreadcrumbs: Array<PageLink> = [
   {
@@ -166,6 +167,17 @@ const AdminPage = () => {
               <>
                 <PageTitle breadcrumbs={adminBreadcrumbs}>Token Usage</PageTitle>
                 <TokenUsagePage />
+              </>
+            }
+          />
+          
+          {/* Token Plan Routes */}
+          <Route
+            path='token/plan'
+            element={
+              <>
+                <PageTitle breadcrumbs={adminBreadcrumbs}>Token Plans</PageTitle>
+                <TokenPlanPage />
               </>
             }
           />
