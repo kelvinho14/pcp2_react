@@ -25,6 +25,8 @@ const PrivateRoutes = () => {
   const QuestionsPage = lazy(() => import('../modules/questions/QuestionsPage'))
   const NotificationsPage = lazy(() => import('../modules/notifications/NotificationsPage'))
   const SettingsPage = lazy(() => import('../modules/settings/SettingsPage'))
+  const TokenSubscriptionPage = lazy(() => import('../modules/token/TokenSubscriptionPage'))
+  const NonStudentRouteGuard = lazy(() => import('../modules/token/NonStudentRouteGuard'))
 
 
   return (
@@ -90,6 +92,16 @@ const PrivateRoutes = () => {
           element={
             <SuspensedView>
               <SettingsPage />
+            </SuspensedView>
+          }
+        />
+        <Route
+          path='token/subscription'
+          element={
+            <SuspensedView>
+              <NonStudentRouteGuard>
+                <TokenSubscriptionPage />
+              </NonStudentRouteGuard>
             </SuspensedView>
           }
         />
