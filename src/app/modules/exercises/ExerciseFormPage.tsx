@@ -24,7 +24,6 @@ import {
   Exercise,
   LinkedQuestion
 } from '../../../store/exercises/exercisesSlice'
-import Select from 'react-select'
 import clsx from 'clsx'
 import {toast} from '../../../_metronic/helpers/toast'
 import SimpleTagSelect, {SimpleTagData} from '../questions/components/SimpleTagSelect'
@@ -67,46 +66,6 @@ const exerciseValidationSchema = Yup.object().shape({
   status: Yup.number().required('Please select a status'),
 })
 
-// MultiSelect Component using react-select
-interface MultiSelectProps {
-  options: Topic[]
-  selectedValues: string[]
-  onChange: (values: string[]) => void
-  placeholder: string
-  className?: string
-}
-
-const MultiSelect: FC<MultiSelectProps> = ({ options, selectedValues, onChange, placeholder, className }) => {
-  // Convert options to react-select format
-  const selectOptions = options.map(option => ({
-    value: option.id || option.topic_id || '', // Handle both id and topic_id
-    label: option.name
-  }))
-
-  // Convert selected values to react-select format
-  const selectedOptions = selectOptions.filter(option => 
-    selectedValues.includes(option.value)
-  )
-
-  const handleChange = (selected: any) => {
-    const values = selected ? selected.map((item: any) => item.value) : []
-    onChange(values)
-  }
-
-  return (
-    <Select
-      isMulti
-      options={selectOptions}
-      value={selectedOptions}
-      onChange={handleChange}
-      placeholder={placeholder}
-      className={className}
-      classNamePrefix="select"
-      isSearchable={true}
-      closeMenuOnSelect={false}
-    />
-  )
-}
 
 // Sortable Row Component for @dnd-kit
 const SortableRow: FC<{ question: LinkedQuestion; index: number; onUnlink: (questionId: string) => void; unlinking: boolean; navigate: any; getQuestionTypeBadge: (type: string) => JSX.Element }> = ({ 
