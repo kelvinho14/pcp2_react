@@ -15,7 +15,8 @@ import {
   updateVideo,
   deleteVideo,
   fetchVimeoFolders,
-  fetchVimeoFolderVideos,
+  fetchVimeoFolderContents,
+  toggleVimeoFolder,
   fetchYouTubeMetadata,
   clearMessages,
   clearVimeoData,
@@ -41,8 +42,11 @@ import {StudentSelectionTable} from '../../../../app/modules/exercises/exercise-
 import TinyMCEEditor from '../../../../components/Editor/TinyMCEEditor'
 import {DatePicker} from '../../../../_metronic/helpers/components/DatePicker'
 import {Modal, Button} from 'react-bootstrap'
+import VimeoFolderTree from './VimeoFolderTree'
 import './TeacherVideoListPage.css'
 import Select from 'react-select'
+
+// Constants for better performance
 
 const TeacherVideoListPage: FC = () => {
   const intl = useIntl()
@@ -59,9 +63,9 @@ const TeacherVideoListPage: FC = () => {
     success, 
     total,
     vimeoFolders,
-    vimeoFolderVideos,
+    vimeoFolderContents,
     fetchingVimeoFolders,
-    fetchingVimeoVideos,
+    fetchingVimeoContents,
     youtubeMetadata,
     fetchingYouTubeMetadata,
     assigning,
@@ -315,12 +319,19 @@ const TeacherVideoListPage: FC = () => {
   // Handle Vimeo folder expansion
   const handleFolderExpand = (folderUri: string) => {
     const newExpanded = new Set(expandedFolders)
-    if (newExpanded.has(folderUri)) {
+    const isCurrentlyExpanded = newExpanded.has(folderUri)
+    
+    if (isCurrentlyExpanded) {
+      // Collapsing - just remove from expanded set
       newExpanded.delete(folderUri)
     } else {
+      // Expanding - add to expanded set and fetch contents if not already loaded
       newExpanded.add(folderUri)
-      dispatch(fetchVimeoFolderVideos(folderUri))
+      if (!vimeoFolderContents[folderUri]) {
+        dispatch(fetchVimeoFolderContents(folderUri))
+      }
     }
+    
     setExpandedFolders(newExpanded)
   }
 
@@ -346,8 +357,9 @@ const TeacherVideoListPage: FC = () => {
       // Collect all selected video IDs
       const selectedVideoIds: string[] = []
       
-      for (const folderUri of Object.keys(vimeoFolderVideos)) {
-        const videos = vimeoFolderVideos[folderUri]
+      for (const folderUri of Object.keys(vimeoFolderContents)) {
+        const contents = vimeoFolderContents[folderUri]
+        const videos = contents?.videos || []
         for (const video of videos) {
           if (selectedVimeoVideos.has(video.uri)) {
             const videoId = video.uri.split('/').pop() || ''
@@ -1496,7 +1508,7 @@ const TeacherVideoListPage: FC = () => {
                 )}
                 
                 {modalStep === 'vimeo' && (
-                  <div style={{overflowY: 'auto', flex: '1 1 auto'}}>
+                  <>
                     <div className='mb-3'>
                       <h6>Select videos from your Vimeo projects:</h6>
                       <p className='text-muted small'>
@@ -1504,94 +1516,34 @@ const TeacherVideoListPage: FC = () => {
                       </p>
                     </div>
                     
-                    {fetchingVimeoFolders ? (
-                      <div className='text-center py-4'>
-                        <div className='spinner-border text-primary' role='status'>
-                          <span className='visually-hidden'>Loading...</span>
+                    <div className='vimeo-modal-content'>
+                      {fetchingVimeoFolders ? (
+                        <div className='text-center py-4'>
+                          <div className='spinner-border text-primary' role='status'>
+                            <span className='visually-hidden'>Loading...</span>
+                          </div>
+                          <p className='mt-2'>Loading your Vimeo projects...</p>
                         </div>
-                        <p className='mt-2'>Loading your Vimeo projects...</p>
-                      </div>
-                    ) : (
-                      <div className='vimeo-folders'>
-                        {(vimeoFolders || []).map((folder) => (
-                          <div key={folder.uri} className='mb-3'>
-                            <div 
-                              className='d-flex align-items-center justify-content-between p-3 border rounded cursor-pointer'
-                              onClick={() => handleFolderExpand(folder.uri)}
-                              style={{cursor: 'pointer'}}
-                            >
-                              <div>
-                                <i className='fas fa-folder text-warning me-2'></i>
-                                <strong>{folder.name}</strong>
-                                {folder.description && (
-                                  <small className='text-muted d-block'>{folder.description}</small>
-                                )}
-                              </div>
-                              <div>
-                                <i className={`fas fa-chevron-${expandedFolders.has(folder.uri) ? 'up' : 'down'}`}></i>
-                              </div>
+                      ) : (
+                        <div className='vimeo-folders'>
+                          <VimeoFolderTree
+                            folders={vimeoFolders || []}
+                            selectedVideos={selectedVimeoVideos}
+                            onVideoSelect={handleVimeoVideoSelect}
+                            expandedFolders={expandedFolders}
+                            onFolderExpand={handleFolderExpand}
+                          />
+                          
+                          {(vimeoFolders || []).length === 0 && !fetchingVimeoFolders && (
+                            <div className='text-center py-4'>
+                              <i className='fas fa-folder-open text-muted fs-1 mb-3'></i>
+                              <p className='text-muted'>No Vimeo projects found</p>
                             </div>
-                            
-                            {expandedFolders.has(folder.uri) && (
-                              <div className='ms-4 mt-2'>
-                                {fetchingVimeoVideos[folder.uri] ? (
-                                  <div className='text-center py-2'>
-                                    <div className='spinner-border spinner-border-sm text-primary me-2' role='status'>
-                                      <span className='visually-hidden'>Loading...</span>
-                                    </div>
-                                    <small>Loading videos...</small>
-                                  </div>
-                                ) : (
-                                  <div className='row g-2'>
-                                    {vimeoFolderVideos[folder.uri]?.map((video) => (
-                                      <div key={video.uri} className='col-12'>
-                                        <div className='d-flex align-items-center p-2 border rounded'>
-                                          <div className='form-check me-3'>
-                                            <input
-                                              className='form-check-input'
-                                              type='checkbox'
-                                              checked={selectedVimeoVideos.has(video.uri)}
-                                              onChange={() => handleVimeoVideoSelect(video.uri)}
-                                            />
-                                          </div>
-                                          <div className='flex-grow-1'>
-                                            <div className='d-flex align-items-center'>
-                                              <img
-                                                src={video.pictures.sizes[0]?.link || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDMyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjRjVGNUY1Ii8+CjxwYXRoIGQ9Ik0xNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBDMTYwIDkwIDE2MCA5MCAxNjAgOTBaIiBmaWxsPSIjQ0NDQ0NDIi8+Cjx0ZXh0IHg9IjE2MCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5OTk5IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
-                                                alt={video.name}
-                                                className='rounded me-2'
-                                                style={{width: '60px', height: '40px', objectFit: 'cover'}}
-                                              />
-                                              <div>
-                                                <strong className='small'>{video.name}</strong>
-                                                {video.description && (
-                                                  <small className='text-muted d-block'>{video.description}</small>
-                                                )}
-                                                <small className='text-muted'>
-                                                  {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
-                                                </small>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                        
-                        {(vimeoFolders || []).length === 0 && !fetchingVimeoFolders && (
-                          <div className='text-center py-4'>
-                            <i className='fas fa-folder-open text-muted fs-1 mb-3'></i>
-                            <p className='text-muted'>No Vimeo projects found</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
                 
                 {/* Vimeo Tags Input - Outside scrollable area */}
