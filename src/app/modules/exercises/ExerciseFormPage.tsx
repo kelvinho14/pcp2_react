@@ -7,14 +7,13 @@ import {useNavigate, useParams} from 'react-router-dom'
 import {useSelector, useDispatch} from 'react-redux'
 import {RootState, AppDispatch} from '../../../store'
 import {
-  fetchTopics,
   fetchExerciseTypes,
   clearMessages,
   createExercise,
-  Topic,
   ExerciseType,
   ExerciseFormData
 } from '../../../store/exercise/exerciseSlice'
+import {fetchTags, Tag} from '../../../store/tags/tagsSlice'
 import {
   fetchExercises,
   updateExercise,
@@ -28,6 +27,7 @@ import {
 import Select from 'react-select'
 import clsx from 'clsx'
 import {toast} from '../../../_metronic/helpers/toast'
+import SimpleTagSelect, {SimpleTagData} from '../questions/components/SimpleTagSelect'
 import { hasImages, renderHtmlSafely, getTextPreview } from '../../../_metronic/helpers/htmlRenderer'
 import {
   DndContext,
@@ -57,7 +57,12 @@ const exerciseValidationSchema = Yup.object().shape({
     .required('Exercise title is required'),
   description: Yup.string()
     .max(1000, 'Maximum 1000 characters'),
-  topic_ids: Yup.array().of(Yup.string()),
+  selectedTags: Yup.array().of(
+    Yup.object().shape({
+      id: Yup.string().required(),
+      name: Yup.string().required()
+    })
+  ),
   type: Yup.string().required('Please select an exercise type'),
   status: Yup.number().required('Please select a status'),
 })
@@ -84,9 +89,7 @@ const MultiSelect: FC<MultiSelectProps> = ({ options, selectedValues, onChange, 
   )
 
   const handleChange = (selected: any) => {
-    console.log('React-select change:', selected)
     const values = selected ? selected.map((item: any) => item.value) : []
-    console.log('New values:', values)
     onChange(values)
   }
 
@@ -223,20 +226,38 @@ const ExerciseFormPage: FC = () => {
   )
   
   // Redux selectors
-  const { topics, exerciseTypes, loading, creating } = useSelector(
+  const { exerciseTypes, loading, creating } = useSelector(
     (state: RootState) => state.exercise
   )
   const { exercises, loading: exercisesLoading, updating, updatingPositions, unlinking, currentExercise, linkedQuestions, fetchingExercise } = useSelector(
     (state: RootState) => state.exercises
   )
+  const { tags, loading: tagsLoading } = useSelector((state: RootState) => state.tags)
+
+  // Helper function to transform tags to the required format
+  const transformTags = (selectedTags: SimpleTagData[]) => {
+    const result = selectedTags.map(tag => {
+      // Check if it's an existing tag (has a real UUID)
+      const existingTag = tags.find(t => t.id === tag.id)
+      if (existingTag) {
+        const transformed = { tag_id: tag.id }
+        return transformed
+      } else {
+        // It's a new tag (starts with 'temp-')
+        const transformed = { name: tag.name }
+        return transformed
+      }
+    })
+    return result
+  }
 
   // Get current exercise data if in edit mode
   const exerciseFromList = isEditMode ? exercises.find((ex: Exercise) => ex.exercise_id === exerciseId) : null
 
-  // Fetch exercise types and topics on component mount
+  // Fetch exercise types and tags on component mount
   useEffect(() => {
     dispatch(fetchExerciseTypes())
-    dispatch(fetchTopics())
+    dispatch(fetchTags())
   }, [dispatch])
 
   // Fetch exercise with questions if in edit mode
@@ -288,7 +309,7 @@ const ExerciseFormPage: FC = () => {
     initialValues: {
       title: '',
       description: '',
-      topic_ids: [],
+      selectedTags: [],
       type: '',
       status: 0, // Default to Inactive
     },
@@ -297,11 +318,17 @@ const ExerciseFormPage: FC = () => {
     onSubmit: async (values, {setSubmitting}) => {
       setIsSubmitting(true)
       try {
+        const transformedTags = transformTags(values.selectedTags)
+        const exerciseData = {
+          ...values,
+          tags: transformedTags
+        }
+        
         if (isEditMode && exerciseId) {
-          await dispatch(updateExercise({ exerciseId, data: values })).unwrap()
+          await dispatch(updateExercise({ exerciseId, data: exerciseData })).unwrap()
           // Don't navigate - stay on the edit page
         } else {
-          await dispatch(createExercise(values)).unwrap()
+          await dispatch(createExercise(exerciseData)).unwrap()
           navigate('/exercises/list')
         }
       } catch (error) {
@@ -323,7 +350,12 @@ const ExerciseFormPage: FC = () => {
     setIsSubmitting(true)
     try {
       if (isEditMode && exerciseId) {
-        await dispatch(updateExercise({ exerciseId, data: formik.values })).unwrap()
+        const transformedTags = transformTags(formik.values.selectedTags)
+        const exerciseData = {
+          ...formik.values,
+          tags: transformedTags
+        }
+        await dispatch(updateExercise({ exerciseId, data: exerciseData })).unwrap()
         navigate('/exercises/list')
       }
     } catch (error) {
@@ -338,19 +370,25 @@ const ExerciseFormPage: FC = () => {
   useEffect(() => {
     if (isEditMode && (currentExercise || exerciseFromList)) {
       const exercise = currentExercise || exerciseFromList
+      
+      // Transform the tags from API format to our component format
+      const transformedTags: SimpleTagData[] = (exercise?.tags || []).map(tag => ({
+        id: tag.tag_id || '',
+        name: tag.name || ''
+      })) as SimpleTagData[]
+      
       formik.setValues({
         title: exercise?.title || '',
         description: exercise?.description || '',
-        topic_ids: [], // TODO: Add topic_ids to Exercise type when API supports it
+        selectedTags: transformedTags,
         type: exercise?.type_id || '',
         status: exercise?.status || 0,
-      })
+      }, false) // Set validateOnChange to false to prevent validation during load
     }
   }, [currentExercise, exerciseFromList, isEditMode])
 
   const handleAIGenerateDescription = () => {
     // TODO: Implement AI description generation
-    console.log('AI description generation will be implemented here')
   }
 
   const getQuestionTypeBadge = (type: string) => {
@@ -427,7 +465,7 @@ const ExerciseFormPage: FC = () => {
     }
   }
 
-  if (loading || (isEditMode && exercisesLoading) || (isEditMode && fetchingExercise)) {
+  if (loading || tagsLoading || (isEditMode && exercisesLoading) || (isEditMode && fetchingExercise)) {
     return (
       <>
         <PageTitle breadcrumbs={breadcrumbs}>
@@ -514,17 +552,17 @@ const ExerciseFormPage: FC = () => {
               </div>
             </div>
 
-            {/* Topic List */}
+            {/* Tags */}
             <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-bold fs-6'>Topics</label>
+              <label className='col-lg-3 col-form-label fw-bold fs-6'>Tags</label>
               <div className='col-lg-9 fv-row'>
-                <MultiSelect
-                  options={topics}
-                  selectedValues={formik.values.topic_ids}
-                  onChange={(values) => formik.setFieldValue('topic_ids', values)}
-                  placeholder='Select topics (optional)'
+                <SimpleTagSelect
+                  options={tags}
+                  selectedTags={formik.values.selectedTags}
+                  onChange={(tags) => formik.setFieldValue('selectedTags', tags)}
+                  placeholder='Select tags or type to create new ones (optional)'
                 />
-                <div className='form-text'>Select one or more topics (optional)</div>
+                <div className='form-text'>Select existing tags or create new ones (optional)</div>
               </div>
             </div>
 
