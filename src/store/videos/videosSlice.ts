@@ -62,6 +62,9 @@ export interface VimeoFolder {
   privacy: {
     view: string
   }
+  isExpanded?: boolean
+  hasSubfolders?: boolean
+  hasVideos?: boolean
 }
 
 export interface VimeoVideo {
@@ -70,12 +73,14 @@ export interface VimeoVideo {
   description?: string
   duration: number
   pictures: {
+    base_link?: string
     sizes: Array<{
       width: number
       height: number
       link: string
     }>
   }
+  link?: string
   created_time: string
   modified_time: string
   privacy: {
@@ -327,30 +332,34 @@ export const fetchVimeoFolders = createAsyncThunk(
   }
 )
 
-export const fetchVimeoFolderVideos = createAsyncThunk(
-  'videos/fetchVimeoFolderVideos',
-  async (folderUri: string) => {
+export const fetchVimeoFolderContents = createAsyncThunk(
+  'videos/fetchVimeoFolderContents',
+  async (projectId: string) => {
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/videos/vimeo/projects/${encodeURIComponent(folderUri)}/videos`)
-      const response = await axios.get(`${API_URL}/videos/vimeo/projects/${encodeURIComponent(folderUri)}/videos`, { 
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/videos/vimeo/projects/${projectId}/contents`)
+      const response = await axios.get(`${API_URL}/videos/vimeo/projects/${projectId}/contents`, { 
         headers,
         withCredentials: true 
       })
       
-      // Transform the API response to match our expected structure
-      const videos = response.data.data?.videos || response.data.data || []
+      const data = response.data.data
+      
+      // Transform videos
+      const videos = data?.videos || []
       const transformedVideos = videos.map((video: any) => ({
         uri: video.uri || video.ID || video.id,
         name: video.name || video.Name || video.title || '',
         description: video.description || video.Description || '',
         duration: video.duration || video.Duration || 0,
         pictures: {
+          base_link: video.pictures?.base_link || video.Pictures?.base_link || '',
           sizes: video.pictures?.sizes || video.Pictures?.sizes || [{
             width: 640,
             height: 360,
             link: video.thumbnail || video.Thumbnail || ''
           }]
         },
+        link: video.link || '',
         created_time: video.created_time || video.CreatedTime || '',
         modified_time: video.modified_time || video.ModifiedTime || '',
         privacy: {
@@ -358,12 +367,31 @@ export const fetchVimeoFolderVideos = createAsyncThunk(
         }
       }))
       
+      // Transform subfolders
+      const subfolders = data?.subfolders || []
+      const transformedSubfolders = subfolders.map((folder: any) => ({
+        uri: folder.ID || folder.uri,
+        name: folder.Name || folder.name,
+        description: folder.Description || folder.description || '',
+        created_time: folder.CreatedTime || folder.created_time || '',
+        modified_time: folder.ModifiedTime || folder.modified_time || '',
+        privacy: {
+          view: folder.Privacy?.view || folder.privacy?.view || 'anybody'
+        },
+        isExpanded: false,
+        hasSubfolders: false,
+        hasVideos: false
+      }))
+      
       return {
-        folderUri,
-        videos: transformedVideos
+        projectId,
+        videos: transformedVideos,
+        subfolders: transformedSubfolders,
+        totalVideos: data?.total_videos || 0,
+        totalSubfolders: data?.total_subfolders || 0
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to fetch Vimeo project videos'
+      const errorMessage = error.response?.data?.message || 'Failed to fetch Vimeo project contents'
       toast.error(errorMessage, 'Error')
       throw new Error(errorMessage)
     }
@@ -503,9 +531,9 @@ interface VideosState {
   success: string | null
   total: number
   vimeoFolders: VimeoFolder[]
-  vimeoFolderVideos: Record<string, VimeoVideo[]>
+  vimeoFolderContents: Record<string, { videos: VimeoVideo[]; subfolders: VimeoFolder[] }>
   fetchingVimeoFolders: boolean
-  fetchingVimeoVideos: Record<string, boolean>
+  fetchingVimeoContents: Record<string, boolean>
   youtubeMetadata: YouTubeMetadata | null
   fetchingYouTubeMetadata: boolean
   assigning: boolean
@@ -524,9 +552,9 @@ const initialState: VideosState = {
   success: null,
   total: 0,
   vimeoFolders: [],
-  vimeoFolderVideos: {},
+  vimeoFolderContents: {},
   fetchingVimeoFolders: false,
-  fetchingVimeoVideos: {},
+  fetchingVimeoContents: {},
   youtubeMetadata: null,
   fetchingYouTubeMetadata: false,
   assigning: false,
@@ -554,7 +582,14 @@ const videosSlice = createSlice({
     },
     clearVimeoData: (state) => {
       state.vimeoFolders = []
-      state.vimeoFolderVideos = {}
+      state.vimeoFolderContents = {}
+    },
+    toggleVimeoFolder: (state, action) => {
+      const folderUri = action.payload
+      const folder = state.vimeoFolders.find(f => f.uri === folderUri)
+      if (folder) {
+        folder.isExpanded = !folder.isExpanded
+      }
     },
   },
   extraReducers: (builder) => {
@@ -700,19 +735,29 @@ const videosSlice = createSlice({
         state.error = action.error.message || 'Failed to fetch Vimeo folders'
       })
 
-    // Fetch Vimeo folder videos
+    // Fetch Vimeo folder contents
     builder
-      .addCase(fetchVimeoFolderVideos.pending, (state, action) => {
-        state.fetchingVimeoVideos[action.meta.arg] = true
+      .addCase(fetchVimeoFolderContents.pending, (state, action) => {
+        state.fetchingVimeoContents[action.meta.arg] = true
         state.error = null
       })
-      .addCase(fetchVimeoFolderVideos.fulfilled, (state, action) => {
-        state.fetchingVimeoVideos[action.payload.folderUri] = false
-        state.vimeoFolderVideos[action.payload.folderUri] = action.payload.videos
+      .addCase(fetchVimeoFolderContents.fulfilled, (state, action) => {
+        state.fetchingVimeoContents[action.payload.projectId] = false
+        state.vimeoFolderContents[action.payload.projectId] = {
+          videos: action.payload.videos,
+          subfolders: action.payload.subfolders
+        }
+        
+        // Update folder state to show it has content
+        const folder = state.vimeoFolders.find(f => f.uri === action.payload.projectId)
+        if (folder) {
+          folder.hasVideos = action.payload.videos.length > 0
+          folder.hasSubfolders = action.payload.subfolders.length > 0
+        }
       })
-      .addCase(fetchVimeoFolderVideos.rejected, (state, action) => {
-        state.fetchingVimeoVideos[action.meta.arg] = false
-        state.error = action.error.message || 'Failed to fetch Vimeo folder videos'
+      .addCase(fetchVimeoFolderContents.rejected, (state, action) => {
+        state.fetchingVimeoContents[action.meta.arg] = false
+        state.error = action.error.message || 'Failed to fetch Vimeo folder contents'
       })
 
     // Fetch YouTube metadata
@@ -763,5 +808,5 @@ const videosSlice = createSlice({
   },
 })
 
-export const { clearError, clearSuccess, clearMessages, clearCurrentVideo, clearVimeoData } = videosSlice.actions
+export const { clearError, clearSuccess, clearMessages, clearCurrentVideo, clearVimeoData, toggleVimeoFolder } = videosSlice.actions
 export default videosSlice.reducer 
