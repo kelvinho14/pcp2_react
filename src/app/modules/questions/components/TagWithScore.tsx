@@ -29,6 +29,25 @@ const TagWithScore: FC<TagWithScoreProps> = ({
   const [newTagScore, setNewTagScore] = useState(0)
   const [showNewTagForm, setShowNewTagForm] = useState(false)
   const [selectedOption, setSelectedOption] = useState<any>(null)
+  const [duplicateMessage, setDuplicateMessage] = useState('')
+
+  // Constants
+  const DUPLICATE_MESSAGE_TIMEOUT = 3000
+
+  // Helper function to reset form state
+  const resetFormState = () => {
+    setNewTagName('')
+    setNewTagScore(0)
+    setShowNewTagForm(false)
+    setDuplicateMessage('')
+  }
+
+  // Helper function to check if tag name exists
+  const isTagNameDuplicate = (name: string, targetList: Array<{name: string}>) => {
+    return targetList.some(item => 
+      item.name.toLowerCase() === name.toLowerCase()
+    )
+  }
 
   const handleAddExistingTag = (selectedOption: any) => {
     if (selectedOption && !selectedTags.find(t => t.id === selectedOption.value)) {
@@ -44,18 +63,37 @@ const TagWithScore: FC<TagWithScoreProps> = ({
   }
 
   const handleAddNewTag = () => {
-    if (newTagName.trim() && newTagScore >= 0) {
-      const newTag: TagWithScoreData = {
-        id: `temp-${Date.now()}`,
-        name: newTagName.trim(),
-        score: newTagScore,
-        isNew: true
-      }
-      onChange([...selectedTags, newTag])
-      setNewTagName('')
-      setNewTagScore(0)
-      setShowNewTagForm(false)
+    const trimmedName = newTagName.trim()
+    if (!trimmedName || newTagScore < 0) return
+
+    // Check for duplicates using helper function
+    const isAlreadySelected = isTagNameDuplicate(trimmedName, selectedTags)
+    const existingTag = options.find(option => 
+      option.name.toLowerCase() === trimmedName.toLowerCase()
+    )
+    
+    if (isAlreadySelected) {
+      setDuplicateMessage('This tag is already selected')
+      setTimeout(() => setDuplicateMessage(''), DUPLICATE_MESSAGE_TIMEOUT)
+      return
     }
+    
+    // Create tag object based on whether it exists in system
+    const tagToAdd: TagWithScoreData = existingTag 
+      ? {
+          id: existingTag.id,
+          name: existingTag.name,
+          score: newTagScore
+        }
+      : {
+          id: `temp-${Date.now()}`,
+          name: trimmedName,
+          score: newTagScore,
+          isNew: true
+        }
+    
+    onChange([...selectedTags, tagToAdd])
+    resetFormState()
   }
 
   const handleRemoveTag = (tagId: string) => {
@@ -113,7 +151,10 @@ const TagWithScore: FC<TagWithScoreProps> = ({
                   type='text'
                   className='form-control'
                   value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
+                  onChange={(e) => {
+                    setNewTagName(e.target.value)
+                    setDuplicateMessage('') // Clear message when user starts typing
+                  }}
                   placeholder='Enter tag name'
                 />
               </div>
@@ -140,17 +181,21 @@ const TagWithScore: FC<TagWithScoreProps> = ({
                   <button
                     type='button'
                     className='btn btn-secondary btn-sm'
-                    onClick={() => {
-                      setShowNewTagForm(false)
-                      setNewTagName('')
-                      setNewTagScore(0)
-                    }}
+                    onClick={resetFormState}
                   >
                     Cancel
                   </button>
                 </div>
               </div>
             </div>
+            {duplicateMessage && (
+              <div className='mt-2'>
+                <div className='alert alert-warning alert-sm' role='alert'>
+                  <i className='fas fa-exclamation-triangle me-1'></i>
+                  {duplicateMessage}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

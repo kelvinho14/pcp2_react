@@ -21,9 +21,16 @@ export interface ExerciseType {
 export interface ExerciseFormData {
   title: string
   description: string
-  topic_ids: string[]
+  selectedTags: Array<{
+    id: string
+    name: string
+  }>
   type: string
   status?: number
+  tags?: Array<{
+    tag_id?: string
+    name?: string
+  }>
 }
 
 // Async thunks
@@ -37,7 +44,7 @@ export const createExercise = createAsyncThunk(
       const payload = {
         title: exerciseData.title,
         description: exerciseData.description || '',
-        topic_ids: exerciseData.topic_ids || [],
+        tags: exerciseData.tags || [],
         type_id: exerciseData.type,
         status: exerciseData.status !== undefined ? exerciseData.status : 0
       }
