@@ -4,7 +4,7 @@ import {useDispatch, useSelector} from 'react-redux'
 import {AppDispatch, RootState} from '../../../../../../store'
 import {ConfirmationDialog} from '../../../../../../_metronic/helpers/ConfirmationDialog'
 import {useState} from 'react'
-import {fetchExercises, Exercise} from '../../../../../../store/exercises/exercisesSlice'
+import {fetchExercises, Exercise, bulkDeleteExercises} from '../../../../../../store/exercises/exercisesSlice'
 import {toast} from '../../../../../../_metronic/helpers/toast'
 import {AssignToStudentsModal} from './AssignToStudentsModal'
 
@@ -20,9 +20,7 @@ const ExercisesListGrouping = () => {
   const handleBulkDelete = async () => {
     try {
       const exerciseIds = selected.filter(id => id !== undefined && id !== null).map(id => String(id))
-      // TODO: Implement bulk delete for exercises
-      console.log('Bulk delete exercises:', exerciseIds)
-      toast.success(`${exerciseIds.length} exercise(s) deleted successfully!`, 'Success')
+      await dispatch(bulkDeleteExercises(exerciseIds)).unwrap()
       clearSelected()
       setShowDeleteDialog(false)
       // Refresh the exercises list

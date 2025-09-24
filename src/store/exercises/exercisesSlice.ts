@@ -23,6 +23,10 @@ export interface Exercise {
   created_at: string
   updated_at: string
   question_count: number
+  tags?: Array<{
+    tag_id: string
+    name: string
+  }>
 }
 
 export interface LinkedQuestion {
@@ -41,9 +45,16 @@ export interface LinkedQuestion {
 export interface ExerciseFormData {
   title: string
   description: string
-  topic_ids: string[]
+  selectedTags: Array<{
+    id: string
+    name: string
+  }>
   type: string
   status?: number
+  tags?: Array<{
+    tag_id?: string
+    name?: string
+  }>
 }
 
 // Async thunks
@@ -96,7 +107,7 @@ export const updateExercise = createAsyncThunk(
       const payload = {
         title: data.title,
         description: data.description || '',
-        topic_ids: data.topic_ids || [],
+        tags: data.tags || [],
         type_id: data.type,
         status: data.status || 0
       }
@@ -129,15 +140,35 @@ export const deleteExercise = createAsyncThunk(
   'exercises/deleteExercise',
   async (exerciseId: string) => {
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises`)
-      await axios.delete(`${API_URL}/exercises`, { 
-        data: { exercise_ids: [exerciseId] },
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/${exerciseId}`)
+      await axios.delete(`${API_URL}/exercises/${exerciseId}`, { 
         headers,
         withCredentials: true 
       })
+      toast.success('Exercise deleted successfully!', 'Success')
       return exerciseId
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to delete exercise'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
+export const bulkDeleteExercises = createAsyncThunk(
+  'exercises/bulkDeleteExercises',
+  async (exerciseIds: string[]) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises`)
+      await axios.delete(`${API_URL}/exercises`, { 
+        data: { exercise_ids: exerciseIds },
+        headers,
+        withCredentials: true 
+      })
+      toast.success(`${exerciseIds.length} exercise(s) deleted successfully!`, 'Success')
+      return exerciseIds
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to delete exercises'
       toast.error(errorMessage, 'Error')
       throw new Error(errorMessage)
     }
@@ -564,6 +595,19 @@ const exercisesSlice = createSlice({
       .addCase(deleteExercise.rejected, (state, action) => {
         state.loading = false
         state.error = action.error.message || 'Failed to delete exercise'
+      })
+      // Bulk delete exercises
+      .addCase(bulkDeleteExercises.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(bulkDeleteExercises.fulfilled, (state, action) => {
+        state.loading = false
+        state.exercises = state.exercises.filter(exercise => !action.payload.includes(exercise.exercise_id))
+      })
+      .addCase(bulkDeleteExercises.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message || 'Failed to delete exercises'
       })
       // Link questions to exercises
       .addCase(linkQuestionsToExercises.pending, (state) => {
