@@ -112,6 +112,30 @@ export const fetchCustomDropdownsByLocation = createAsyncThunk(
   }
 )
 
+export const reorderCustomDropdowns = createAsyncThunk(
+  'customDropdowns/reorderCustomDropdowns',
+  async (reorderData: { items: Array<{ dropdown_id: string; sort_order: number }> }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/custom-dropdowns/reorder`)
+      const response = await axios.put(`${API_URL}/custom-dropdowns/reorder`, reorderData, {
+        headers,
+        withCredentials: true
+      })
+
+      if (response.data.status === 'success') {
+        toast.success('Dropdown order updated successfully!', 'Success')
+        return response.data.data
+      } else {
+        throw new Error('Failed to reorder custom dropdowns')
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to reorder custom dropdowns'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 export const createCustomDropdown = createAsyncThunk(
   'customDropdowns/createCustomDropdown',
   async (payload: CreateDropdownPayload) => {
@@ -296,6 +320,25 @@ const customDropdownsSlice = createSlice({
       .addCase(deleteCustomDropdown.rejected, (state, action) => {
         state.loading = false
         state.error = action.error.message || 'Failed to delete custom dropdown'
+      })
+      // Reorder custom dropdowns
+      .addCase(reorderCustomDropdowns.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(reorderCustomDropdowns.fulfilled, (state, action) => {
+        state.loading = false
+        // Update the order of dropdowns based on the returned data
+        if (action.payload && action.payload.dropdowns && Array.isArray(action.payload.dropdowns)) {
+          // Sort by sort_order to ensure correct display order
+          const sortedDropdowns = action.payload.dropdowns.sort((a, b) => a.sort_order - b.sort_order)
+          state.dropdowns = sortedDropdowns
+          console.log('Updated dropdowns order:', sortedDropdowns.map(d => ({ name: d.name, sort_order: d.sort_order })))
+        }
+      })
+      .addCase(reorderCustomDropdowns.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message || 'Failed to reorder custom dropdowns'
       })
   },
 })

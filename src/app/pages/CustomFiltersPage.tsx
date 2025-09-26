@@ -7,12 +7,13 @@ import { KTCard } from '../../_metronic/helpers/components/KTCard'
 import { Button, Card, Modal, Form } from 'react-bootstrap'
 import Select from 'react-select'
 import { toast } from '../../_metronic/helpers/toast'
-import { 
-  fetchCustomDropdowns, 
-  fetchTagOptions, 
-  createCustomDropdown, 
-  updateCustomDropdown, 
+import {
+  fetchCustomDropdowns,
+  fetchTagOptions,
+  createCustomDropdown,
+  updateCustomDropdown,
   deleteCustomDropdown,
+  reorderCustomDropdowns,
   CustomDropdown,
   TagOption,
   CreateDropdownPayload,
@@ -42,6 +43,110 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
+// Sortable Dropdown Card Component
+interface SortableDropdownCardProps {
+  dropdown: CustomDropdown
+  index: number
+  onEdit: (dropdown: CustomDropdown) => void
+  onDelete: (dropdown: CustomDropdown) => void
+}
+
+const SortableDropdownCard: FC<SortableDropdownCardProps> = ({
+  dropdown,
+  index,
+  onEdit,
+  onDelete
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: dropdown.dropdown_id })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.8 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+    position: isDragging ? 'relative' : 'static',
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className='col-md-6 col-lg-4 mb-4'>
+      <Card>
+        <Card.Body className='p-3'>
+          <div className='d-flex justify-content-between align-items-start mb-3'>
+            <div className='flex-grow-1'>
+              <div 
+                className='d-flex align-items-center mb-2'
+                {...attributes}
+                {...listeners}
+                style={{ cursor: 'grab' }}
+              >
+                <i className='fas fa-grip-vertical text-muted me-2'></i>
+                <h5 
+                  className='card-title mb-1 fw-bold me-2' 
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => onEdit(dropdown)}
+                >
+                  {dropdown.name}
+                </h5>
+                <span className='badge bg-primary text-white'>
+                  {dropdown.options.length} option{dropdown.options.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              {dropdown.description && (
+                <p className='text-muted small mb-2'>{dropdown.description}</p>
+              )}
+            </div>
+            <div className='dropdown'>
+              <Button
+                variant='outline-secondary'
+                size='sm'
+                data-bs-toggle='dropdown'
+              >
+                <i className='fas fa-ellipsis-v'></i>
+              </Button>
+              <ul className='dropdown-menu'>
+                <li>
+                  <button 
+                    className='dropdown-item'
+                    onClick={() => onEdit(dropdown)}
+                  >
+                    <i className='fas fa-edit me-2'></i>Edit
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    className='dropdown-item text-danger'
+                    onClick={() => onDelete(dropdown)}
+                  >
+                    <i className='fas fa-trash me-2'></i>Delete
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className='d-flex align-items-center'>
+            <span className='text-muted small me-2'>Pages:</span>
+            <div className='d-flex flex-wrap gap-1'>
+              {dropdown.display_locations.map((location, idx) => (
+                <span key={idx} className='badge bg-light text-dark'>
+                  {getPageTypeName(location as PageType)}
+                </span>
+              ))}
+            </div>
+          </div>
+        </Card.Body>
+      </Card>
+    </div>
+  )
+}
+
 // Sortable Option Component
 interface SortableOptionProps {
   option: CustomDropdownOption
@@ -49,7 +154,6 @@ interface SortableOptionProps {
   tagOptions: TagOption[]
   allOptions: CustomDropdownOption[]
   onOptionChange: (index: number, field: keyof CustomDropdownOption, value: any) => void
-  onTagOptionSelect: (index: number, tagOption: TagOption) => void
   onRemoveOption: (index: number) => void
 }
 
@@ -59,7 +163,6 @@ const SortableOption: FC<SortableOptionProps> = ({
   tagOptions,
   allOptions,
   onOptionChange,
-  onTagOptionSelect,
   onRemoveOption
 }) => {
   const {
@@ -103,45 +206,7 @@ const SortableOption: FC<SortableOptionProps> = ({
       </div>
       
       <div className='row'>
-        <div className='col-md-6'>
-          <Form.Label>Tag Option</Form.Label>
-          <Select
-            value={option.option_value ? tagOptions.find(to => to.option_value === option.option_value) : null}
-            onChange={(selectedOption) => {
-              if (selectedOption) {
-                onTagOptionSelect(index, selectedOption)
-              }
-            }}
-            options={tagOptions.filter(tagOption => {
-              // Filter out tags that are already selected in other options
-              return !allOptions.some((otherOption, otherIndex) => 
-                otherIndex !== index && otherOption.option_value === tagOption.option_value
-              )
-            })}
-            getOptionValue={(option) => option.option_value}
-            getOptionLabel={(option) => option.display_text}
-            placeholder="Select a tag option..."
-            isClearable
-            isSearchable
-            className="react-select-container"
-            classNamePrefix="react-select"
-            noOptionsMessage={() => "No tags found"}
-            styles={{
-              control: (provided) => ({
-                ...provided,
-                minHeight: '38px',
-                border: '1px solid #ced4da',
-                borderRadius: '0.375rem',
-              }),
-              option: (provided, state) => ({
-                ...provided,
-                backgroundColor: state.isSelected ? '#0d6efd' : state.isFocused ? '#f8f9fa' : 'white',
-                color: state.isSelected ? 'white' : '#000000',
-              }),
-            }}
-          />
-        </div>
-        <div className='col-md-6'>
+        <div className='col-12'>
           <Form.Label>Display Text</Form.Label>
           <Form.Control
             type='text'
@@ -183,9 +248,11 @@ const CustomFiltersPage: FC = () => {
     is_active: true,
     options: []
   })
+  const [selectedMasterTags, setSelectedMasterTags] = useState<TagOption[]>([])
 
   // Drag and drop state
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null)
 
   // DnD sensors
   const sensors = useSensors(
@@ -220,18 +287,6 @@ const CustomFiltersPage: FC = () => {
   }
 
 
-  // Add new option
-  const addOption = () => {
-    setFormData(prev => ({
-      ...prev,
-      options: [...prev.options, {
-        option_type: 1,
-        option_value: '',
-        display_text: '',
-        sort_order: prev.options.length + 1
-      }]
-    }))
-  }
 
   // Remove option
   const removeOption = (index: number) => {
@@ -244,20 +299,35 @@ const CustomFiltersPage: FC = () => {
     }))
   }
 
-  // Handle tag option selection
-  const handleTagOptionSelect = (index: number, tagOption: TagOption) => {
+  // Get available tags (excluding already selected ones)
+  const getAvailableTags = () => {
+    const selectedTagValues = formData.options.map(option => option.option_value)
+    return tagOptions.filter(tag => !selectedTagValues.includes(tag.option_value))
+  }
+
+  // Add selected tags from master dropdown
+  const handleAddSelectedTags = () => {
+    if (selectedMasterTags.length === 0) {
+      toast.error('Please select at least one tag to add')
+      return
+    }
+
+    const newOptions: CustomDropdownOption[] = selectedMasterTags.map((tag, index) => ({
+      option_type: 1,
+      option_value: tag.option_value,
+      display_text: tag.display_text,
+      sort_order: formData.options.length + index
+    }))
+
     setFormData(prev => ({
       ...prev,
-      options: prev.options.map((option, i) => 
-        i === index ? { 
-          ...option, 
-          option_type: tagOption.option_type,
-          option_value: tagOption.option_value,
-          display_text: tagOption.display_text
-        } : option
-      )
+      options: [...prev.options, ...newOptions]
     }))
+
+    // Clear the master selection
+    setSelectedMasterTags([])
   }
+
 
   // Handle create dropdown
   const handleCreateDropdown = () => {
@@ -267,13 +337,9 @@ const CustomFiltersPage: FC = () => {
       description: '',
       display_locations: [], // No default selection
       is_active: true,
-      options: [{
-        option_type: 1,
-        option_value: '',
-        display_text: '',
-        sort_order: 0
-      }]
+      options: []
     })
+    setSelectedMasterTags([])
     setShowModal(true)
   }
 
@@ -290,6 +356,7 @@ const CustomFiltersPage: FC = () => {
         sort_order: option.sort_order !== undefined ? option.sort_order : index
       }))
     })
+    setSelectedMasterTags([])
     setShowModal(true)
   }
 
@@ -408,6 +475,51 @@ const CustomFiltersPage: FC = () => {
     }
   }
 
+  // Handle drag start for dropdowns
+  const handleDropdownDragStart = (event: any) => {
+    setActiveDropdownId(event.active.id)
+  }
+
+  // Handle drag end for dropdowns
+  const handleDropdownDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (!over || active.id === over.id) {
+      setActiveDropdownId(null)
+      return
+    }
+
+    const oldIndex = dropdowns.findIndex(dropdown => dropdown.dropdown_id === active.id)
+    const newIndex = dropdowns.findIndex(dropdown => dropdown.dropdown_id === over.id)
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      // Create reorder payload with items wrapper based on current order
+      const reorderData = {
+        items: dropdowns.map((dropdown, index) => ({
+          dropdown_id: dropdown.dropdown_id,
+          sort_order: index
+        }))
+      }
+
+      // Update the sort_order for the moved items
+      reorderData.items[oldIndex].sort_order = newIndex
+      reorderData.items[newIndex].sort_order = oldIndex
+
+      // Call API to update order
+      try {
+        console.log('Sending reorder data:', reorderData)
+        const result = await dispatch(reorderCustomDropdowns(reorderData)).unwrap()
+        console.log('Reorder API response:', result)
+        // The Redux state will be updated with the API response
+      } catch (error) {
+        // Error handling is done in the thunk
+        console.error('Failed to reorder dropdowns:', error)
+      }
+    }
+
+    setActiveDropdownId(null)
+  }
+
   return (
     <>
       <PageTitle breadcrumbs={[
@@ -477,65 +589,44 @@ const CustomFiltersPage: FC = () => {
                     </Button>
                   </div>
                 ) : (
-                  <div className='row'>
-                    {dropdowns.map((dropdown) => (
-                      <div key={dropdown.dropdown_id} className='col-md-6 col-lg-4 mb-4'>
-                        <Card>
-                          <Card.Body>
-                            <div className='d-flex justify-content-between align-items-start mb-3'>
-                              <div>
-                                <h5 
-                                  className='card-title mb-1' 
-                                  style={{ cursor: 'pointer' }}
-                                  onClick={() => handleEditDropdown(dropdown)}
-                                >
-                                  {dropdown.name}
-                                </h5>
-                                {dropdown.description && (
-                                  <p className='text-muted small mb-2'>{dropdown.description}</p>
-                                )}
-                              </div>
-                              <div className='dropdown'>
-                                <Button
-                                  variant='outline-secondary'
-                                  size='sm'
-                                  data-bs-toggle='dropdown'
-                                >
-                                  <i className='fas fa-ellipsis-v'></i>
-                                </Button>
-                                <ul className='dropdown-menu'>
-                                  <li>
-                                    <button 
-                                      className='dropdown-item'
-                                      onClick={() => handleEditDropdown(dropdown)}
-                                    >
-                                      <i className='fas fa-edit me-2'></i>Edit
-                                    </button>
-                                  </li>
-                                  <li>
-                                    <button 
-                                      className='dropdown-item text-danger'
-                                      onClick={() => handleDeleteClick(dropdown)}
-                                    >
-                                      <i className='fas fa-trash me-2'></i>Delete
-                                    </button>
-                                  </li>
-                                </ul>
-                              </div>
-                            </div>
-                            <div className='d-flex justify-content-between align-items-center'>
-                              <span className='badge bg-primary text-white'>
-                                {dropdown.options.length} options
-                              </span>
-                              <small className='text-muted'>
-                                {formatApiTimestamp(dropdown.created_at, { format: 'custom' })}
-                              </small>
-                            </div>
-                          </Card.Body>
-                        </Card>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDropdownDragStart}
+                    onDragEnd={handleDropdownDragEnd}
+                  >
+                    <SortableContext
+                      items={dropdowns.map(dropdown => dropdown.dropdown_id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className='row'>
+                        {dropdowns.map((dropdown, index) => (
+                          <SortableDropdownCard
+                            key={dropdown.dropdown_id}
+                            dropdown={dropdown}
+                            index={index}
+                            onEdit={handleEditDropdown}
+                            onDelete={handleDeleteClick}
+                          />
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </SortableContext>
+                    <DragOverlay>
+                      {activeDropdownId ? (
+                        (() => {
+                          const dropdown = dropdowns.find(d => d.dropdown_id === activeDropdownId)
+                          return dropdown ? (
+                            <SortableDropdownCard
+                              dropdown={dropdown}
+                              index={dropdowns.findIndex(d => d.dropdown_id === activeDropdownId)}
+                              onEdit={handleEditDropdown}
+                              onDelete={handleDeleteClick}
+                            />
+                          ) : null
+                        })()
+                      ) : null}
+                    </DragOverlay>
+                  </DndContext>
                 )}
               </Card.Body>
             </KTCard>
@@ -611,60 +702,90 @@ const CustomFiltersPage: FC = () => {
             </div>
             
             <div className='mb-3'>
-              <div className='d-flex justify-content-between align-items-center mb-2'>
-                <Form.Label>Options *</Form.Label>
-                <Button variant='outline-primary' size='sm' onClick={addOption}>
-                  <i className='fas fa-plus me-1'></i>Add Option
+              <Form.Label>Add Tags as Options *</Form.Label>
+              <div className='d-flex gap-2 mb-3 align-items-end'>
+                <div className='flex-grow-1'>
+                  <Select
+                    isMulti
+                    isSearchable
+                    isClearable
+                    value={selectedMasterTags}
+                    onChange={(selected) => setSelectedMasterTags(selected as TagOption[])}
+                    options={getAvailableTags()}
+                    getOptionLabel={(option) => option.display_text}
+                    getOptionValue={(option) => option.option_value}
+                    placeholder="Search and select tags to add as options..."
+                    noOptionsMessage={() => "No available tags"}
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    styles={{
+                      control: (provided) => ({
+                        ...provided,
+                        minHeight: '38px',
+                      }),
+                    }}
+                  />
+                </div>
+                <Button 
+                  variant='primary' 
+                  onClick={handleAddSelectedTags}
+                  disabled={selectedMasterTags.length === 0}
+                  style={{ height: '38px' }}
+                >
+                  <i className='fas fa-plus me-1'></i>Add Selected
                 </Button>
               </div>
               
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={formData.options.map(option => option.option_value)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {formData.options.map((option, index) => (
-                    <SortableOption
-                      key={option.option_value || index}
-                      option={option}
-                      index={index}
-                      tagOptions={tagOptions}
-                      allOptions={formData.options}
-                      onOptionChange={handleOptionChange}
-                      onTagOptionSelect={handleTagOptionSelect}
-                      onRemoveOption={removeOption}
-                    />
-                  ))}
-                </SortableContext>
-                <DragOverlay>
-                  {activeId ? (
-                    (() => {
-                      const option = formData.options.find(opt => opt.option_value === activeId)
-                      return option ? (
+              {formData.options.length > 0 && (
+                <div className='mb-3'>
+                  <Form.Label>Current Options</Form.Label>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={formData.options.map(option => option.option_value)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {formData.options.map((option, index) => (
+                        <SortableOption
+                          key={option.option_value || index}
+                          option={option}
+                          index={index}
+                          tagOptions={tagOptions}
+                          allOptions={formData.options}
+                          onOptionChange={handleOptionChange}
+                          onRemoveOption={removeOption}
+                        />
+                      ))}
+                    </SortableContext>
+                    <DragOverlay>
+                      {activeId ? (
+                        (() => {
+                          const option = formData.options.find(opt => opt.option_value === activeId)
+                          return option ? (
                         <SortableOption
                           option={option}
                           index={formData.options.findIndex(opt => opt.option_value === activeId)}
                           tagOptions={tagOptions}
                           allOptions={formData.options}
                           onOptionChange={handleOptionChange}
-                          onTagOptionSelect={handleTagOptionSelect}
                           onRemoveOption={removeOption}
                         />
-                      ) : null
-                    })()
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
+                          ) : null
+                        })()
+                      ) : null}
+                    </DragOverlay>
+                  </DndContext>
+                </div>
+              )}
               
               {formData.options.length === 0 && (
                 <div className='text-center py-4 text-muted'>
-                  <i className='fas fa-plus-circle fs-1 mb-2'></i>
-                  <p>No options added yet. Click "Add Option" to get started.</p>
+                  <i className='fas fa-tags fs-1 mb-2'></i>
+                  <p>No options added yet. Select tags from the dropdown above and click "Add Selected" to get started.</p>
                 </div>
               )}
             </div>
