@@ -21,6 +21,142 @@ import {
 import { PAGE_TYPES, getPageTypeName, PageType } from '../constants/pageTypes'
 import { formatApiTimestamp } from '../../_metronic/helpers/dateUtils'
 import { ConfirmationDialog } from '../../_metronic/helpers/ConfirmationDialog'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+
+// Sortable Option Component
+interface SortableOptionProps {
+  option: CustomDropdownOption
+  index: number
+  tagOptions: TagOption[]
+  allOptions: CustomDropdownOption[]
+  onOptionChange: (index: number, field: keyof CustomDropdownOption, value: any) => void
+  onTagOptionSelect: (index: number, tagOption: TagOption) => void
+  onRemoveOption: (index: number) => void
+}
+
+const SortableOption: FC<SortableOptionProps> = ({
+  option,
+  index,
+  tagOptions,
+  allOptions,
+  onOptionChange,
+  onTagOptionSelect,
+  onRemoveOption
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: option.option_value })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.8 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+    position: isDragging ? 'relative' : 'static',
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className='border rounded p-3 mb-3'>
+      <div className='d-flex align-items-center mb-2'>
+        <div 
+          className='me-2 cursor-pointer'
+          {...attributes}
+          {...listeners}
+          style={{ cursor: 'grab' }}
+        >
+          <i className='fas fa-grip-vertical text-muted'></i>
+        </div>
+        <div className='flex-grow-1'>
+          <span className='text-muted small'>Option {index + 1}</span>
+        </div>
+        <Button
+          variant='outline-danger'
+          size='sm'
+          onClick={() => onRemoveOption(index)}
+        >
+          <i className='fas fa-trash'></i>
+        </Button>
+      </div>
+      
+      <div className='row'>
+        <div className='col-md-6'>
+          <Form.Label>Tag Option</Form.Label>
+          <Select
+            value={option.option_value ? tagOptions.find(to => to.option_value === option.option_value) : null}
+            onChange={(selectedOption) => {
+              if (selectedOption) {
+                onTagOptionSelect(index, selectedOption)
+              }
+            }}
+            options={tagOptions.filter(tagOption => {
+              // Filter out tags that are already selected in other options
+              return !allOptions.some((otherOption, otherIndex) => 
+                otherIndex !== index && otherOption.option_value === tagOption.option_value
+              )
+            })}
+            getOptionValue={(option) => option.option_value}
+            getOptionLabel={(option) => option.display_text}
+            placeholder="Select a tag option..."
+            isClearable
+            isSearchable
+            className="react-select-container"
+            classNamePrefix="react-select"
+            noOptionsMessage={() => "No tags found"}
+            styles={{
+              control: (provided) => ({
+                ...provided,
+                minHeight: '38px',
+                border: '1px solid #ced4da',
+                borderRadius: '0.375rem',
+              }),
+              option: (provided, state) => ({
+                ...provided,
+                backgroundColor: state.isSelected ? '#0d6efd' : state.isFocused ? '#f8f9fa' : 'white',
+                color: state.isSelected ? 'white' : '#000000',
+              }),
+            }}
+          />
+        </div>
+        <div className='col-md-6'>
+          <Form.Label>Display Text</Form.Label>
+          <Form.Control
+            type='text'
+            value={option.display_text || ''}
+            onChange={(e) => onOptionChange(index, 'display_text', e.target.value)}
+            placeholder='Enter display text...'
+          />
+          <Form.Text className='text-muted'>
+            You may change how this option appears to users
+          </Form.Text>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const CustomFiltersPage: FC = () => {
   const intl = useIntl()
@@ -44,8 +180,20 @@ const CustomFiltersPage: FC = () => {
     name: '',
     description: '',
     display_locations: [],
+    is_active: true,
     options: []
   })
+
+  // Drag and drop state
+  const [activeId, setActiveId] = useState<string | null>(null)
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   // Load data on component mount
   useEffect(() => {
@@ -71,6 +219,7 @@ const CustomFiltersPage: FC = () => {
     }))
   }
 
+
   // Add new option
   const addOption = () => {
     setFormData(prev => ({
@@ -88,7 +237,10 @@ const CustomFiltersPage: FC = () => {
   const removeOption = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      options: prev.options.filter((_, i) => i !== index)
+      options: prev.options.filter((_, i) => i !== index).map((option, i) => ({
+        ...option,
+        sort_order: i
+      }))
     }))
   }
 
@@ -114,11 +266,12 @@ const CustomFiltersPage: FC = () => {
       name: '',
       description: '',
       display_locations: [], // No default selection
+      is_active: true,
       options: [{
         option_type: 1,
         option_value: '',
         display_text: '',
-        sort_order: 1
+        sort_order: 0
       }]
     })
     setShowModal(true)
@@ -131,7 +284,11 @@ const CustomFiltersPage: FC = () => {
       name: dropdown.name,
       description: dropdown.description || '',
       display_locations: dropdown.display_locations || [],
-      options: dropdown.options
+      is_active: dropdown.is_active,
+      options: dropdown.options.map((option, index) => ({
+        ...option,
+        sort_order: option.sort_order !== undefined ? option.sort_order : index
+      }))
     })
     setShowModal(true)
   }
@@ -143,34 +300,55 @@ const CustomFiltersPage: FC = () => {
       return
     }
 
-    if (formData.display_locations.length === 0) {
-      toast.error('At least one page type must be selected for "Appear on"')
-      return
-    }
 
     if (formData.options.length === 0) {
       toast.error('At least one option is required')
       return
     }
 
-    // Check that all options have valid tag selections
-    const hasValidOptions = formData.options.every(option => 
+    // Check that at least one option has a valid tag selection
+    const validOptions = formData.options.filter(option => 
       option.option_value && option.option_value.trim() !== ''
     )
     
-    if (!hasValidOptions) {
-      toast.error('Please add at least one option')
+    if (validOptions.length === 0) {
+      toast.error('Please add at least one option with a valid tag selection')
       return
     }
+
+    // Ensure sort_order is properly set as integers and filter out database fields
+    // Only include valid options (those with option_value filled)
+    const validOptionsWithSortOrder = validOptions.map((option, index) => ({
+      option_type: option.option_type,
+      option_value: option.option_value,
+      display_text: option.display_text,
+      sort_order: typeof option.sort_order === 'number' ? option.sort_order : index
+    }))
+
+    const payload = {
+      name: formData.name,
+      description: formData.description,
+      display_locations: formData.display_locations,
+      is_active: true, // Always set to true for active dropdowns
+      options: validOptionsWithSortOrder
+    }
+
+    // Debug: Log the data being sent
+    console.log('Sending formData:', JSON.stringify(payload, null, 2))
+    console.log('Options with sort_order:', payload.options.map(opt => ({
+      ...opt,
+      sort_order: opt.sort_order,
+      sort_order_type: typeof opt.sort_order
+    })))
 
     try {
       if (editingDropdown) {
         await dispatch(updateCustomDropdown({ 
           dropdownId: editingDropdown.dropdown_id, 
-          payload: formData 
+          payload: payload 
         })).unwrap()
       } else {
-        await dispatch(createCustomDropdown(formData)).unwrap()
+        await dispatch(createCustomDropdown(payload)).unwrap()
       }
       setShowModal(false)
       setEditingDropdown(null)
@@ -195,6 +373,38 @@ const CustomFiltersPage: FC = () => {
       setDropdownToDelete(null)
     } catch (error) {
       // Error handling is done in the Redux slice
+    }
+  }
+
+  // Drag and drop handlers
+  const handleDragStart = (event: any) => {
+    setActiveId(event.active.id)
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null)
+    const { active, over } = event
+
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    const oldIndex = formData.options.findIndex(option => option.option_value === active.id)
+    const newIndex = formData.options.findIndex(option => option.option_value === over.id)
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newOptions = arrayMove(formData.options, oldIndex, newIndex)
+      
+      // Update sort_order for all options
+      const updatedOptions = newOptions.map((option, index) => ({
+        ...option,
+        sort_order: index
+      }))
+
+      setFormData(prev => ({
+        ...prev,
+        options: updatedOptions
+      }))
     }
   }
 
@@ -408,59 +618,48 @@ const CustomFiltersPage: FC = () => {
                 </Button>
               </div>
               
-              {formData.options.map((option, index) => (
-                <div key={index} className='border rounded p-3 mb-3'>
-                  <div className='row'>
-                    <div className='col-md-6'>
-                      <Form.Label>Tag Option</Form.Label>
-                      <Form.Select
-                        value={option.option_value}
-                        onChange={(e) => {
-                          const selectedTag = tagOptions.find(tag => tag.option_value === e.target.value)
-                          if (selectedTag) {
-                            handleTagOptionSelect(index, selectedTag)
-                          }
-                        }}
-                      >
-                        <option value=''>Select a tag option...</option>
-                        {tagOptions
-                          .filter(tagOption => {
-                            // Filter out tags that are already selected in other options
-                            return !formData.options.some((otherOption, otherIndex) => 
-                              otherIndex !== index && otherOption.option_value === tagOption.option_value
-                            )
-                          })
-                          .map((tagOption) => (
-                            <option key={tagOption.option_value} value={tagOption.option_value}>
-                              {tagOption.display_text}
-                            </option>
-                          ))}
-                      </Form.Select>
-                    </div>
-                    <div className='col-md-5'>
-                      <Form.Label>Display Text</Form.Label>
-                      <Form.Control
-                        type='text'
-                        value={option.display_text}
-                        onChange={(e) => handleOptionChange(index, 'display_text', e.target.value)}
-                        placeholder='Enter display text'
-                      />
-                      <Form.Text className='text-muted'>
-                        You may change how this option appears to users
-                      </Form.Text>
-                    </div>
-                    <div className='col-md-1 d-flex align-items-end'>
-                      <Button
-                        variant='outline-danger'
-                        size='sm'
-                        onClick={() => removeOption(index)}
-                      >
-                        <i className='fas fa-trash'></i>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={formData.options.map(option => option.option_value)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {formData.options.map((option, index) => (
+                    <SortableOption
+                      key={option.option_value || index}
+                      option={option}
+                      index={index}
+                      tagOptions={tagOptions}
+                      allOptions={formData.options}
+                      onOptionChange={handleOptionChange}
+                      onTagOptionSelect={handleTagOptionSelect}
+                      onRemoveOption={removeOption}
+                    />
+                  ))}
+                </SortableContext>
+                <DragOverlay>
+                  {activeId ? (
+                    (() => {
+                      const option = formData.options.find(opt => opt.option_value === activeId)
+                      return option ? (
+                        <SortableOption
+                          option={option}
+                          index={formData.options.findIndex(opt => opt.option_value === activeId)}
+                          tagOptions={tagOptions}
+                          allOptions={formData.options}
+                          onOptionChange={handleOptionChange}
+                          onTagOptionSelect={handleTagOptionSelect}
+                          onRemoveOption={removeOption}
+                        />
+                      ) : null
+                    })()
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
               
               {formData.options.length === 0 && (
                 <div className='text-center py-4 text-muted'>

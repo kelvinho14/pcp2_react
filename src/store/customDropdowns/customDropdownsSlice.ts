@@ -36,6 +36,7 @@ export interface CreateDropdownPayload {
   name: string
   description?: string
   display_locations: number[]
+  is_active: boolean
   options: CustomDropdownOption[]
 }
 
