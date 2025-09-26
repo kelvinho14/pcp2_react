@@ -1,12 +1,12 @@
 import { ListViewProvider, useListView } from './core/ListViewProvider'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { QuestionsListHeader } from './components/header/QuestionsListHeader'
 import { QuestionsTable } from './table/QuestionsTable'
 import { KTCard } from '../../../../../_metronic/helpers'
 import { PageLink, PageTitle } from '../../../../../_metronic/layout/core'
 import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '../../../../../store'
-import { fetchQuestionTags } from '../../../../../store/tags/tagsSlice'
+import { fetchCustomDropdownsByLocation } from '../../../../../store/customDropdowns/customDropdownsSlice'
 import Select from 'react-select'
 import clsx from 'clsx'
 
@@ -29,28 +29,48 @@ const questionsListBreadcrumbs: Array<PageLink> = [
 const QuestionsList = () => {
   const { itemIdForUpdate } = useListView()
   const [search, setSearch] = useState('')
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [tagLogic, setTagLogic] = useState<'and' | 'or'>('and')
   const [selectedLogic, setSelectedLogic] = useState<'and' | 'or'>('and')
   const [showTagFilter, setShowTagFilter] = useState(false)
+  const [selectedCustomDropdowns, setSelectedCustomDropdowns] = useState<Record<string, string[]>>({})
   
   const dispatch = useDispatch<AppDispatch>()
-  const { questionTags, questionTagsLoading } = useSelector((state: RootState) => state.tags)
+  const { dropdownsByLocation, dropdownsByLocationLoading } = useSelector((state: RootState) => state.customDropdowns)
 
-  // Fetch question tags on component mount
+  // Fetch custom dropdowns on component mount
   useEffect(() => {
-    dispatch(fetchQuestionTags('lq'))
+    dispatch(fetchCustomDropdownsByLocation(1)) // 1 = QuestionList
   }, [dispatch])
-
-  const handleTagChange = (selectedOptions: any) => {
-    const tagIds = selectedOptions ? selectedOptions.map((option: any) => option.value) : []
-    setSelectedTags(tagIds)
-  }
 
   const handleLogicChange = (logic: 'and' | 'or') => {
     setSelectedLogic(logic)
-    setTagLogic(logic)
   }
+
+  const handleCustomDropdownChange = (dropdownId: string, selectedOptions: any) => {
+    const optionValues = selectedOptions ? selectedOptions.map((option: any) => option.value) : []
+    setSelectedCustomDropdowns(prev => ({
+      ...prev,
+      [dropdownId]: optionValues
+    }))
+  }
+
+  // Get custom dropdowns for this location
+  const customDropdowns = useMemo(() => dropdownsByLocation[1] || [], [dropdownsByLocation])
+  const customDropdownsLoading = useMemo(() => dropdownsByLocationLoading[1] || false, [dropdownsByLocationLoading])
+
+  // Combine all selected filters (custom dropdowns only)
+  const getAllSelectedFilters = useCallback(() => {
+    const allFilters: string[] = []
+    
+    // Add custom dropdown selections
+    Object.values(selectedCustomDropdowns).forEach(dropdownSelections => {
+      allFilters.push(...dropdownSelections)
+    })
+    
+    return allFilters
+  }, [selectedCustomDropdowns])
+
+  // Memoize the combined filters to prevent infinite re-renders
+  const combinedFilters = useMemo(() => getAllSelectedFilters(), [getAllSelectedFilters])
 
   return (
     <>
@@ -89,39 +109,44 @@ const QuestionsList = () => {
           </div>
         </div>
         
-        {/* Tag Filter Dropdown - Right Aligned */}
+        {/* Custom Dropdown Filters */}
         {showTagFilter && (
-          <div className='tag-filter-section mt-3 d-flex justify-content-end'>
+          <div className='custom-filter-section mt-3 d-flex justify-content-end'>
             <div className='d-flex align-items-center gap-3 flex-wrap'>
-              <div className='d-flex align-items-center gap-2'>
-                <label htmlFor='lq-tag-filter' className='form-label mb-0 text-white-50' style={{ fontSize: '0.875rem' }}>Tags:</label>
-                <div style={{ width: '180px' }}>
-                  <Select
-                    id='lq-tag-filter'
-                    options={questionTags.map((tag: any) => ({
-                      value: tag.tag_id,
-                      label: `${tag.name} (${tag.usage_count})`
-                    }))}
-                    isMulti
-                    onChange={handleTagChange}
-                    placeholder='Select...'
-                    isLoading={questionTagsLoading}
-                    isClearable
-                    isSearchable
-                    styles={{
-                      option: (provided, state) => ({
-                        ...provided,
-                        color: state.isSelected ? 'white' : '#000000',
-                        backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f8f9fa' : 'white',
-                      }),
-                      menu: (provided) => ({
-                        ...provided,
-                        backgroundColor: 'white',
-                      }),
-                    }}
-                  />
+              {/* Custom Dropdowns */}
+              {customDropdowns.map((dropdown) => (
+                <div key={dropdown.dropdown_id} className='d-flex align-items-center gap-2'>
+                  <label htmlFor={`custom-${dropdown.dropdown_id}`} className='form-label mb-0 text-white-50' style={{ fontSize: '0.875rem' }}>
+                    {dropdown.name}:
+                  </label>
+                  <div style={{ width: '180px' }}>
+                    <Select
+                      id={`custom-${dropdown.dropdown_id}`}
+                      options={dropdown.options.map((option) => ({
+                        value: option.option_value,
+                        label: option.display_text
+                      }))}
+                      isMulti
+                      onChange={(selectedOptions) => handleCustomDropdownChange(dropdown.dropdown_id, selectedOptions)}
+                      placeholder='Select...'
+                      isLoading={customDropdownsLoading}
+                      isClearable
+                      isSearchable
+                      styles={{
+                        option: (provided, state) => ({
+                          ...provided,
+                          color: state.isSelected ? 'white' : '#000000',
+                          backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f8f9fa' : 'white',
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          backgroundColor: 'white',
+                        }),
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
+              ))}
               
               <div className='d-flex align-items-center gap-2'>
                 <span className='text-white-50' style={{ fontSize: '0.875rem' }}>Logic:</span>
@@ -162,8 +187,8 @@ const QuestionsList = () => {
           <QuestionsListHeader setSearch={setSearch} />
           <QuestionsTable 
             search={search} 
-            selectedTags={selectedTags} 
-            tagLogic={tagLogic}
+            selectedTags={combinedFilters} 
+            tagLogic={selectedLogic}
           />
         </ListViewProvider>
       </KTCard>

@@ -1,12 +1,19 @@
-import {FC} from 'react'
+import {FC, useEffect} from 'react'
 import {PageTitle} from '../../../../_metronic/layout/core'
 import {useIntl} from 'react-intl'
+import {useDispatch} from 'react-redux'
+import {AppDispatch} from '../../../../store'
+import {fetchCustomDropdownsByLocation} from '../../../../store/customDropdowns/customDropdownsSlice'
 import './VideoListPage.scss'
 
 const VideoListPage: FC = () => {
   const intl = useIntl()
-  
+  const dispatch = useDispatch<AppDispatch>()
 
+  // Fetch custom dropdowns on component mount
+  useEffect(() => {
+    dispatch(fetchCustomDropdownsByLocation(3)) // 3 = VideoList
+  }, [dispatch])
 
   return (
     <div className='video-list-page'>

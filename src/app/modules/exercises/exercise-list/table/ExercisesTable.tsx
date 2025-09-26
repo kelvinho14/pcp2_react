@@ -13,9 +13,11 @@ type Props = {
   search: string
   selectedTypes: string[]
   statusFilter: number | ''
+  selectedTags: string[]
+  tagLogic: 'and' | 'or'
 }
 
-const ExercisesTable = ({ search, selectedTypes, statusFilter }: Props) => {
+const ExercisesTable = ({ search, selectedTypes, statusFilter, selectedTags, tagLogic }: Props) => {
   const dispatch = useDispatch<AppDispatch>()
   const dispatchRef = useRef(dispatch)
   dispatchRef.current = dispatch
@@ -39,18 +41,20 @@ const ExercisesTable = ({ search, selectedTypes, statusFilter }: Props) => {
         search: search || undefined,
         types: selectedTypes.length > 0 ? selectedTypes : undefined,
         status: statusFilter !== '' ? statusFilter : undefined,
+        tags: selectedTags.length > 0 ? selectedTags : undefined,
+        tag_logic: selectedTags.length > 0 ? tagLogic : undefined,
       })
     )
-  }, [page, sort, search, selectedTypes, statusFilter, itemsPerPage])
+  }, [page, sort, search, selectedTypes, statusFilter, selectedTags, tagLogic, itemsPerPage])
 
   useEffect(() => {
     fetchExercisesData()
   }, [fetchExercisesData])
 
-  // Reset page to 1 when search, types, or status change
+  // Reset page to 1 when search, types, status, or tags change
   useEffect(() => {
     setPage(1)
-  }, [search, selectedTypes, statusFilter])
+  }, [search, selectedTypes, statusFilter, selectedTags, tagLogic])
 
   const data = useMemo(() => (Array.isArray(exercises) ? exercises : []), [exercises])
   const columns = useMemo(() => exercisesColumns, [])

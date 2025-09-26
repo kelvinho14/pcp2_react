@@ -95,7 +95,7 @@ export interface VimeoFolderWithVideos extends VimeoFolder {
 // Async thunks
 export const fetchVideos = createAsyncThunk(
   'videos/fetchVideos',
-  async ({ page, items_per_page, sort, order, search, platform, teacher_id }: {
+  async ({ page, items_per_page, sort, order, search, platform, teacher_id, tags, tag_logic }: {
     page: number
     items_per_page: number
     sort?: string
@@ -103,6 +103,8 @@ export const fetchVideos = createAsyncThunk(
     search?: string
     platform?: 'youtube' | 'vimeo'
     teacher_id?: string
+    tags?: string[]
+    tag_logic?: 'and' | 'or'
   }) => {
     const params: any = { page, items_per_page }
     if (sort) params.sort = sort
@@ -111,10 +113,35 @@ export const fetchVideos = createAsyncThunk(
     if (platform) params.platform = platform
     if (teacher_id) params.teacher_id = teacher_id
 
+    // Build the URL with proper tag_ids format
+    let url = `${API_URL}/videos`
+    const queryParams = new URLSearchParams()
+    
+    // Add all params except tag_ids
+    Object.keys(params).forEach(key => {
+      queryParams.append(key, params[key])
+    })
+    
+    // Add tag_ids as separate parameters
+    if (tags && tags.length > 0) {
+      tags.forEach(tagId => {
+        queryParams.append('tag_ids', tagId)
+      })
+      
+      // Add tag logic parameter
+      if (tag_logic) {
+        queryParams.append('logic', tag_logic)
+      }
+    }
+    
+    const queryString = queryParams.toString()
+    if (queryString) {
+      url += `?${queryString}`
+    }
+
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/videos`)
-      const response = await axios.get(`${API_URL}/videos`, { 
-        params, 
+      const headers = getHeadersWithSchoolSubject(url)
+      const response = await axios.get(url, { 
         headers,
         withCredentials: true 
       })
@@ -264,7 +291,7 @@ export const deleteVideo = createAsyncThunk(
 
 export const fetchTeacherVideos = createAsyncThunk(
   'videos/fetchTeacherVideos',
-  async ({ page, items_per_page, sort, order, search, source, status, tags }: {
+  async ({ page, items_per_page, sort, order, search, source, status, tags, tag_logic }: {
     page: number
     items_per_page: number
     sort?: string
@@ -273,6 +300,7 @@ export const fetchTeacherVideos = createAsyncThunk(
     source?: number
     status?: number
     tags?: string[]
+    tag_logic?: 'and' | 'or'
   }) => {
     const params: any = { page, items_per_page }
     if (sort) params.sort = sort
@@ -280,12 +308,36 @@ export const fetchTeacherVideos = createAsyncThunk(
     if (search) params.search = search
     if (source) params.source = source
     if (status) params.video_status = status
-    if (tags && tags.length > 0) params.tags = tags.join(',')
+
+    // Build the URL with proper tag_ids format
+    let url = `${API_URL}/videos`
+    const queryParams = new URLSearchParams()
+    
+    // Add all params except tag_ids
+    Object.keys(params).forEach(key => {
+      queryParams.append(key, params[key])
+    })
+    
+    // Add tag_ids as separate parameters
+    if (tags && tags.length > 0) {
+      tags.forEach(tagId => {
+        queryParams.append('tag_ids', tagId)
+      })
+      
+      // Add tag logic parameter
+      if (tag_logic) {
+        queryParams.append('logic', tag_logic)
+      }
+    }
+    
+    const queryString = queryParams.toString()
+    if (queryString) {
+      url += `?${queryString}`
+    }
 
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/videos`)
-      const response = await axios.get(`${API_URL}/videos`, { 
-        params, 
+      const headers = getHeadersWithSchoolSubject(url)
+      const response = await axios.get(url, { 
         headers,
         withCredentials: true 
       })

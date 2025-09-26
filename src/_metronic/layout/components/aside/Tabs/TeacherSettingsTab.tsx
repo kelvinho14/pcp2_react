@@ -53,6 +53,7 @@ const TeacherSettingsTab = () => {
           {isTeachingStaff(currentUser?.role?.role_type) && (
             <>
               <AsideMenuItem to='/settings' title='Platform Settings' hasBullet={true} />
+              <AsideMenuItem to='/customfilters' title='Custom Filters' hasBullet={true} />
             </>
           )}
         </div>
