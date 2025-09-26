@@ -30,6 +30,7 @@ export interface CustomDropdown {
   updated_at: string
   display_locations: number[]
   options: CustomDropdownOption[]
+  sort_order?: number
 }
 
 export interface CreateDropdownPayload {
@@ -331,9 +332,9 @@ const customDropdownsSlice = createSlice({
         // Update the order of dropdowns based on the returned data
         if (action.payload && action.payload.dropdowns && Array.isArray(action.payload.dropdowns)) {
           // Sort by sort_order to ensure correct display order
-          const sortedDropdowns = action.payload.dropdowns.sort((a, b) => a.sort_order - b.sort_order)
+          const sortedDropdowns = action.payload.dropdowns.sort((a: CustomDropdown, b: CustomDropdown) => (a.sort_order || 0) - (b.sort_order || 0))
           state.dropdowns = sortedDropdowns
-          console.log('Updated dropdowns order:', sortedDropdowns.map(d => ({ name: d.name, sort_order: d.sort_order })))
+          console.log('Updated dropdowns order:', sortedDropdowns.map((d: CustomDropdown) => ({ name: d.name, sort_order: d.sort_order })))
         }
       })
       .addCase(reorderCustomDropdowns.rejected, (state, action) => {
