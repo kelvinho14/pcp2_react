@@ -3,8 +3,9 @@ import { PageTitle } from '../../_metronic/layout/core'
 import { KTCard } from '../../_metronic/helpers'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '../../store'
-import { fetchTagsWithLinkages, updateTagName, TagWithLinkages, TagLinkage } from '../../store/tags/tagsSlice'
+import { fetchTagsWithLinkages, updateTagName, createTag, deleteTag, TagWithLinkages, TagLinkage } from '../../store/tags/tagsSlice'
 import { toast } from '../../_metronic/helpers/toast'
+import { ConfirmationDialog } from '../../_metronic/helpers/ConfirmationDialog'
 
 // Content Type Badge Colors
 const CONTENT_TYPE_COLORS = {
@@ -22,6 +23,11 @@ const TagsPage: FC = () => {
   const [editName, setEditName] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [newTagName, setNewTagName] = useState('')
+  const [isCreatingTag, setIsCreatingTag] = useState(false)
+  const [deletingTagId, setDeletingTagId] = useState<string | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [tagToDelete, setTagToDelete] = useState<{ id: string; name: string } | null>(null)
 
   // Fetch tags with linkages using Redux
   const fetchTags = useCallback((search?: string) => {
@@ -40,6 +46,49 @@ const TagsPage: FC = () => {
     setEditingTag(null)
     setEditName('')
   }, [dispatch])
+
+  // Create new tag using Redux
+  const handleCreateTag = useCallback(async () => {
+    if (!newTagName.trim()) {
+      toast.error('Tag name cannot be empty', 'Error')
+      return
+    }
+
+    setIsCreatingTag(true)
+    try {
+      await dispatch(createTag(newTagName.trim())).unwrap()
+      setNewTagName('')
+      // Refresh the tags list to show the new tag
+      fetchTags(searchTerm)
+    } catch (error) {
+      // Error is already handled in the thunk
+    } finally {
+      setIsCreatingTag(false)
+    }
+  }, [dispatch, newTagName, fetchTags, searchTerm])
+
+  // Show delete confirmation dialog
+  const handleDeleteClick = useCallback((tagId: string, tagName: string) => {
+    setTagToDelete({ id: tagId, name: tagName })
+    setShowDeleteDialog(true)
+  }, [])
+
+  // Confirm delete tag using Redux
+  const confirmDeleteTag = useCallback(async () => {
+    if (!tagToDelete) return
+
+    setDeletingTagId(tagToDelete.id)
+    try {
+      await dispatch(deleteTag(tagToDelete.id)).unwrap()
+      // The tag will be removed from the list automatically by the reducer
+    } catch (error) {
+      // Error is already handled in the thunk
+    } finally {
+      setDeletingTagId(null)
+      setShowDeleteDialog(false)
+      setTagToDelete(null)
+    }
+  }, [dispatch, tagToDelete])
 
   // Start editing
   const startEditing = (tagId: string, currentName: string) => {
@@ -159,6 +208,42 @@ const TagsPage: FC = () => {
               Manage and organize your content tags
             </h3>
           </div>
+          <div className='welcome-actions'>
+            <div className='d-flex align-items-center gap-2'>
+              <input
+                type='text'
+                className='form-control form-control-sm'
+                placeholder='Enter new tag name'
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateTag()
+                  }
+                }}
+                style={{ minWidth: '200px' }}
+              />
+              <button
+                type='button'
+                className='btn btn-light btn-sm'
+                onClick={handleCreateTag}
+                disabled={isCreatingTag || !newTagName.trim()}
+                style={{ minWidth: '120px', height: '32px' }}
+              >
+                {isCreatingTag ? (
+                  <>
+                    <span className='spinner-border spinner-border-sm me-1' role='status' aria-hidden='true'></span>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <i className='fas fa-plus me-1'></i>
+                    Create Tag
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -227,13 +312,29 @@ const TagsPage: FC = () => {
                           <h5 className='card-title mb-0 flex-grow-1'>{tag.name}</h5>
                         )}
                         
-                        <button
-                          className='btn btn-sm btn-light'
-                          onClick={() => startEditing(tag.tag_id, tag.name)}
-                          title='Edit tag name'
-                        >
-                          <i className='fas fa-pencil-alt'></i>
-                        </button>
+                        <div className='d-flex gap-1'>
+                          <button
+                            className='btn btn-sm btn-light'
+                            onClick={() => startEditing(tag.tag_id, tag.name)}
+                            title='Edit tag name'
+                          >
+                            <i className='fas fa-pencil-alt'></i>
+                          </button>
+                          {getTotalCount(tag.linkages) === 0 && (
+                            <button
+                              className='btn btn-sm btn-danger'
+                              onClick={() => handleDeleteClick(tag.tag_id, tag.name)}
+                              disabled={deletingTagId === tag.tag_id}
+                              title='Delete tag'
+                            >
+                              {deletingTagId === tag.tag_id ? (
+                                <span className='spinner-border spinner-border-sm' role='status' aria-hidden='true'></span>
+                              ) : (
+                                <i className='fas fa-trash'></i>
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Edit Actions */}
@@ -286,6 +387,23 @@ const TagsPage: FC = () => {
           )}
         </div>
       </KTCard>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        show={showDeleteDialog}
+        onHide={() => {
+          setShowDeleteDialog(false)
+          setTagToDelete(null)
+        }}
+        onConfirm={confirmDeleteTag}
+        title="Delete Tag"
+        message={`Are you sure you want to delete the tag "${tagToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete Tag"
+        cancelText="Cancel"
+        variant="danger"
+        loading={deletingTagId !== null}
+        loadingText="Deleting tag..."
+      />
 
     </>
   )
