@@ -60,7 +60,7 @@ export interface ExerciseFormData {
 // Async thunks
 export const fetchExercises = createAsyncThunk(
   'exercises/fetchExercises',
-  async ({ page, items_per_page, sort, order, search, all, types, status }: {
+  async ({ page, items_per_page, sort, order, search, all, types, status, tags, tag_logic }: {
     page: number
     items_per_page: number
     sort?: string
@@ -69,6 +69,8 @@ export const fetchExercises = createAsyncThunk(
     all?: number
     types?: string[]
     status?: number
+    tags?: string[]
+    tag_logic?: 'and' | 'or'
   }) => {
     const params: any = { page, items_per_page }
     if (sort) params.sort = sort
@@ -78,10 +80,35 @@ export const fetchExercises = createAsyncThunk(
     if (types && types.length > 0) params.types = types.join(',')
     if (status !== undefined) params.status = status
 
+    // Build the URL with proper tag_ids format
+    let url = `${API_URL}/exercises`
+    const queryParams = new URLSearchParams()
+    
+    // Add all params except tag_ids
+    Object.keys(params).forEach(key => {
+      queryParams.append(key, params[key])
+    })
+    
+    // Add tag_ids as separate parameters
+    if (tags && tags.length > 0) {
+      tags.forEach(tagId => {
+        queryParams.append('tag_ids', tagId)
+      })
+      
+      // Add tag logic parameter
+      if (tag_logic) {
+        queryParams.append('logic', tag_logic)
+      }
+    }
+    
+    const queryString = queryParams.toString()
+    if (queryString) {
+      url += `?${queryString}`
+    }
+
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises`)
-      const response = await axios.get(`${API_URL}/exercises`, { 
-        params, 
+      const headers = getHeadersWithSchoolSubject(url)
+      const response = await axios.get(url, { 
         headers,
         withCredentials: true 
       })

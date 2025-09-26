@@ -1,4 +1,4 @@
-import {FC, useEffect, useState, useCallback, useRef} from 'react'
+import {FC, useEffect, useState, useCallback, useRef, useMemo} from 'react'
 import {PageTitle} from '../../../../_metronic/layout/core'
 import {useIntl} from 'react-intl'
 import {useDispatch, useSelector} from 'react-redux'
@@ -32,6 +32,7 @@ import {
 } from '../../../../store/videos/videosSlice'
 import {fetchTags} from '../../../../store/tags/tagsSlice'
 import {fetchGroups} from '../../../../store/groups/groupsSlice'
+import {fetchCustomDropdownsByLocation} from '../../../../store/customDropdowns/customDropdownsSlice'
 import VideoTagInput, {VideoTagData} from '../../../../components/Video/VideoTagInput'
 import {toast} from '../../../../_metronic/helpers/toast'
 import {KTIcon} from '../../../../_metronic/helpers'
@@ -45,6 +46,7 @@ import {Modal, Button} from 'react-bootstrap'
 import VimeoFolderTree from './VimeoFolderTree'
 import './TeacherVideoListPage.css'
 import Select from 'react-select'
+import clsx from 'clsx'
 
 // Constants for better performance
 
@@ -75,6 +77,7 @@ const TeacherVideoListPage: FC = () => {
   
   const {tags} = useSelector((state: RootState) => state.tags)
   const {groups, loading: groupsLoading} = useSelector((state: RootState) => state.groups)
+  const { dropdownsByLocation, dropdownsByLocationLoading } = useSelector((state: RootState) => state.customDropdowns)
 
   // State for pagination and filtering
   const [currentPage, setCurrentPage] = useState(1)
@@ -85,7 +88,9 @@ const TeacherVideoListPage: FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [platformFilter, setPlatformFilter] = useState<'youtube' | 'vimeo' | ''>('')
   const [statusFilter, setStatusFilter] = useState<1 | 2 | ''>('') // 1 = private, 2 = public
-  const [tagFilter, setTagFilter] = useState<string[]>([])
+  const [selectedLogic, setSelectedLogic] = useState<'and' | 'or'>('and')
+  const [showTagFilter, setShowTagFilter] = useState(true) // Show filters by default for all users
+  const [selectedCustomDropdowns, setSelectedCustomDropdowns] = useState<Record<string, string[]>>({})
 
   // State for modal
   const [showModal, setShowModal] = useState(false)
@@ -135,6 +140,38 @@ const TeacherVideoListPage: FC = () => {
   const [selectedVideos, setSelectedVideos] = useState<string[]>([])
   const [searchingVideos, setSearchingVideos] = useState(false)
 
+  // Custom dropdown filtering functions
+  const handleLogicChange = (logic: 'and' | 'or') => {
+    setSelectedLogic(logic)
+  }
+
+  const handleCustomDropdownChange = (dropdownId: string, selectedOptions: any) => {
+    const optionValues = selectedOptions ? selectedOptions.map((option: any) => option.value) : []
+    setSelectedCustomDropdowns(prev => ({
+      ...prev,
+      [dropdownId]: optionValues
+    }))
+  }
+
+  // Get custom dropdowns for this location
+  const customDropdowns = useMemo(() => dropdownsByLocation[3] || [], [dropdownsByLocation])
+  const customDropdownsLoading = useMemo(() => dropdownsByLocationLoading[3] || false, [dropdownsByLocationLoading])
+
+  // Combine all selected filters (custom dropdowns only)
+  const getAllSelectedFilters = useCallback(() => {
+    const allFilters: string[] = []
+    
+    // Add custom dropdown selections
+    Object.values(selectedCustomDropdowns).forEach(dropdownSelections => {
+      allFilters.push(...dropdownSelections)
+    })
+    
+    return allFilters
+  }, [selectedCustomDropdowns])
+
+  // Memoize the combined filters to prevent infinite re-renders
+  const combinedFilters = useMemo(() => getAllSelectedFilters(), [getAllSelectedFilters])
+
   // Fetch videos on component mount and when filters change
   useEffect(() => {
           dispatch(fetchTeacherVideos({
@@ -145,14 +182,16 @@ const TeacherVideoListPage: FC = () => {
         search: debouncedSearchTerm || undefined,
         source: getSourceFromPlatform(platformFilter),
         status: statusFilter || undefined,
-        tags: tagFilter.length > 0 ? tagFilter : undefined,
+        tags: combinedFilters.length > 0 ? combinedFilters : undefined,
+        tag_logic: combinedFilters.length > 0 ? selectedLogic : undefined,
       }))
-  }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder, debouncedSearchTerm, platformFilter, statusFilter, tagFilter])
+  }, [dispatch, currentPage, itemsPerPage, sortBy, sortOrder, debouncedSearchTerm, platformFilter, statusFilter, combinedFilters, selectedLogic])
 
-  // Fetch tags on component mount
+  // Fetch tags and custom dropdowns on component mount
   useEffect(() => {
     dispatch(fetchTags())
     dispatch(fetchVideoTags())
+    dispatch(fetchCustomDropdownsByLocation(3)) // 3 = VideoList
   }, [dispatch])
 
   // Effect to handle debounced search
@@ -303,7 +342,7 @@ const TeacherVideoListPage: FC = () => {
         search: searchTerm || undefined,
         source: getSourceFromPlatform(platformFilter),
         status: statusFilter || undefined,
-        tags: tagFilter.length > 0 ? tagFilter : undefined,
+        tags: combinedFilters.length > 0 ? combinedFilters : undefined,
       }))
       
       setShowModal(false)
@@ -394,7 +433,7 @@ const TeacherVideoListPage: FC = () => {
         search: searchTerm || undefined,
         source: getSourceFromPlatform(platformFilter),
         status: statusFilter || undefined,
-        tags: tagFilter.length > 0 ? tagFilter : undefined,
+        tags: combinedFilters.length > 0 ? combinedFilters : undefined,
       }))
       
       setShowModal(false)
@@ -460,7 +499,7 @@ const TeacherVideoListPage: FC = () => {
         search: searchTerm || undefined,
         source: getSourceFromPlatform(platformFilter),
         status: statusFilter || undefined,
-        tags: tagFilter.length > 0 ? tagFilter : undefined,
+        tags: combinedFilters.length > 0 ? combinedFilters : undefined,
       }))
     } catch (error) {
       // Error is handled by the thunk
@@ -700,11 +739,6 @@ const TeacherVideoListPage: FC = () => {
     setCurrentPage(1)
   }
 
-  // Handle tag filter
-  const handleTagFilter = (tagIds: string[]) => {
-    setTagFilter(tagIds)
-    setCurrentPage(1)
-  }
 
   // Convert platform filter to source value
   const getSourceFromPlatform = (platform: string): number | undefined => {
@@ -838,59 +872,12 @@ const TeacherVideoListPage: FC = () => {
           
           <div className='card-toolbar'>
             <div className='d-flex justify-content-end' data-kt-user-table-toolbar='base'>
-              {/* Tag filter - available for all users */}
-              <div className='me-3'>
-                <div style={{minWidth: '250px'}}>
-                  <Select
-                    isMulti
-                    options={videoTags.map(tag => ({
-                      value: tag.tag_id,
-                      label: tag.name
-                    }))}
-                    value={tagFilter.map(tagId => {
-                      const tag = videoTags.find(t => t.tag_id === tagId)
-                      return tag ? { value: tag.tag_id, label: tag.name } : null
-                    }).filter(Boolean)}
-                    onChange={(selectedOptions) => {
-                      if (!selectedOptions) {
-                        handleTagFilter([])
-                      } else {
-                        const selectedIds = selectedOptions.map((option: any) => option.value)
-                        handleTagFilter(selectedIds)
-                      }
-                    }}
-                    placeholder="Filter by tags..."
-                    noOptionsMessage={() => "No tags available"}
-                    styles={{
-                      control: (provided) => ({
-                        ...provided,
-                        minHeight: '45px',
-                        border: '1px solid #e1e3ea',
-                        borderRadius: '6px',
-                      }),
-                      multiValue: (provided) => ({
-                        ...provided,
-                        backgroundColor: '#f1f3f4',
-                      }),
-                      option: (provided, state) => ({
-                        ...provided,
-                        backgroundColor: state.isSelected ? '#3699ff' : state.isFocused ? '#f8f9fa' : 'white',
-                        color: state.isSelected ? 'white' : '#3f4254',
-                        cursor: 'pointer',
-                      }),
-                    }}
-                    className="react-select-container"
-                    classNamePrefix="react-select"
-                    menuPortalTarget={document.body}
-                  />
-                </div>
-              </div>
 
               {isTeachingStaff(currentUser?.role?.role_type) && (
                 <>
                   <div className='me-3'>
                     <select
-                      className='form-select form-select-solid'
+                      className='form-select form-select-solid form-select-sm'
                       value={platformFilter}
                       onChange={(e) => handlePlatformFilter(e.target.value as 'youtube' | 'vimeo' | '')}
                     >
@@ -902,7 +889,7 @@ const TeacherVideoListPage: FC = () => {
                   
                   <div className='me-3'>
                     <select
-                      className='form-select form-select-solid'
+                      className='form-select form-select-solid form-select-sm'
                       value={statusFilter}
                       onChange={(e) => handleStatusFilter(e.target.value as '1' | '2' | '')}
                     >
@@ -913,9 +900,95 @@ const TeacherVideoListPage: FC = () => {
                   </div>
                 </>
               )}
+
+              {/* Custom Dropdown Filter Toggle - Only for teaching staff */}
+              {isTeachingStaff(currentUser?.role?.role_type) && (
+                <div className='me-3'>
+                  <button
+                    type='button'
+                    className='btn btn-light-dark btn-sm'
+                    onClick={() => setShowTagFilter(!showTagFilter)}
+                  >
+                    <i className={`fas fa-chevron-${showTagFilter ? 'up' : 'down'} me-2`}></i>
+                    More Filters
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Custom Dropdown Filters */}
+        {showTagFilter && (
+          <div className='custom-filter-section tag-filter-section mt-3 d-flex justify-content-end'>
+            <div className='d-flex align-items-center gap-3 flex-wrap'>
+              {/* Custom Dropdowns */}
+              {customDropdowns.map((dropdown) => (
+                <div key={dropdown.dropdown_id} className='d-flex align-items-center gap-2'>
+                    <label htmlFor={`custom-${dropdown.dropdown_id}`} className='form-label mb-0 text-gray-800 fw-semibold' style={{ fontSize: '0.875rem' }}>
+                      {dropdown.name}:
+                    </label>
+                  <div style={{ width: '180px' }}>
+                    <Select
+                      id={`custom-${dropdown.dropdown_id}`}
+                      options={dropdown.options.map((option) => ({
+                        value: option.option_value,
+                        label: option.display_text
+                      }))}
+                      isMulti
+                      onChange={(selectedOptions) => handleCustomDropdownChange(dropdown.dropdown_id, selectedOptions)}
+                      placeholder='Select...'
+                      isLoading={customDropdownsLoading}
+                      isClearable
+                      isSearchable
+                      styles={{
+                        option: (provided, state) => ({
+                          ...provided,
+                          color: state.isSelected ? 'white' : '#000000',
+                          backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f8f9fa' : 'white',
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          backgroundColor: 'white',
+                        }),
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              <div className='d-flex align-items-center gap-2'>
+                <span className='text-gray-800 fw-semibold' style={{ fontSize: '0.875rem' }}>Logic:</span>
+                <div className='btn-group btn-group-sm' role='group'>
+                  <input
+                    type='radio'
+                    className='btn-check'
+                    name='videoTagLogic'
+                    id='videoTagLogicAnd'
+                    value='and'
+                    checked={selectedLogic === 'and'}
+                    onChange={() => handleLogicChange('and')}
+                  />
+                  <label className={clsx('btn btn-sm', selectedLogic === 'and' ? 'btn-light-primary' : 'btn-outline-light')} htmlFor='videoTagLogicAnd'>
+                    AND
+                  </label>
+                  <input
+                    type='radio'
+                    className='btn-check'
+                    name='videoTagLogic'
+                    id='videoTagLogicOr'
+                    value='or'
+                    checked={selectedLogic === 'or'}
+                    onChange={() => handleLogicChange('or')}
+                  />
+                  <label className={clsx('btn btn-sm', selectedLogic === 'or' ? 'btn-light-primary' : 'btn-outline-light')} htmlFor='videoTagLogicOr'>
+                    OR
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className='card-body py-4'>
           {loading ? (
@@ -984,15 +1057,7 @@ const TeacherVideoListPage: FC = () => {
                             {video.tags.slice(0, 3).map((tag, index) => (
                               <span 
                                 key={index} 
-                                className='badge badge-light-info me-1 cursor-pointer'
-                                style={{ cursor: 'pointer' }}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (tag.tag_id && !tagFilter.includes(tag.tag_id)) {
-                                    handleTagFilter([...tagFilter, tag.tag_id])
-                                  }
-                                }}
-                                title={`Click to add "${tag.name}" to filter`}
+                                className='badge badge-light-info me-1'
                               >
                                 {tag.name}
                               </span>
