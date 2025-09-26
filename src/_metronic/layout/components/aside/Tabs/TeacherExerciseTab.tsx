@@ -73,12 +73,6 @@ const TeacherExerciseTab = () => {
           <AsideMenuItem to='/exercises/list' title='Exercise Bank' hasBullet={true} />
           <AsideMenuItem to='/exercises/assignedlist' title='Assigned Exercise' hasBullet={true} />
 
-          <div className='menu-item'>
-              <div className='menu-content pt-8 pb-2'>
-              <span className='menu-section text-muted text-uppercase fs-8 ls-1'><i className='fa-solid fa-tags fs-3 me-2'></i>Tags</span>
-              </div>
-          </div>
-          <AsideMenuItem to='/tags' title='Manage Tags' hasBullet={true} />
         </div>
       </div>
     </div>

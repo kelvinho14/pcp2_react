@@ -107,7 +107,20 @@ const TagsPage: FC = () => {
   if (tagsWithLinkagesLoading) {
     return (
       <>
-        <PageTitle breadcrumbs={[]}>Tags Management</PageTitle>
+        <PageTitle breadcrumbs={[
+          {
+            title: 'Home',
+            path: '/',
+            isActive: false,
+          },
+          {
+            title: 'Tags',
+            path: '/tags',
+            isActive: true,
+          },
+        ]}>
+          Tags Management
+        </PageTitle>
         <KTCard>
           <div className='card-body'>
             <div className='d-flex justify-content-center'>
@@ -123,7 +136,31 @@ const TagsPage: FC = () => {
 
   return (
     <>
-      <PageTitle breadcrumbs={[]}>Tags Management</PageTitle>
+      <PageTitle breadcrumbs={[
+        {
+          title: 'Home',
+          path: '/',
+          isActive: false,
+        },
+        {
+          title: 'Tags',
+          path: '/tags',
+          isActive: true,
+        },
+      ]}>
+        Tags Management
+      </PageTitle>
+
+      {/* Welcome Banner */}
+      <div className='welcome-section'>
+        <div className='welcome-content'>
+          <div className='welcome-text'>
+            <h3 className='welcome-title'>
+              Manage and organize your content tags
+            </h3>
+          </div>
+        </div>
+      </div>
       
       <KTCard>
         <div className='card-header'>

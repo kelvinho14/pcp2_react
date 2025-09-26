@@ -30,7 +30,13 @@ const settingsSchema = Yup.object().shape({
 
 const settingsBreadcrumbs: Array<PageLink> = [
   {
-    title: 'Settings',
+    title: 'Home',
+    path: '/',
+    isSeparator: false,
+    isActive: false,
+  },
+  {
+    title: 'Credentials',
     path: '/settings',
     isSeparator: false,
     isActive: true,
@@ -173,7 +179,19 @@ const SettingsPage: FC = () => {
 
   return (
     <>
-      <PageTitle breadcrumbs={settingsBreadcrumbs}>Settings</PageTitle>
+      <PageTitle breadcrumbs={settingsBreadcrumbs}>Credentials</PageTitle>
+
+      {/* Welcome Banner */}
+      <div className='welcome-section'>
+        <div className='welcome-content'>
+          <div className='welcome-text'>
+            <h3 className='welcome-title'>
+              Manage your Vimeo and YouTube API credentials
+            </h3>
+          </div>
+        </div>
+      </div>
+
       <KTCard>
         <KTCardBody className='py-4'>
         <form onSubmit={formik.handleSubmit} className='form'>

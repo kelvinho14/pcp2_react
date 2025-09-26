@@ -529,11 +529,6 @@ const CustomFiltersPage: FC = () => {
           isActive: false,
         },
         {
-          title: 'Platform Settings',
-          path: '/settings',
-          isActive: false,
-        },
-        {
           title: 'Custom Filters',
           path: '/customfilters',
           isActive: true,
@@ -546,12 +541,9 @@ const CustomFiltersPage: FC = () => {
       <div className='welcome-section'>
               <div className='welcome-content'>
                 <div className='welcome-text'>
-                  <h2 className='welcome-title'>
-                    Custom Filters
-                  </h2>
-                  <p className='welcome-subtitle'>
+                  <h3 className='welcome-title'>
                     Create and manage custom dropdown filters for your content
-                  </p>
+                  </h3>
                 </div>
                 <div className='welcome-actions'>
                   <Button
