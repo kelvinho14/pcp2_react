@@ -44,7 +44,7 @@ const TeacherSettingsTab = () => {
             <div className='menu-item'>
               <div className='menu-content pt-2 pb-2'>
                 <span className='menu-section text-muted text-uppercase fs-8 ls-1'>
-                  <i className='fa-solid fa-gear fs-3 me-2'></i>Settings
+                  <i className='fa-solid fa-gear fs-3 me-2'></i>Platform
                 </span>
               </div>
             </div>
@@ -52,7 +52,25 @@ const TeacherSettingsTab = () => {
           {/* Settings submenu for teachers */}
           {isTeachingStaff(currentUser?.role?.role_type) && (
             <>
-              <AsideMenuItem to='/settings' title='Platform Settings' hasBullet={true} />
+              <AsideMenuItem to='/settings' title='Credentials' hasBullet={true} />
+            </>
+          )}
+
+          {/* Tags section for teachers */}
+          {isTeachingStaff(currentUser?.role?.role_type) && (
+            <div className='menu-item'>
+              <div className='menu-content pt-2 pb-2'>
+                <span className='menu-section text-muted text-uppercase fs-8 ls-1'>
+                  <i className='fa-solid fa-tags fs-3 me-2'></i>Tags
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Tags submenu for teachers */}
+          {isTeachingStaff(currentUser?.role?.role_type) && (
+            <>
+              <AsideMenuItem to='/tags' title='Manage Tags' hasBullet={true} />
               <AsideMenuItem to='/customfilters' title='Custom Filters' hasBullet={true} />
             </>
           )}
