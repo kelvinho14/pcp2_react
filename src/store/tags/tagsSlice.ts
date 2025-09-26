@@ -65,6 +65,54 @@ export const fetchTags = createAsyncThunk(
   }
 )
 
+export const createTag = createAsyncThunk(
+  'tags/createTag',
+  async (name: string) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/tags`)
+      const response = await axios.post(`${API_URL}/tags`, { name }, {
+        headers,
+        withCredentials: true 
+      })
+
+      if (response.data.status === 'success') {
+        toast.success('Tag created successfully!', 'Success')
+        return response.data.data
+      } else {
+        throw new Error('Failed to create tag')
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to create tag'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
+export const deleteTag = createAsyncThunk(
+  'tags/deleteTag',
+  async (tagId: string) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/tags/${tagId}`)
+      const response = await axios.delete(`${API_URL}/tags/${tagId}`, {
+        headers,
+        withCredentials: true 
+      })
+
+      if (response.data.status === 'success') {
+        toast.success('Tag deleted successfully!', 'Success')
+        return tagId
+      } else {
+        throw new Error('Failed to delete tag')
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to delete tag'
+      toast.error(errorMessage, 'Error')
+      throw new Error(errorMessage)
+    }
+  }
+)
+
 export const fetchQuestionTags = createAsyncThunk(
   'tags/fetchQuestionTags',
   async (type?: 'lq' | 'mc') => {
@@ -233,6 +281,28 @@ const tagsSlice = createSlice({
       })
       .addCase(updateTagName.rejected, (state, action) => {
         state.error = action.error.message || 'Failed to update tag'
+      })
+      // Create tag
+      .addCase(createTag.pending, (state) => {
+        state.error = null
+      })
+      .addCase(createTag.fulfilled, (state, action) => {
+        // Refresh tags with linkages to include the new tag
+        // The component will handle the refresh
+      })
+      .addCase(createTag.rejected, (state, action) => {
+        state.error = action.error.message || 'Failed to create tag'
+      })
+      // Delete tag
+      .addCase(deleteTag.pending, (state) => {
+        state.error = null
+      })
+      .addCase(deleteTag.fulfilled, (state, action) => {
+        // Remove the deleted tag from the list
+        state.tagsWithLinkages = state.tagsWithLinkages.filter(tag => tag.tag_id !== action.payload)
+      })
+      .addCase(deleteTag.rejected, (state, action) => {
+        state.error = action.error.message || 'Failed to delete tag'
       })
   },
 })
