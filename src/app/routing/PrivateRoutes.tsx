@@ -22,6 +22,7 @@ const PrivateRoutes = () => {
   const ExercisePage = lazy(() => import('../modules/exercises/ExercisePage'))
   const VideoPage = lazy(() => import('../modules/videos/VideoPage'))
   const TagsPage = lazy(() => import('../pages/TagsPage'))
+  const CustomFiltersPage = lazy(() => import('../pages/CustomFiltersPage'))
   const AdminPage = lazy(() => import('../modules/admin/AdminPage'))
   const QuestionsPage = lazy(() => import('../modules/questions/QuestionsPage'))
   const NotificationsPage = lazy(() => import('../modules/notifications/NotificationsPage'))
@@ -101,6 +102,14 @@ const PrivateRoutes = () => {
           element={
             <SuspensedView>
               <TagsPage />
+            </SuspensedView>
+          }
+        />
+        <Route
+          path='customfilters'
+          element={
+            <SuspensedView>
+              <CustomFiltersPage />
             </SuspensedView>
           }
         />

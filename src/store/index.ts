@@ -15,6 +15,7 @@ import studentAssignedVideosReducer from './videos/studentAssignedVideosSlice'
 import migrationsReducer from './admin/migrationsSlice'
 import notificationsReducer from './notifications/notificationsSlice'
 import creditsReducer from './credits/creditsSlice'
+import customDropdownsReducer from './customDropdowns/customDropdownsSlice'
 
 export const store = configureStore({
   reducer: {
@@ -34,6 +35,7 @@ export const store = configureStore({
     migrations: migrationsReducer,
     notifications: notificationsReducer,
     credits: creditsReducer,
+    customDropdowns: customDropdownsReducer,
   },
 })
 
