@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import { getHeadersWithSchoolSubject } from '../../_metronic/helpers/axios'
+import { toast } from '../../_metronic/helpers/toast'
 import axios from 'axios'
 
 const API_URL = import.meta.env.VITE_APP_API_URL
@@ -214,6 +215,27 @@ export const fetchAssignedExercises = createAsyncThunk(
   }
 )
 
+export const deleteAssignment = createAsyncThunk(
+  'assignedExercises/deleteAssignment',
+  async (assignmentId: string, { rejectWithValue }) => {
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/student-exercises/assignments/${assignmentId}`)
+      
+      await axios.delete(`${API_URL}/student-exercises/assignments/${assignmentId}`, {
+        headers,
+        withCredentials: true
+      })
+      
+      toast.success('Assignment deleted successfully!', 'Success')
+      return assignmentId
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to delete assignment'
+      toast.error(errorMessage, 'Error')
+      return rejectWithValue(errorMessage)
+    }
+  }
+)
+
 const assignedExercisesSlice = createSlice({
   name: 'assignedExercises',
   initialState,
@@ -278,6 +300,37 @@ const assignedExercisesSlice = createSlice({
       .addCase(fetchAssignedExercises.rejected, (state, action) => {
         state.loading = false
         state.loadingFilters = false
+        state.error = action.payload as string
+      })
+      .addCase(deleteAssignment.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(deleteAssignment.fulfilled, (state, action) => {
+        state.loading = false
+        // Remove the deleted assignment from all exercises
+        state.exercises = state.exercises.map(exercise => ({
+          ...exercise,
+          assignments: exercise.assignments.filter(assignment => assignment.assignment_id !== action.payload)
+        }))
+        
+        // Update summary stats by recalculating from remaining assignments
+        const allAssignments = state.exercises.flatMap(exercise => exercise.assignments)
+        state.summary = {
+          total: allAssignments.length,
+          completed: allAssignments.filter(a => parseInt(a.status, 10) === 2).length, // SUBMITTED
+          in_progress: allAssignments.filter(a => parseInt(a.status, 10) === 1).length, // IN_PROGRESS
+          not_started: allAssignments.filter(a => parseInt(a.status, 10) === 0).length, // ASSIGNED
+          overdue: allAssignments.filter(a => parseInt(a.status, 10) === 4).length, // OVERDUE
+          submitted: allAssignments.filter(a => parseInt(a.status, 10) === 2).length, // SUBMITTED
+          submitted_by_teacher: allAssignments.filter(a => parseInt(a.status, 10) === 3).length // SUBMITTEDBYTEACHER
+        }
+        
+        // Don't clear cache - we want to maintain UI state like collapsed cards
+        // state.cache = {}
+      })
+      .addCase(deleteAssignment.rejected, (state, action) => {
+        state.loading = false
         state.error = action.payload as string
       })
   }

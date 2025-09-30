@@ -3,7 +3,7 @@ import {useDispatch, useSelector} from 'react-redux'
 import {PageTitle} from '../../../../_metronic/layout/core'
 import {useIntl} from 'react-intl'
 import {AppDispatch, RootState} from '../../../../store'
-import {fetchAssignedExercises, setPage, setFilters, setLoadingFilters, clearCache} from '../../../../store/exercises/assignedExercisesSlice'
+import {fetchAssignedExercises, setPage, setFilters, setLoadingFilters, clearCache, deleteAssignment} from '../../../../store/exercises/assignedExercisesSlice'
 import {submitExerciseByTeacher} from '../../../../store/exercises/exercisesSlice'
 import AssignedExercisesFilters from './components/AssignedExercisesFilters'
 import {ASSIGNMENT_STATUS, getStatusLabel, getStatusColor, AssignmentStatus} from '../../../constants/assignmentStatus'
@@ -23,7 +23,7 @@ const SubmitForStudentButton: FC<{
   studentName: string
   onSubmit: (assignmentId: string, studentName: string) => Promise<void>
   className?: string
-}> = ({ assignmentId, studentName, onSubmit, className = '' }) => {
+}> = memo(({ assignmentId, studentName, onSubmit, className = '' }) => {
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -41,14 +41,14 @@ const SubmitForStudentButton: FC<{
 
   return (
     <>
-              <button
-          className={`btn btn-icon btn-sm btn-light-primary btn-submit-for-student ${className}`}
-          onClick={() => setShowConfirmation(true)}
-          title={`Submit exercise for ${studentName}`}
-          style={{ width: '32px', height: '32px' }}
-        >
-          <i className='fas fa-check text-primary'></i>
-        </button>
+      <button
+        className={`btn btn-icon btn-sm btn-light-primary btn-submit-for-student ${className}`}
+        onClick={() => setShowConfirmation(true)}
+        title={`Submit exercise for ${studentName}`}
+        style={{ width: '32px', height: '32px' }}
+      >
+        <i className='fas fa-check text-primary'></i>
+      </button>
       
       <ConfirmationDialog
         show={showConfirmation}
@@ -64,10 +64,59 @@ const SubmitForStudentButton: FC<{
       />
     </>
   )
-}
+})
+
+// Reusable Delete Assignment Button component
+const DeleteAssignmentButton: FC<{
+  assignmentId: string
+  studentName: string
+  onDelete: (assignmentId: string, studentName: string) => Promise<void>
+  className?: string
+}> = memo(({ assignmentId, studentName, onDelete, className = '' }) => {
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleConfirm = async () => {
+    setIsDeleting(true)
+    try {
+      await onDelete(assignmentId, studentName)
+      setShowConfirmation(false)
+    } catch (error) {
+      // Error is already handled by the parent component
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  return (
+    <>
+      <button
+        className={`btn btn-icon btn-sm btn-light-danger btn-delete-assignment ${className}`}
+        onClick={() => setShowConfirmation(true)}
+        title={`Delete assignment for ${studentName}`}
+        style={{ width: '32px', height: '32px' }}
+      >
+        <i className='fas fa-trash text-danger'></i>
+      </button>
+      
+      <ConfirmationDialog
+        show={showConfirmation}
+        onHide={() => setShowConfirmation(false)}
+        onConfirm={handleConfirm}
+        title={`Delete Assignment for ${studentName}`}
+        message={`Are you sure you want to delete the assignment for ${studentName}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        loading={isDeleting}
+        loadingText="Deleting..."
+      />
+    </>
+  )
+})
 
 // Custom tooltip component
-const Tooltip: FC<{message: string, children: React.ReactNode}> = ({message, children}) => {
+const Tooltip: FC<{message: string, children: React.ReactNode}> = memo(({message, children}) => {
   const [showTooltip, setShowTooltip] = useState(false)
 
   return (
@@ -106,7 +155,7 @@ const Tooltip: FC<{message: string, children: React.ReactNode}> = ({message, chi
       )}
     </div>
   )
-}
+})
 
 const ExerciseAssignedListPage: FC = () => {
   const intl = useIntl()
@@ -123,7 +172,7 @@ const ExerciseAssignedListPage: FC = () => {
     lastFetchTime 
   } = useSelector((state: RootState) => state.assignedExercises)
   
-  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set(exercises.map(exercise => exercise.id)))
+  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set())
   const [showFilters, setShowFilters] = useState(false)
   const [selectedView, setSelectedView] = useState<'grid' | 'list'>('grid')
   const apiTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -152,6 +201,19 @@ const ExerciseAssignedListPage: FC = () => {
       dispatch(fetchAssignedExercises(filters))
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to submit exercise for student'
+      toast.error(errorMessage, 'Error')
+    }
+  }
+
+  // Handle deleting assignment for a student
+  const handleDeleteAssignment = async (assignmentId: string, studentName: string) => {
+    try {
+      await dispatch(deleteAssignment(assignmentId)).unwrap()
+      // The assignment is automatically removed from the state by the reducer
+      // No need to refetch data - the reducer handles the state update
+      // This prevents the card from collapsing and maintains the current view state
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to delete assignment'
       toast.error(errorMessage, 'Error')
     }
   }
@@ -265,12 +327,13 @@ const ExerciseAssignedListPage: FC = () => {
     setIsInitialLoad(false)
   }, [dispatch]) // Only run on mount
 
-  // Update collapsed cards when exercises are loaded
+  // Set cards to collapsed by default when exercises are first loaded
   useEffect(() => {
-    if (exercises.length > 0) {
+    if (exercises.length > 0 && collapsedCards.size === 0) {
+      // Set all cards to collapsed by default on initial load
       setCollapsedCards(new Set(exercises.map(exercise => exercise.id)))
     }
-  }, [exercises])
+  }, [exercises, collapsedCards.size])
 
   // Memoized exercise cards to prevent unnecessary re-renders
   const exerciseCards = useMemo(() => {
@@ -391,6 +454,12 @@ const ExerciseAssignedListPage: FC = () => {
                                         className="ms-2"
                                       />
                                     )}
+                                    <DeleteAssignmentButton
+                                      assignmentId={assignment.assignment_id}
+                                      studentName={assignment.student.name}
+                                      onDelete={handleDeleteAssignment}
+                                      className="ms-2"
+                                    />
                                     {assignment.message_for_student && (
                                       <i 
                                         className='fas fa-comment text-muted cursor-pointer ms-2' 
@@ -576,6 +645,12 @@ const ExerciseAssignedListPage: FC = () => {
                                       className="ms-2"
                                     />
                                   )}
+                                  <DeleteAssignmentButton
+                                    assignmentId={assignment.assignment_id}
+                                    studentName={assignment.student.name}
+                                    onDelete={handleDeleteAssignment}
+                                    className="ms-2"
+                                  />
                                   {assignment.message_for_student && (
                                     <Tooltip message={assignment.message_for_student}>
                                       <i className='fas fa-comment text-muted ms-2'></i>
