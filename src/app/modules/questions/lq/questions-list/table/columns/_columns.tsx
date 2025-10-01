@@ -3,9 +3,10 @@ import { QuestionSelectionCell } from './QuestionSelectionCell'
 import { QuestionActionsCell } from './QuestionActionsCell'
 import { Question } from '../../../../../../../store/questions/questionsSlice'
 import { ID } from '../../../../../../../_metronic/helpers'
-import { hasImages, renderHtmlSafely, getTextPreview } from '../../../../../../../_metronic/helpers/htmlRenderer'
+import { hasImages, renderHtmlSafely, getTextPreview, getHtmlPreview, CONTENT_PREVIEW_LIMIT } from '../../../../../../../_metronic/helpers/htmlRenderer'
 import { useNavigate } from 'react-router-dom'
 import { formatApiTimestamp } from '../../../../../../../_metronic/helpers/dateUtils'
+import { ContentTooltip } from '../../../../shared/ContentTooltip'
 
 const questionsColumns: ReadonlyArray<Column<Question>> = [
   {
@@ -22,42 +23,41 @@ const questionsColumns: ReadonlyArray<Column<Question>> = [
       const answerContent = props.data[props.row.index].lq_question?.answer_content || ''
       const navigate = useNavigate()
       
+      
       const handleContentClick = () => {
         navigate(`/questions/lq/edit/${props.data[props.row.index].q_id}`)
       }
       
       return (
-        <div 
-          className="d-flex flex-column cursor-pointer" 
-          style={{ maxWidth: '500px', minWidth: '400px', cursor: 'pointer' }}
-          onClick={handleContentClick}
+        <ContentTooltip
+          questionContent={questionContent}
+          answerContent={answerContent}
+          questionType="lq"
         >
-          {/* Question Content */}
-          <div className="mb-2">
-            <div className="fw-bold mb-1" style={{ fontSize: '0.75rem', color: '#6f42c1', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Question:</div>
-            {hasImages(questionContent) ? (
+          <div 
+            className="d-flex flex-column cursor-pointer" 
+            style={{ maxWidth: '500px', minWidth: '400px', cursor: 'pointer' }}
+            onClick={handleContentClick}
+          >
+            {/* Question Content */}
+              <div className="mb-2">
+                <div className="fw-bold mb-1" style={{ fontSize: '0.75rem', color: '#6f42c1', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Question:</div>
+                <div 
+                  style={{ fontSize: '0.875rem' }}
+                  dangerouslySetInnerHTML={{ __html: getHtmlPreview(questionContent, CONTENT_PREVIEW_LIMIT, { maxImageWidth: 520, maxImageHeight: 312 }) }}
+                />
+              </div>
+            
+            {/* Answer Content */}
+            <div>
+              <div className="fw-bold mb-1" style={{ fontSize: '0.75rem', color: '#28a745', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Answer:</div>
               <div 
-                className="d-flex align-items-center"
-                dangerouslySetInnerHTML={{ __html: renderHtmlSafely(questionContent, { maxImageWidth: 520, maxImageHeight: 312 }) }}
+                style={{ fontSize: '0.875rem' }}
+                dangerouslySetInnerHTML={{ __html: getHtmlPreview(answerContent, CONTENT_PREVIEW_LIMIT, { maxImageWidth: 520, maxImageHeight: 312 }) }}
               />
-            ) : (
-              <div style={{ fontSize: '0.875rem' }}>{getTextPreview(questionContent, 100)}</div>
-            )}
+            </div>
           </div>
-          
-          {/* Answer Content */}
-          <div>
-            <div className="fw-bold mb-1" style={{ fontSize: '0.75rem', color: '#28a745', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Answer:</div>
-            {hasImages(answerContent) ? (
-              <div 
-                className="d-flex align-items-center"
-                dangerouslySetInnerHTML={{ __html: renderHtmlSafely(answerContent, { maxImageWidth: 520, maxImageHeight: 312 }) }}
-              />
-            ) : (
-              <div style={{ fontSize: '0.875rem' }}>{getTextPreview(answerContent, 100)}</div>
-            )}
-          </div>
-        </div>
+        </ContentTooltip>
       )
     },
   },
