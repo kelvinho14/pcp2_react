@@ -181,8 +181,7 @@ export const getHtmlPreview = (
   const walker = document.createTreeWalker(
     tempDiv,
     NodeFilter.SHOW_TEXT,
-    null,
-    false
+    null
   )
   
   let totalTextLength = 0
