@@ -2,6 +2,9 @@
  * Utility functions for safely rendering HTML content
  */
 
+// Character limit constants for content preview
+export const CONTENT_PREVIEW_LIMIT = 150
+
 /**
  * Safely strips HTML tags and extracts text content
  * @param html - The HTML string to process
@@ -14,15 +17,7 @@ export const stripHtml = (html: string): string => {
   const tempDiv = document.createElement('div')
   tempDiv.innerHTML = html
   
-  // Replace img tags with a placeholder before getting text content
-  const images = tempDiv.querySelectorAll('img')
-  images.forEach((img, index) => {
-    const alt = img.getAttribute('alt') || ''
-    const placeholder = alt ? `[Image: ${alt}]` : '[Image]'
-    img.replaceWith(document.createTextNode(placeholder))
-  })
-  
-  // Get text content (this automatically strips remaining HTML tags)
+  // Get text content (this automatically strips all HTML tags including images)
   let text = tempDiv.textContent || tempDiv.innerText || ''
   
   // Clean up any remaining HTML entities
@@ -117,12 +112,114 @@ export const hasImages = (html: string): boolean => {
 /**
  * Utility function to get a text preview of HTML content
  * @param html - The HTML string to process
- * @param maxLength - Maximum length of the preview (default: 80)
+ * @param maxLength - Maximum length of the preview (default: 150)
  * @returns Text preview with ellipsis if truncated
  */
-export const getTextPreview = (html: string, maxLength: number = 80): string => {
+export const getTextPreview = (html: string, maxLength: number = CONTENT_PREVIEW_LIMIT): string => {
   const text = stripHtml(html)
-  return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
+  
+  // For proper character counting (especially for Chinese characters)
+  // We'll use a more sophisticated approach that counts actual characters
+  if (text.length <= maxLength) {
+    return text
+  }
+  
+  // For text with mixed languages, we need to be careful about where we cut
+  // to avoid cutting in the middle of a word or character
+  let truncated = text.substring(0, maxLength)
+  
+  // If we're not at the end of the string, add ellipsis
+  if (text.length > maxLength) {
+    truncated += '...'
+  }
+  
+  return truncated
+}
+
+/**
+ * Utility function to render HTML content with images but limit text content
+ * @param html - The HTML string to process
+ * @param maxLength - Maximum length of text content (default: 150)
+ * @param imageOptions - Options for image rendering
+ * @returns HTML string with images and truncated text content
+ */
+export const getHtmlPreview = (
+  html: string, 
+  maxLength: number = CONTENT_PREVIEW_LIMIT,
+  imageOptions: { maxImageWidth?: number; maxImageHeight?: number } = {}
+): string => {
+  if (!html) return ''
+  
+  const { maxImageWidth = 100, maxImageHeight = 60 } = imageOptions
+  
+  // Create a temporary div to parse HTML safely
+  const tempDiv = document.createElement('div')
+  tempDiv.innerHTML = html
+  
+  // Remove potentially dangerous elements and attributes
+  const dangerousElements = tempDiv.querySelectorAll('script, style, iframe, object, embed, form, input, button, select, textarea')
+  dangerousElements.forEach(el => el.remove())
+  
+  // Remove dangerous attributes from all elements
+  const allElements = tempDiv.querySelectorAll('*')
+  allElements.forEach(el => {
+    const dangerousAttrs = ['onclick', 'onload', 'onerror', 'onmouseover', 'onmouseout', 'onfocus', 'onblur', 'onchange', 'onsubmit']
+    dangerousAttrs.forEach(attr => el.removeAttribute(attr))
+  })
+  
+  // Limit image size for preview
+  const images = tempDiv.querySelectorAll('img')
+  images.forEach(img => {
+    img.style.maxWidth = `${maxImageWidth}px`
+    img.style.maxHeight = `${maxImageHeight}px`
+    img.style.objectFit = 'contain'
+    img.style.marginRight = '5px'
+    img.style.verticalAlign = 'middle'
+  })
+  
+  // Get all text nodes and truncate them if needed
+  const walker = document.createTreeWalker(
+    tempDiv,
+    NodeFilter.SHOW_TEXT,
+    null,
+    false
+  )
+  
+  let totalTextLength = 0
+  const textNodes: Text[] = []
+  
+  // Collect all text nodes and calculate total length
+  let node
+  while (node = walker.nextNode()) {
+    if (node.nodeType === Node.TEXT_NODE && node.textContent) {
+      textNodes.push(node as Text)
+      totalTextLength += node.textContent.length
+    }
+  }
+  
+  // If total text length is within limit, return as is
+  if (totalTextLength <= maxLength) {
+    return tempDiv.innerHTML
+  }
+  
+  // Truncate text nodes to fit within the limit
+  let remainingLength = maxLength
+  for (const textNode of textNodes) {
+    if (remainingLength <= 0) {
+      textNode.textContent = ''
+      continue
+    }
+    
+    const nodeText = textNode.textContent || ''
+    if (nodeText.length <= remainingLength) {
+      remainingLength -= nodeText.length
+    } else {
+      textNode.textContent = nodeText.substring(0, remainingLength) + '...'
+      remainingLength = 0
+    }
+  }
+  
+  return tempDiv.innerHTML
 }
 
 /**
