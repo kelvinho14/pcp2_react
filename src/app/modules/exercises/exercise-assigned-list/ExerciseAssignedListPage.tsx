@@ -178,6 +178,7 @@ const ExerciseAssignedListPage: FC = () => {
   const apiTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const filtersRef = useRef(filters)
+  const hasInitializedCollapse = useRef(false)
 
   // Keep filters ref updated
   useEffect(() => {
@@ -329,11 +330,12 @@ const ExerciseAssignedListPage: FC = () => {
 
   // Set cards to collapsed by default when exercises are first loaded
   useEffect(() => {
-    if (exercises.length > 0 && collapsedCards.size === 0) {
+    if (exercises.length > 0 && !hasInitializedCollapse.current) {
       // Set all cards to collapsed by default on initial load
       setCollapsedCards(new Set(exercises.map(exercise => exercise.id)))
+      hasInitializedCollapse.current = true
     }
-  }, [exercises, collapsedCards.size])
+  }, [exercises.length])
 
   // Memoized exercise cards to prevent unnecessary re-renders
   const exerciseCards = useMemo(() => {
