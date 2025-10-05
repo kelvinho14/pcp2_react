@@ -8,6 +8,7 @@ const API_URL = import.meta.env.VITE_APP_API_URL
 // Types
 export interface LQQuestion {
   answer_content: string
+  rubric_content?: string | { include: string; exclude: string }
 }
 
 export interface MCOption {

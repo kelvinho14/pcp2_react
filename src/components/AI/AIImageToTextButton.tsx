@@ -4,7 +4,7 @@ interface AIImageToTextButtonProps {
   field: 'question' | 'answer'
   content: string
   isProcessing: boolean
-  processingField: 'question' | 'answer' | null
+  processingField: 'question' | 'answer' | 'rubric' | null
   onClick: (content: string, field: 'question' | 'answer') => void
 }
 
