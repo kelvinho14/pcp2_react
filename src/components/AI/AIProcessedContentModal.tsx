@@ -6,24 +6,42 @@ import {Modal, Button} from 'react-bootstrap'
 import TinyMCEEditor from '../Editor/TinyMCEEditor'
 
 interface AIProcessedContentModalProps {
-  onAccept: (content: string, field: 'question' | 'answer') => void
+  onAccept: (content: string | { include: string; exclude: string }, field: 'question' | 'answer' | 'rubric') => void
 }
 
 const AIProcessedContentModal: React.FC<AIProcessedContentModalProps> = ({ onAccept }) => {
   const dispatch = useDispatch<AppDispatch>()
   const { showModal, processedContent, targetField } = useSelector((state: RootState) => state.ai)
   const [editableContent, setEditableContent] = useState('')
+  const [rubricInclude, setRubricInclude] = useState('')
+  const [rubricExclude, setRubricExclude] = useState('')
 
   // Update editable content when modal opens
   useEffect(() => {
     if (processedContent) {
-      setEditableContent(processedContent)
+      if (typeof processedContent === 'object' && processedContent !== null && 'include' in processedContent && 'exclude' in processedContent) {
+        // New object format for rubric
+        setRubricInclude(processedContent.include)
+        setRubricExclude(processedContent.exclude)
+        setEditableContent('') // Clear string content
+      } else {
+        // String format for question/answer or legacy rubric
+        setEditableContent(processedContent as string)
+        setRubricInclude('')
+        setRubricExclude('')
+      }
     }
   }, [processedContent])
 
   const handleAccept = () => {
-    if (editableContent && targetField) {
-      onAccept(editableContent, targetField)
+    if (targetField) {
+      if (targetField === 'rubric' && (rubricInclude || rubricExclude)) {
+        // Send rubric object format
+        onAccept({ include: rubricInclude, exclude: rubricExclude }, targetField)
+      } else if (editableContent) {
+        // Send string format
+        onAccept(editableContent, targetField)
+      }
       dispatch(acceptProcessedContent())
     }
   }
@@ -54,9 +72,52 @@ const AIProcessedContentModal: React.FC<AIProcessedContentModalProps> = ({ onAcc
       </Modal.Header>
       
       <Modal.Body>
+        {targetField === 'rubric' && (rubricInclude || rubricExclude) ? (
+          // Rubric object format
+          <>
             <div className='mb-3'>
               <label className='form-label fw-bold'>
-                Processed content for {targetField === 'question' ? 'Question' : 'Answer'}:
+                AI Generated Rubric:
+              </label>
+            </div>
+            
+            <div className='mb-4'>
+              <label className='form-label fw-semibold fs-6 mb-2'>
+                Should contain:
+              </label>
+              <TinyMCEEditor
+                value={rubricInclude}
+                onChange={setRubricInclude}
+                height={200}
+                placeholder='Edit what the answer should contain...'
+              />
+            </div>
+            
+            <div className='mb-4'>
+              <label className='form-label fw-semibold fs-6 mb-2'>
+                Should not have:
+              </label>
+              <TinyMCEEditor
+                value={rubricExclude}
+                onChange={setRubricExclude}
+                height={200}
+                placeholder='Edit what the answer should not have...'
+              />
+            </div>
+            
+            <div className='mt-3'>
+              <small className='text-muted'>
+                <i className='fas fa-info-circle me-1'></i>
+                You can edit the rubric criteria above. Click "Accept" to use this rubric, or "Reject" to dismiss.
+              </small>
+            </div>
+          </>
+        ) : (
+          // String format for question/answer or legacy rubric
+          <>
+            <div className='mb-3'>
+              <label className='form-label fw-bold'>
+                Processed content for {targetField === 'question' ? 'Question' : targetField === 'answer' ? 'Answer' : 'Rubric'}:
               </label>
             </div>
             
@@ -75,6 +136,8 @@ const AIProcessedContentModal: React.FC<AIProcessedContentModalProps> = ({ onAcc
                 You can edit the processed content above. Click "Accept" to use this content in your {targetField}, or "Reject" to dismiss.
               </small>
             </div>
+          </>
+        )}
       </Modal.Body>
       
       <Modal.Footer>

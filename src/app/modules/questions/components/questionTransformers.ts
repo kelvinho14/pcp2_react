@@ -1,5 +1,5 @@
 import { toast } from '../../../../_metronic/helpers/toast'
-import { QuestionFormData, MCOption as StoreMCOption } from '../../../../store/questions/questionsSlice'
+import { QuestionFormData, MCOption as StoreMCOption, LQQuestion } from '../../../../store/questions/questionsSlice'
 
 interface MCOption {
   option_letter: string
@@ -13,6 +13,7 @@ interface GeneratedQuestion {
   teacher_remark: string
   lq_question?: {
     answer_content: string
+    rubric_content?: string
   }
   mc_question?: {
     options: MCOption[]
@@ -65,7 +66,8 @@ export const transformLQQuestionForBackend = (
   teacher_remark: string,
   answer_content: string,
   tags: Array<{ tag_id?: string; name?: string; score?: number }> = [],
-  question_id?: string
+  question_id?: string,
+  rubric?: string | { include: string; exclude: string }
 ): QuestionFormData => {
   return {
     type,
@@ -74,8 +76,9 @@ export const transformLQQuestionForBackend = (
     teacher_remark,
     ...(question_id && { question_id }),
     lq_question: {
-      answer_content
-    },
+      answer_content,
+      ...(rubric && { rubric_content: rubric })
+    } as LQQuestion,
     tags
   }
 }
@@ -101,7 +104,8 @@ export const transformQuestionsForBackend = (questions: GeneratedQuestion[], que
       ...(questionId && { question_id: questionId }),
       ...(q.type === 'lq' && q.lq_question && {
         lq_question: {
-          answer_content: q.lq_question.answer_content
+          answer_content: q.lq_question.answer_content,
+          ...(q.lq_question.rubric_content && { rubric_content: q.lq_question.rubric_content })
         }
       }),
       ...(q.type === 'mc' && q.mc_question && {
@@ -134,7 +138,8 @@ export const transformSingleQuestionForBackend = (question: GeneratedQuestion, q
   
   if (question.type === 'lq' && question.lq_question) {
     questionData.lq_question = {
-      answer_content: question.lq_question.answer_content
+      answer_content: question.lq_question.answer_content,
+      ...(question.lq_question.rubric_content && { rubric_content: question.lq_question.rubric_content })
     }
   }
   

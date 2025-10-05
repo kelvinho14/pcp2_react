@@ -95,10 +95,14 @@ const MCFormPage: FC = () => {
   }
 
   // Handle accepting processed content from modal
-  const handleAcceptProcessedContent = (content: string, field: 'question' | 'answer') => {
-    formik.setFieldValue(field, content)
-    formik.setFieldTouched(field, true)
-    toast.success('AI processed content applied successfully!', 'Success')
+  const handleAcceptProcessedContent = (content: string | { include: string; exclude: string }, field: 'question' | 'answer' | 'rubric') => {
+    // Only handle question and answer fields for MC questions
+    if (field === 'question' || field === 'answer') {
+      formik.setFieldValue(field, content as string)
+      formik.setFieldTouched(field, true)
+      toast.success('AI processed content applied successfully!', 'Success')
+    }
+    // Note: MC questions don't use rubric field, so we ignore rubric content
   }
 
   // Handle image uploads to update currentQuestionId when question_id is returned

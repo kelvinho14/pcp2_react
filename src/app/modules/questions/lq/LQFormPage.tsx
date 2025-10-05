@@ -7,7 +7,7 @@ import {useSelector, useDispatch} from 'react-redux'
 import {RootState, AppDispatch} from '../../../../store'
 import {fetchTags, Tag} from '../../../../store/tags/tagsSlice'
 import {createQuestion, fetchQuestionById, updateQuestion} from '../../../../store/questions/questionsSlice'
-import {processContentToText, setProcessedContent} from '../../../../store/ai/aiSlice'
+import {processContentToText, setProcessedContent, generateRubric} from '../../../../store/ai/aiSlice'
 import {PageLink, PageTitle} from '../../../../_metronic/layout/core'
 import {KTCard} from '../../../../_metronic/helpers'
 import {toast} from '../../../../_metronic/helpers/toast'
@@ -29,6 +29,7 @@ interface GeneratedQuestion {
   teacher_remark: string
   lq_question?: {
     answer_content: string
+    rubric_content?: string
   }
   mc_question?: {
     options: Array<{
@@ -47,6 +48,10 @@ const lqValidationSchema = Yup.object().shape({
     .max(5000, 'Maximum 5000 characters'),
   answer: Yup.string()
     .max(5000, 'Maximum 5000 characters'),
+  rubricShouldHave: Yup.string()
+    .max(5000, 'Maximum 5000 characters'),
+  rubricShouldNotHave: Yup.string()
+    .max(5000, 'Maximum 5000 characters'),
   selectedTags: Yup.array().of(
     Yup.object().shape({
       id: Yup.string().required(),
@@ -60,6 +65,8 @@ interface LQFormData {
   teacherRemark: string
   question: string
   answer: string
+  rubricShouldHave: string
+  rubricShouldNotHave: string
   selectedTags: TagWithScoreData[]
 }
 
@@ -91,6 +98,7 @@ const LQFormPage: FC = () => {
   // Redux selectors
   const { tags, loading: tagsLoading } = useSelector((state: RootState) => state.tags)
   const { creating, currentQuestion, loading: questionLoading } = useSelector((state: RootState) => state.questions)
+  const { processedContent, success, targetField } = useSelector((state: RootState) => state.ai)
 
   // Helper function to transform tags to the required format
   const transformTags = (selectedTags: TagWithScoreData[]) => {
@@ -159,6 +167,8 @@ const LQFormPage: FC = () => {
       teacherRemark: '',
       question: '',
       answer: '',
+      rubricShouldHave: '',
+      rubricShouldNotHave: '',
       selectedTags: [],
     },
     validationSchema: lqValidationSchema,
@@ -167,13 +177,21 @@ const LQFormPage: FC = () => {
       try {
         const transformedTags = transformTags(values.selectedTags)
 
+        // Format rubric fields as object
+        const rubricObject = {
+          include: values.rubricShouldHave,
+          exclude: values.rubricShouldNotHave
+        }
+
         if (isEditMode) {
           const questionData = transformLQQuestionForBackend(
             'lq',
             values.question,
             values.teacherRemark,
             values.answer,
-            transformedTags
+            transformedTags,
+            currentQuestionId,
+            rubricObject
           )
           
           await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -186,7 +204,8 @@ const LQFormPage: FC = () => {
             values.teacherRemark,
             values.answer,
             transformedTags,
-            currentQuestionId
+            currentQuestionId,
+            rubricObject
           )
           
           await dispatch(createQuestion(questionData)).unwrap()
@@ -216,12 +235,37 @@ const LQFormPage: FC = () => {
         score: tag.score !== undefined ? tag.score : 0
       })) as TagWithScoreData[]
 
+      // Parse existing rubric content
+      const existingRubric = currentQuestion.lq_question?.rubric_content
+      let rubricShouldHave = ''
+      let rubricShouldNotHave = ''
+      
+      if (existingRubric) {
+        if (typeof existingRubric === 'object' && existingRubric !== null && ('include' in existingRubric || 'exclude' in existingRubric)) {
+          // New format: object with include/exclude properties
+          rubricShouldHave = (existingRubric as { include?: string; exclude?: string }).include || ''
+          rubricShouldNotHave = (existingRubric as { include?: string; exclude?: string }).exclude || ''
+        } else if (typeof existingRubric === 'string') {
+          // Legacy format: string that needs parsing
+          const parts = existingRubric.split(/Should not have:/i)
+          if (parts.length === 2) {
+            rubricShouldHave = parts[0].replace(/Should contain:\s*/i, '').trim()
+            rubricShouldNotHave = parts[1].trim()
+          } else {
+            // Fallback: if format doesn't match, put all content in should contain
+            rubricShouldHave = existingRubric
+          }
+        }
+      }
+
       // Delay setting form values to ensure TinyMCE editors are ready
       setTimeout(() => {
         formik.setValues({
           question: currentQuestion.question_content || '',
           teacherRemark: currentQuestion.teacher_remark || '',
           answer: currentQuestion.lq_question?.answer_content || '',
+          rubricShouldHave,
+          rubricShouldNotHave,
           selectedTags: transformedTags,
         }, false) // Set validateOnChange to false to prevent validation during load
       }, 500) // 500ms delay to ensure editors are initialized
@@ -235,6 +279,20 @@ const LQFormPage: FC = () => {
     }
   }, [qId])
 
+  // Handle AI-generated rubric content
+  useEffect(() => {
+    if (success && targetField === 'rubric' && processedContent) {
+      if (typeof processedContent === 'object' && processedContent !== null && 'include' in processedContent && 'exclude' in processedContent) {
+        // Populate rubric textareas directly
+        formik.setFieldValue('rubricShouldHave', processedContent.include)
+        formik.setFieldValue('rubricShouldNotHave', processedContent.exclude)
+        formik.setFieldTouched('rubricShouldHave', true)
+        formik.setFieldTouched('rubricShouldNotHave', true)
+        toast.success('AI-generated rubric applied successfully!', 'Success')
+      }
+    }
+  }, [success, targetField, processedContent])
+
   // Handle image uploads to update currentQuestionId when question_id is returned
   const handleImageUpload = (fileId: string, url: string, field: 'question' | 'answer', questionId?: string) => {
     // If we received a question ID from the image upload, update our state
@@ -246,9 +304,34 @@ const LQFormPage: FC = () => {
 
 
   // Handle accepting processed content from modal
-  const handleAcceptProcessedContent = (content: string, field: 'question' | 'answer') => {
-    formik.setFieldValue(field, content)
-    formik.setFieldTouched(field, true)
+  const handleAcceptProcessedContent = (content: string | { include: string; exclude: string }, field: 'question' | 'answer' | 'rubric') => {
+    if (field === 'rubric') {
+      if (typeof content === 'object' && content !== null && ('include' in content || 'exclude' in content)) {
+        // New format: object with include/exclude properties
+        formik.setFieldValue('rubricShouldHave', (content as { include?: string; exclude?: string }).include || '')
+        formik.setFieldValue('rubricShouldNotHave', (content as { include?: string; exclude?: string }).exclude || '')
+        formik.setFieldTouched('rubricShouldHave', true)
+        formik.setFieldTouched('rubricShouldNotHave', true)
+      } else if (typeof content === 'string') {
+        // Legacy format: string that needs parsing
+        const parts = content.split(/Should not have:/i)
+        if (parts.length === 2) {
+          const shouldContain = parts[0].replace(/Should contain:\s*/i, '').trim()
+          const shouldNotHave = parts[1].trim()
+          formik.setFieldValue('rubricShouldHave', shouldContain)
+          formik.setFieldValue('rubricShouldNotHave', shouldNotHave)
+          formik.setFieldTouched('rubricShouldHave', true)
+          formik.setFieldTouched('rubricShouldNotHave', true)
+        } else {
+          // Fallback: if format doesn't match, put all content in should contain
+          formik.setFieldValue('rubricShouldHave', content)
+          formik.setFieldTouched('rubricShouldHave', true)
+        }
+      }
+    } else {
+      formik.setFieldValue(field, content as string)
+      formik.setFieldTouched(field, true)
+    }
     toast.success('AI processed content applied successfully!', 'Success')
   }
 
@@ -399,6 +482,109 @@ const LQFormPage: FC = () => {
               </div>
             </div>
 
+            {/* Rubric Content */}
+            <div className='row mb-6'>
+              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+                Rubric
+              </label>
+              <div className='col-lg-9'>
+                {/* Should Contain Section */}
+                <div className='mb-4'>
+                  <label className='form-label fw-semibold fs-6 mb-2'>
+                    Should contain
+                  </label>
+                  <textarea
+                    className={clsx(
+                      'form-control form-control-lg form-control-solid',
+                      {
+                        'is-valid': formik.touched.rubricShouldHave && !formik.errors.rubricShouldHave,
+                        'is-invalid': formik.touched.rubricShouldHave && formik.errors.rubricShouldHave,
+                      }
+                    )}
+                    rows={4}
+                    placeholder='Enter what the answer should contain...'
+                    value={formik.values.rubricShouldHave}
+                    onChange={(e) => {
+                      formik.setFieldValue('rubricShouldHave', e.target.value)
+                      formik.setFieldTouched('rubricShouldHave', true)
+                    }}
+                    onBlur={() => formik.setFieldTouched('rubricShouldHave', true)}
+                  />
+                  {formik.touched.rubricShouldHave && formik.errors.rubricShouldHave && (
+                    <div className='fv-plugins-message-container invalid-feedback d-block'>
+                      <div>{formik.errors.rubricShouldHave}</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Should Not Have Section */}
+                <div className='mb-4'>
+                  <label className='form-label fw-semibold fs-6 mb-2'>
+                    Should not have
+                  </label>
+                  <textarea
+                    className={clsx(
+                      'form-control form-control-lg form-control-solid',
+                      {
+                        'is-valid': formik.touched.rubricShouldNotHave && !formik.errors.rubricShouldNotHave,
+                        'is-invalid': formik.touched.rubricShouldNotHave && formik.errors.rubricShouldNotHave,
+                      }
+                    )}
+                    rows={4}
+                    placeholder='Enter what the answer should not have...'
+                    value={formik.values.rubricShouldNotHave}
+                    onChange={(e) => {
+                      formik.setFieldValue('rubricShouldNotHave', e.target.value)
+                      formik.setFieldTouched('rubricShouldNotHave', true)
+                    }}
+                    onBlur={() => formik.setFieldTouched('rubricShouldNotHave', true)}
+                  />
+                  {formik.touched.rubricShouldNotHave && formik.errors.rubricShouldNotHave && (
+                    <div className='fv-plugins-message-container invalid-feedback d-block'>
+                      <div>{formik.errors.rubricShouldNotHave}</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* AI Generate Button */}
+                <div className='mt-2'>
+                  <button
+                    type='button'
+                    className='btn btn-sm btn-primary'
+                    disabled={!formik.values.question.trim() || !formik.values.answer.trim() || processingField === 'rubric'}
+                    onClick={async () => {
+                      if (formik.values.question.trim() && formik.values.answer.trim()) {
+                        try {
+                          await dispatch(generateRubric({
+                            question_content: formik.values.question,
+                            answer_content: formik.values.answer,
+                            question_id: currentQuestionId || qId
+                          })).unwrap()
+                        } catch (error) {
+                          // Error is already handled by the thunk
+                        }
+                      }
+                    }}
+                  >
+                    {processingField === 'rubric' ? (
+                      <>
+                        <span className='spinner-border spinner-border-sm me-1'></span>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <i className='fas fa-robot me-1'></i>
+                        Generate Rubric with AI
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className='form-text'>
+                  Use AI to generate a grading rubric based on your question and answer content. Make sure both question and answer are filled before generating.
+                </div>
+              </div>
+            </div>
+
 {/* Tags */}
 <div className='row mb-6'>
               <label className='col-lg-3 col-form-label fw-semibold fs-6'>
@@ -456,6 +642,10 @@ const LQFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
+                              const rubricObject = {
+                                include: formik.values.rubricShouldHave,
+                                exclude: formik.values.rubricShouldNotHave
+                              }
 
                               const questionData = transformLQQuestionForBackend(
                                 'lq',
@@ -463,7 +653,8 @@ const LQFormPage: FC = () => {
                                 formik.values.teacherRemark,
                                 formik.values.answer,
                                 transformedTags,
-                                currentQuestionId
+                                currentQuestionId,
+                                rubricObject
                               )
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -497,6 +688,10 @@ const LQFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
+                              const rubricObject = {
+                                include: formik.values.rubricShouldHave,
+                                exclude: formik.values.rubricShouldNotHave
+                              }
 
                               const questionData = transformLQQuestionForBackend(
                                 'lq',
@@ -504,7 +699,8 @@ const LQFormPage: FC = () => {
                                 formik.values.teacherRemark,
                                 formik.values.answer,
                                 transformedTags,
-                                currentQuestionId
+                                currentQuestionId,
+                                rubricObject
                               )
                               
                               await dispatch(updateQuestion({qId, questionData})).unwrap()
@@ -540,13 +736,18 @@ const LQFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
+                              const rubricObject = {
+                                include: formik.values.rubricShouldHave,
+                                exclude: formik.values.rubricShouldNotHave
+                              }
                               const questionData = transformLQQuestionForBackend(
                                 'lq',
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
                                 transformedTags,
-                                currentQuestionId
+                                currentQuestionId,
+                                rubricObject
                               )
                               const createdQuestion = await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Long Question created successfully!', 'Success')
@@ -578,13 +779,18 @@ const LQFormPage: FC = () => {
                             setIsSubmitting(true)
                             try {
                               const transformedTags = transformTags(formik.values.selectedTags)
+                              const rubricObject = {
+                                include: formik.values.rubricShouldHave,
+                                exclude: formik.values.rubricShouldNotHave
+                              }
                               const questionData = transformLQQuestionForBackend(
                                 'lq',
                                 formik.values.question,
                                 formik.values.teacherRemark,
                                 formik.values.answer,
                                 transformedTags,
-                                currentQuestionId
+                                currentQuestionId,
+                                rubricObject
                               )
                               await dispatch(createQuestion(questionData)).unwrap()
                               toast.success('Long Question created successfully!', 'Success')
