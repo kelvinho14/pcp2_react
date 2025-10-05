@@ -181,6 +181,7 @@ const aiSlice = createSlice({
         state.processing = true
         state.error = null
         state.success = null
+        state.targetField = 'rubric'
       })
       .addCase(generateRubric.fulfilled, (state, action) => {
         state.processing = false
@@ -192,6 +193,7 @@ const aiSlice = createSlice({
       .addCase(generateRubric.rejected, (state, action) => {
         state.processing = false
         state.error = action.error.message || 'Failed to generate rubric'
+        state.targetField = null
       })
   },
 })
