@@ -551,7 +551,8 @@ const LQFormPage: FC = () => {
                   <button
                     type='button'
                     className='btn btn-sm btn-primary'
-                    disabled={!formik.values.question.trim() || !formik.values.answer.trim() || processingField === 'rubric'}
+                    style={{ backgroundColor: '#009ef7', borderColor: '#009ef7' }}
+                    disabled={!formik.values.question.trim() || !formik.values.answer.trim() || processingField !== null}
                     onClick={async () => {
                       if (formik.values.question.trim() && formik.values.answer.trim()) {
                         try {
@@ -570,6 +571,11 @@ const LQFormPage: FC = () => {
                       <>
                         <span className='spinner-border spinner-border-sm me-1'></span>
                         Generating...
+                      </>
+                    ) : processingField !== null ? (
+                      <>
+                        <i className='fas fa-clock me-1'></i>
+                        Wait for processing...
                       </>
                     ) : (
                       <>
