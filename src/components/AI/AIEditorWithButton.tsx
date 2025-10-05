@@ -7,7 +7,7 @@ interface AIEditorWithButtonProps {
   value: string
   onBlur: (content: string) => void
   isProcessing: boolean
-  processingField: 'question' | 'answer' | null
+  processingField: 'question' | 'answer' | 'rubric' | null
   onAIClick: (content: string, field: 'question' | 'answer') => void
   onImageUpload?: (fileId: string, url: string, field: 'question' | 'answer', questionId?: string) => void
   questionType?: 'mc' | 'lq'

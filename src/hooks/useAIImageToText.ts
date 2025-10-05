@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { useDispatch } from 'react-redux'
-import { AppDispatch } from '../store'
+import { useDispatch, useSelector } from 'react-redux'
+import { AppDispatch, RootState } from '../store'
 import { processContentToText, setProcessedContent } from '../store/ai/aiSlice'
 import { toast } from '../_metronic/helpers/toast'
 
 export const useAIImageToText = (questionType: 'mc' | 'lq') => {
   const dispatch = useDispatch<AppDispatch>()
   const [processingField, setProcessingField] = useState<'question' | 'answer' | null>(null)
+  const { processing, targetField } = useSelector((state: RootState) => state.ai)
 
   const handleAIImageToText = async (content: string, field: 'question' | 'answer') => {
     // Check if there are images in the current content
@@ -32,7 +33,7 @@ export const useAIImageToText = (questionType: 'mc' | 'lq') => {
   }
 
   return {
-    processingField,
+    processingField: processingField || (processing ? targetField : null),
     handleAIImageToText
   }
 } 
