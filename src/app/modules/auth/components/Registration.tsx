@@ -7,6 +7,7 @@ import {Link} from 'react-router-dom'
 import {toAbsoluteUrl} from '../../../../_metronic/helpers'
 import {PasswordMeterComponent} from '../../../../_metronic/assets/ts/components'
 import {useAuth} from '../core/Auth'
+import {GoogleSignInButton} from '../../../../components/GoogleSignInButton'
 
 const initialValues = {
   firstname: '',
@@ -46,6 +47,18 @@ const registrationSchema = Yup.object().shape({
 export function Registration() {
   const [loading, setLoading] = useState(false)
   const {setCurrentUser} = useAuth()
+
+  const handleGoogleSuccess = (user: any) => {
+    setCurrentUser(user);
+    // Redirect to dashboard or appropriate page
+    window.location.href = '/dashboard';
+  };
+
+  const handleGoogleError = (error: string) => {
+    console.error('Google sign-in error:', error);
+    // You could set a status message here if needed
+  };
+
   const formik = useFormik({
     initialValues,
     validationSchema: registrationSchema,
@@ -135,6 +148,20 @@ export function Registration() {
           <div className='alert-text font-weight-bold'>{formik.status}</div>
         </div>
       )}
+
+      {/* Google Sign-In Button */}
+      <div className='d-grid mb-8'>
+        <GoogleSignInButton
+          onSuccess={handleGoogleSuccess}
+          onError={handleGoogleError}
+          disabled={loading}
+        />
+      </div>
+
+      {/* Separator */}
+      <div className='separator separator-content my-14'>
+        <span className='w-125px text-gray-500 fw-semibold fs-7'>Or with email</span>
+      </div>
 
       {/* begin::Form group Firstname */}
       <div className='fv-row mb-8'>
