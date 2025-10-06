@@ -8,6 +8,7 @@ import webSocketService from '../../../services/WebSocketService'
 import AuthInterceptor from '../../../services/AuthInterceptor'
 import SchoolSelectionService from '../services/SchoolSelectionService'
 import axios from 'axios'
+import {useSchoolSubjectUrlParams} from '../../../../hooks/useSchoolSubjectUrlParams'
 
 type AuthContextProps = {
   currentUser: UserModel | undefined
@@ -78,6 +79,10 @@ const AuthProvider: FC<WithChildren> = ({children}) => {
 const AuthInit: FC<WithChildren> = ({children}) => {
   const {setCurrentUser, currentUser, logout, skipSchoolRedirect} = useAuth()
   const [showSplashScreen, setShowSplashScreen] = useState(true)
+  
+  // CRITICAL: Process school/subject URL parameters BEFORE any API calls
+  // This must happen before the useEffect that calls getCurrentUser()
+  useSchoolSubjectUrlParams()
 
   const processUserAfterAuth = (user: UserModel): string | null => {
     console.log('🔍 Processing authenticated user:', user, 'skipSchoolRedirect:', skipSchoolRedirect)
