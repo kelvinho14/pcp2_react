@@ -54,3 +54,13 @@ export function getCurrentUser() {
     withCredentials: true 
   })
 }
+
+// Google OAuth endpoints
+export const GOOGLE_OAUTH_LOGIN_URL = `${API_URL}/auth/google/callback`;
+
+export function googleOAuthLogin(authorizationCode: string, schoolSubjectId?: string) {
+  return axios.post<ApiResponse<UserModel>>(GOOGLE_OAUTH_LOGIN_URL, {
+    code: authorizationCode,
+    school_subject_id: schoolSubjectId,
+  }, { withCredentials: true });
+}

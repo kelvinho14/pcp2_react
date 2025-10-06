@@ -1,7 +1,7 @@
 import {useState, useEffect, useRef} from 'react'
 import * as Yup from 'yup'
 import clsx from 'clsx'
-import {Link, useNavigate} from 'react-router-dom'
+import {Link, useNavigate, useSearchParams} from 'react-router-dom'
 import {useFormik} from 'formik'
 import {getUserByToken, login} from '../core/_requests'
 import {toAbsoluteUrl} from '../../../../_metronic/helpers'
@@ -9,6 +9,7 @@ import {useAuth} from '../core/Auth'
 import webSocketService from '../../../services/WebSocketService'
 import SubjectSelectionModal from './SubjectSelectionModal'
 import {useSchoolSelection} from '../hooks/useSchoolSelection'
+import {GoogleSignInButton} from '../../../../components/GoogleSignInButton'
 
 const loginSchema = Yup.object().shape({
   email: Yup.string()
@@ -43,6 +44,7 @@ export function Login() {
   const [loading, setLoading] = useState(false)
   const {currentUser} = useAuth()
   const emailInputRef = useRef<HTMLInputElement>(null)
+  const [searchParams] = useSearchParams()
   const {
     showSubjectModal,
     userSchools,
@@ -51,6 +53,22 @@ export function Login() {
     processUserAfterLogin,
     checkExistingUserSession
   } = useSchoolSelection()
+
+  // Handle URL error parameters
+  const getUrlError = () => {
+    const errorParam = searchParams.get('error')
+    if (errorParam) {
+      // Split by underscore and capitalize first letter of each word
+      const errorMessage = errorParam
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+      return errorMessage
+    }
+    return null
+  }
+
+  const urlError = getUrlError()
 
   // Check if user is already logged in when they visit /auth
   useEffect(() => {
@@ -142,6 +160,16 @@ export function Login() {
 </div>
 
 */
+  const handleGoogleSuccess = (user: any) => {
+    // Process user based on role and schools data
+    processUserAfterLogin(user);
+  };
+
+  const handleGoogleError = (error: string) => {
+    console.error('Google sign-in error:', error);
+    // You could set a status message here if needed
+  };
+
   return (
     <form
       className='form w-100'
@@ -156,6 +184,27 @@ export function Login() {
       ) : (
         <></>
       )}
+
+      {/* URL Error Display */}
+      {urlError && (
+        <div className='mb-lg-15 alert alert-danger'>
+          <div className='alert-text font-weight-bold'>{urlError}</div>
+        </div>
+      )}
+
+      {/* Google Sign-In Button */}
+      <div className='d-grid mb-8'>
+        <GoogleSignInButton
+          onSuccess={handleGoogleSuccess}
+          onError={handleGoogleError}
+          disabled={loading || isProcessing}
+        />
+      </div>
+
+      {/* Separator */}
+      <div className='separator separator-content my-14'>
+        <span className='w-125px text-gray-500 fw-semibold fs-7'>Or with email</span>
+      </div>
 
       {/* begin::Form group */}
       <div className='fv-row mb-8'>
@@ -242,13 +291,6 @@ export function Login() {
         </button>
       </div>
       {/* end::Action */}
-
-      <div className='text-gray-500 text-center fw-semibold fs-6'>
-        Not a Member yet?{' '}
-        <Link to='/auth/registration' className='link-primary'>
-          Sign up
-        </Link>
-      </div>
 
        {showSubjectModal && userSchools && userSchools.length > 0 && (
          <SubjectSelectionModal
