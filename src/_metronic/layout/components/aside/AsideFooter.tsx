@@ -11,8 +11,8 @@ const AsideFooter = () => {
 
       {/* begin::Activities */}
       <div className='d-flex align-items-center mb-3'>
-        {/* begin::Drawer toggle */}
-        <div
+        {/* Activity log button hidden as requested */}
+        {/* <div
           className='btn btn-icon btn-active-color-primary btn-color-gray-500 btn-active-light'
           data-kt-menu-trigger='click'
           data-kt-menu-overflow='true'
@@ -24,8 +24,7 @@ const AsideFooter = () => {
           id='kt_activities_toggle'
         >
           <KTIcon iconName='chart-simple' className='fs-2 text-lg-1' />
-        </div>
-        {/* end::drawer toggle */}
+        </div> */}
       </div>
       {/* end::Activities */}
 
