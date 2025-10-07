@@ -1,5 +1,6 @@
 import {useEffect} from 'react'
 import {useIntl} from 'react-intl'
+import {Navigate} from 'react-router-dom'
 import {PageLink, PageTitle} from '../../../_metronic/layout/core'
 import {
   ListsWidget2,
@@ -13,6 +14,8 @@ import {
   TablesWidget5,
   TablesWidget9,
 } from '../../../_metronic/partials/widgets'
+import {useAuth} from '../../modules/auth'
+import {isTeachingStaff, ROLES} from '../../constants/roles'
 
 const dashboardBreadCrumbs: Array<PageLink> = [
   {
@@ -153,6 +156,25 @@ const DashboardPage = () => {
 
 const DashboardWrapper = () => {
   const intl = useIntl()
+  const {currentUser} = useAuth()
+
+  // Redirect based on user role
+  if (currentUser) {
+    // Admin → /admin/schools/list
+    if (currentUser.role?.role_type === ROLES.ADMIN) {
+      return <Navigate to="/admin/schools/list" replace />
+    }
+    // Teachers, Super Teachers, Tutors, Assistants → /exercises/list
+    else if (isTeachingStaff(currentUser.role?.role_type)) {
+      return <Navigate to="/exercises/list" replace />
+    }
+    // Students, Parents → /exercises/dashboard
+    else {
+      return <Navigate to="/exercises/dashboard" replace />
+    }
+  }
+
+  // Fallback to original dashboard if no user (shouldn't happen in private routes)
   return (
     <>
       <PageTitle breadcrumbs={dashboardBreadCrumbs}>

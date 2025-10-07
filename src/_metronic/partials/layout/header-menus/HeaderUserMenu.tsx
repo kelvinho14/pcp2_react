@@ -4,7 +4,7 @@ import {Link} from 'react-router-dom'
 import {useAuth} from '../../../../app/modules/auth'
 import {Languages} from './Languages'
 import {toAbsoluteUrl} from '../../../helpers'
-import {ROLES} from '../../../../app/constants/roles'
+import {ROLES, ROLE_NAMES} from '../../../../app/constants/roles'
 
 const HeaderUserMenu: FC = () => {
   const {currentUser, logout} = useAuth()
@@ -22,7 +22,9 @@ const HeaderUserMenu: FC = () => {
           <div className='d-flex flex-column'>
             <div className='fw-bolder d-flex align-items-center fs-5'>
               {currentUser?.name}
-              <span className='badge badge-light-success fw-bolder fs-8 px-2 py-1 ms-2'>Pro</span>
+              <span className='badge badge-light-success fw-bolder fs-8 px-2 py-1 ms-2'>
+                {currentUser?.role?.role_type ? ROLE_NAMES[currentUser.role.role_type as keyof typeof ROLE_NAMES] : 'User'}
+              </span>
             </div>
             <a href='#' className='fw-bold text-muted text-hover-primary fs-7'>
               {currentUser?.email}
@@ -50,7 +52,7 @@ const HeaderUserMenu: FC = () => {
       )}
       <div className='separator my-2'></div>
 
-      <Languages />
+      {currentUser?.role?.role_type !== ROLES.STUDENT && <Languages />}
 
 
 
