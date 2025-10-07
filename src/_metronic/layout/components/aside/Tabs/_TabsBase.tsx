@@ -86,7 +86,8 @@ const TabsBase: FC<Props> = ({link}) => {
       {/* end::Wrapper */}
       {/* begin::Footer */}
       <div className='flex-column-auto pt-10 px-5' id='kt_aside_secondary_footer'>
-        <a
+        {/* Update log button hidden as requested */}
+        {/* <a
           href={import.meta.env.VITE_APP_PREVIEW_DOCS_URL + '/changelog'}
           target='_blank'
           className='btn btn-bg-light btn-color-gray-600 btn-flex btn-active-color-primary flex-center w-100'
@@ -98,7 +99,7 @@ const TabsBase: FC<Props> = ({link}) => {
         >
           <span className='btn-label'>Update log</span>
           <KTIcon iconName='document' className='btn-icon fs-4 ms-2' />
-        </a>
+        </a> */}
       </div>
       {/* end::Footer */}
     </div>

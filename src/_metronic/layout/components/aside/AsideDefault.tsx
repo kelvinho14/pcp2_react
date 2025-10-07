@@ -28,11 +28,11 @@ const AsideDefault = () => {
       <div className='aside-primary d-flex flex-column align-items-lg-center flex-row-auto'>
         {/* begin::Logo */}
         <div
-          className='aside-logo d-none d-lg-flex flex-column align-items-center flex-column-auto py-10'
+          className='aside-logo d-none d-lg-flex flex-column align-items-center flex-column-auto py-5'
           id='kt_aside_logo'
         >
           <Link to='/dashboard'>
-            <img src={toAbsoluteUrl('media/logos/demo7.svg')} alt='logo' className='h-35px' />
+            <img src={toAbsoluteUrl('media/logos/logo.png')} alt='logo' className='h-70px' />
           </Link>
         </div>
         {/* end::Logo */}

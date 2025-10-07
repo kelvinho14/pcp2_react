@@ -7,23 +7,23 @@ import UserSettingsPage from './UserSettingsPage'
 
 const usersBreadcrumbs: Array<PageLink> = [
   {
-    title: 'Users',
-    path: '/users',
+    title: 'Home',
+    path: '/dashboard',
     isSeparator: false,
     isActive: false,
   },
   {
-    title: '',
+    title: 'User list',
     path: '',
-    isSeparator: true,
-    isActive: false,
+    isSeparator: false,
+    isActive: true,
   },
 ]
 
 const userEditBreadcrumbs: Array<PageLink> = [
   {
-    title: 'Users',
-    path: '/users',
+    title: 'Home',
+    path: '/dashboard',
     isSeparator: false,
     isActive: false,
   },
@@ -34,10 +34,19 @@ const userEditBreadcrumbs: Array<PageLink> = [
     isActive: false,
   },
   {
-    title: 'User List',
+    title: 'User list',
     path: '/users/list',
     isSeparator: false,
     isActive: false,
+  }
+]
+
+const userSettingsBreadcrumbs: Array<PageLink> = [
+  {
+    title: 'Home',
+    path: '/dashboard',
+    isSeparator: false,
+    isActive: false,
   },
   {
     title: '',
@@ -45,9 +54,6 @@ const userEditBreadcrumbs: Array<PageLink> = [
     isSeparator: true,
     isActive: false,
   },
-]
-
-const userSettingsBreadcrumbs: Array<PageLink> = [
   {
     title: 'Users',
     path: '/users',

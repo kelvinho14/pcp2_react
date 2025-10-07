@@ -14,7 +14,7 @@ const Footer: FC = () => {
         <div className='text-gray-900 order-2 order-md-1'>
           <span className='text-gray-500 fw-bold me-1'>Created by</span>
           <a
-            href='Learnflo.ai'
+            href='https://app.learnflo.ai'
             target='_blank'
             className='text-muted text-hover-primary fw-bold me-2 fs-6'
           >
