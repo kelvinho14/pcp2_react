@@ -100,7 +100,7 @@ const AuthLayout = () => {
       {/* begin::Aside */}
       <div
         className='d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2'
-        style={{backgroundImage: `url(${toAbsoluteUrl('media/misc/bg-2.jpg')})`}}
+        style={{backgroundImage: `url(${toAbsoluteUrl('media/misc/dropdown-header-bg.png')})`}}
       >
         {/* begin::Content */}
         <div className='d-flex flex-column flex-center py-15 px-5 px-md-15 w-100'>
@@ -130,7 +130,7 @@ const AuthLayout = () => {
                 <i className='fas fa-chevron-left text-white'></i>
               </button>
               {/* Testimony Content */}
-              <div className='fs-2 text-grey text-center mb-4 px-8' style={fadeStyle}>
+              <div className='fs-2 text-white text-center mb-4 px-8' style={fadeStyle}>
                 <i className='fas fa-quote-left me-2 text-warning'></i>
                 {testimonies[currentTestimony].text}
                 <i className='fas fa-quote-right ms-2 text-warning'></i>
