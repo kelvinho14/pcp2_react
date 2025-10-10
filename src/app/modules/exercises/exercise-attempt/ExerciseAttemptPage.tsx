@@ -11,6 +11,7 @@ import ImageModal from '../../../../components/Modal/ImageModal'
 import {renderHtmlSafely, hasImages} from '../../../../_metronic/helpers/htmlRenderer'
 import {startExerciseAttempt, submitExercise} from '../../../../store/exercises/studentExercisesSlice'
 import {AppDispatch} from '../../../../store'
+import {ConfirmationDialog} from '../../../../_metronic/helpers/ConfirmationDialog'
 
 
 import axios from 'axios'
@@ -103,6 +104,7 @@ const ExerciseAttemptPage: FC = () => {
   const [attemptData, setAttemptData] = useState<AttemptResponse | null>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [showTeacherMessage, setShowTeacherMessage] = useState(false)
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const questionContentRef = useRef<HTMLDivElement>(null)
   const [drawingPads, setDrawingPads] = useState<Array<{id: string, questionId: string}>>([])
 
@@ -241,25 +243,6 @@ const ExerciseAttemptPage: FC = () => {
     />
   }
 
-  const refreshAttemptData = async () => {
-    if (!assignmentId) return
-    
-    try {
-      const attemptUrl = `${import.meta.env.VITE_APP_API_URL}/student-exercises/assignments/${assignmentId}/attempt`
-      const headers = getHeadersWithSchoolSubject(attemptUrl)
-      const response = await axios.get(attemptUrl, { 
-        headers,
-        withCredentials: true 
-      })
-      
-      if (response.data.status === 'success') {
-        const attemptData: AttemptResponse = response.data.data
-        setAttemptData(attemptData)
-      }
-    } catch (error) {
-      console.error('❌ Failed to refresh attempt data:', error)
-    }
-  }
 
   const saveAnswerToAPI = async (questionId: string, questionType: number, answerData: any, drawingPadOrder?: number) => {
     if (!assignmentId) return
@@ -314,18 +297,60 @@ const ExerciseAttemptPage: FC = () => {
         drawingOrder: formattedPayload.drawing_canvases?.[0]?.drawing_order
       })
       
-      await axios.post(url, formattedPayload, {
+      const response = await axios.post(url, formattedPayload, {
         headers,
         withCredentials: true
       })
       
       console.log('✅ API call successful')
       
-      // Refresh attempt data to update saved_answers_count
-      await refreshAttemptData()
-    } catch (error) {
+      // Check if the response indicates success
+      if (response.data && response.data.status !== 'success') {
+        const errorMessage = response.data.message || 'Failed to save answer'
+        console.error('❌ API returned non-success status:', response.data)
+        toast.error(errorMessage, 'Save Error')
+        return
+      }
+      
+      // Update the local exercise state to reflect the saved answer
+      // This eliminates the need for an additional API call
+      if (exercise) {
+        const updatedExercise = {
+          ...exercise,
+          questions: exercise.questions.map(q => {
+            if (q.question_id === questionId) {
+              return {
+                ...q,
+                saved_answer: {
+                  answer_id: q.saved_answer?.answer_id || '',
+                  question_type: questionType,
+                  answered_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  ...answerData
+                }
+              }
+            }
+            return q
+          })
+        }
+        setExercise(updatedExercise)
+      }
+    } catch (error: any) {
       console.error('❌ Failed to save answer:', error)
-      // Don't show error to user as this might be a network issue
+      
+      // Extract error message from response
+      let errorMessage = 'Failed to save answer. Please try again.'
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      // Show error toast to user
+      toast.error(errorMessage, 'Save Error')
     }
   }
 
@@ -499,9 +524,35 @@ const ExerciseAttemptPage: FC = () => {
     }
   }
 
+  const handleSubmitClick = () => {
+    setShowSubmitConfirm(true)
+  }
+
+  const handleConfirmSubmit = async () => {
+    setShowSubmitConfirm(false)
+    await handleSubmit()
+  }
+
   const isLastQuestion = currentQuestionIndex === (exercise?.questions.length || 0) - 1
   const isFirstQuestion = currentQuestionIndex === 0
   const currentAnswer = getCurrentAnswer()
+
+  // Calculate saved answers count locally instead of fetching from API
+  const getSavedAnswersCount = () => {
+    if (!exercise) return 0
+    return exercise.questions.filter(question => {
+      const savedAnswer = question.saved_answer
+      if (!savedAnswer) return false
+      
+      // Check if the answer has actual content
+      if (question.type === 'mc') {
+        return savedAnswer.mc_answer && savedAnswer.mc_answer.trim() !== ''
+      } else if (question.type === 'lq') {
+        return savedAnswer.lq_answer && savedAnswer.lq_answer.trim() !== ''
+      }
+      return false
+    }).length
+  }
 
 
 
@@ -569,9 +620,9 @@ const ExerciseAttemptPage: FC = () => {
               <p className='text-muted mb-0'>{exercise.description}</p>
             </div>
             <div className='question-progress'>
-              {attemptData && attemptData.saved_answers_count > 0 && (
+              {getSavedAnswersCount() > 0 && (
                 <span className='badge badge-light-info fs-6'>
-                  {attemptData.saved_answers_count} answered
+                  {getSavedAnswersCount()} answered
                 </span>
               )}
             </div>
@@ -809,7 +860,7 @@ const ExerciseAttemptPage: FC = () => {
             </button>
 
             <div className='d-flex gap-2'>
-              {!isLastQuestion ? (
+              {!isLastQuestion && (
                 <button
                   type='button'
                   className='btn btn-primary'
@@ -818,30 +869,43 @@ const ExerciseAttemptPage: FC = () => {
                   Next
                   <i className='fas fa-chevron-right ms-1'></i>
                 </button>
-              ) : (
-                <button
-                  type='button'
-                  className='btn btn-success'
-                  disabled={submitting}
-                  onClick={handleSubmit}
-                >
-                  {submitting ? (
-                    <>
-                      <span className='spinner-border spinner-border-sm me-2'></span>
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <i className='fas fa-check me-1'></i>
-                      Submit Exercise
-                    </>
-                  )}
-                </button>
               )}
+              <button
+                type='button'
+                className='btn btn-success'
+                disabled={submitting}
+                onClick={handleSubmitClick}
+              >
+                {submitting ? (
+                  <>
+                    <span className='spinner-border spinner-border-sm me-2'></span>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <i className='fas fa-check me-1'></i>
+                    Submit Exercise
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Submit Confirmation Dialog */}
+      <ConfirmationDialog
+        show={showSubmitConfirm}
+        onHide={() => setShowSubmitConfirm(false)}
+        onConfirm={handleConfirmSubmit}
+        title="Submit Exercise"
+        message="Are you sure you want to submit this exercise? Once submitted, you cannot make any changes to your answers. Please review your answers before proceeding."
+        confirmText="Submit Exercise"
+        cancelText="Cancel"
+        variant="warning"
+        loading={submitting}
+        loadingText="Submitting..."
+      />
 
       {/* Image Modal */}
       <ImageModal

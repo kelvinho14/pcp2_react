@@ -335,12 +335,7 @@ const QuestionsView: FC<QuestionsViewProps> = ({
                               ) : isMC ? (
                                 answer.student_option ? (
                                   <div className={`p-2 rounded ${answer.student_option === question.correct_option ? 'bg-light-success' : 'bg-light-danger'}`}>
-                                    <span className='badge badge-light-primary me-2'>Option {answer.student_option}</span>
-                                    <div 
-                                      dangerouslySetInnerHTML={{ 
-                                        __html: renderHtmlSafely(answer.student_answer || '', { maxImageWidth: 300, maxImageHeight: 200 }) 
-                                      }}
-                                    />
+                                    <span className='badge badge-light-primary me-2'>{answer.student_option}</span>
                                   </div>
                                 ) : (
                                   <span className='text-muted fs-7'>No answer</span>
