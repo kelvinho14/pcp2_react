@@ -1,0 +1,245 @@
+// Exercise Result Page Styles
+.exercise-result-page {
+  .profile-card-header {
+    margin-bottom: 2rem;
+    
+    .profile-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      
+      .score-avatar {
+        flex-shrink: 0;
+        
+        .score-display {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          
+          .score-percentage {
+            color: white;
+            font-size: 4rem;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+          }
+          
+          .score-points {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+          }
+        }
+      }
+      
+      .exercise-info {
+        flex: 1;
+        
+        .exercise-name-section {
+          margin-bottom: 1.5rem;
+          
+          .exercise-name {
+            color: white;
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+          }
+          
+          .exercise-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+          }
+        }
+        
+        .stats-cards {
+          display: flex;
+          gap: 1.5rem;
+          
+          .stat-card {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 180px;
+            transition: all 0.3s ease;
+            
+            &:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+              background: rgba(255, 255, 255, 0.3);
+            }
+            
+            .stat-icon {
+              width: 45px;
+              height: 45px;
+              border-radius: 12px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 1.25rem;
+              flex-shrink: 0;
+              
+              &.submitted {
+                background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+                color: white;
+              }
+              
+              &.status {
+                background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+                color: white;
+              }
+            }
+            
+            .stat-content {
+              display: flex;
+              flex-direction: column;
+              
+              .stat-value {
+                color: white;
+                font-size: 1.1rem;
+                font-weight: 700;
+                margin-bottom: 0.25rem;
+              }
+              
+              .stat-label {
+                color: rgba(255, 255, 255, 0.8);
+                font-size: 0.85rem;
+                font-weight: 500;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Responsive Design
+  @media (max-width: 992px) {
+    .profile-card-header {
+      .profile-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+        
+        .exercise-info {
+          .stats-cards {
+            justify-content: center;
+            flex-wrap: wrap;
+          }
+        }
+      }
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .profile-card-header {
+      .profile-card {
+        padding: 1.5rem;
+        
+        .score-avatar {
+          .score-display {
+            .score-percentage {
+              font-size: 3rem;
+            }
+          }
+        }
+        
+        .exercise-info {
+          .exercise-name-section {
+            .exercise-name {
+              font-size: 1.5rem;
+            }
+          }
+          
+          .stats-cards {
+            flex-direction: column;
+            align-items: center;
+            
+            .stat-card {
+              width: 100%;
+              max-width: 250px;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .profile-card-header {
+      .profile-card {
+        padding: 1rem;
+        
+        .score-avatar {
+          .score-display {
+            .score-percentage {
+              font-size: 2.5rem;
+            }
+            
+            .score-points {
+              font-size: 0.9rem;
+            }
+          }
+        }
+        
+        .exercise-info {
+          .exercise-name-section {
+            margin-bottom: 1rem;
+            
+            .exercise-name {
+              font-size: 1.25rem;
+            }
+            
+            .exercise-badge {
+              font-size: 0.7rem;
+              padding: 0.3rem 0.8rem;
+            }
+          }
+          
+          .stats-cards {
+            .stat-card {
+              padding: 1rem;
+              min-width: auto;
+              
+              .stat-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.1rem;
+              }
+              
+              .stat-content {
+                .stat-value {
+                  font-size: 1rem;
+                }
+                
+                .stat-label {
+                  font-size: 0.8rem;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

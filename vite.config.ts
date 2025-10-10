@@ -8,4 +8,11 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 3000,
   },
+  optimizeDeps: {
+    exclude: ['react-select/creatable'],
+    include: ['hoist-non-react-statics', '@emotion/react', '@emotion/styled']
+  },
+  define: {
+    global: 'globalThis',
+  },
 })
