@@ -11,7 +11,11 @@ import {useNavigate} from 'react-router-dom'
 import {toast} from '../../../../_metronic/helpers/toast'
 import {ConfirmationDialog} from '../../../../_metronic/helpers/ConfirmationDialog'
 import {formatApiTimestamp} from '../../../../_metronic/helpers/dateUtils'
+import axios from 'axios'
+import {getHeadersWithSchoolSubject} from '../../../../_metronic/helpers/axios'
 import './ExerciseAssignedListPage.scss'
+
+const API_URL = import.meta.env.VITE_APP_API_URL
 
 // Completely isolated filters component that doesn't re-render with parent
 const IsolatedFilters = memo(() => {
@@ -181,6 +185,10 @@ const ExerciseAssignedListPage: FC = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const filtersRef = useRef(filters)
   const hasInitializedCollapse = useRef(false)
+  
+  // State for loaded student assignments
+  const [loadedStudents, setLoadedStudents] = useState<Record<string, any[]>>({})
+  const [loadingStudents, setLoadingStudents] = useState<Record<string, boolean>>({})
 
   // Keep filters ref updated
   useEffect(() => {
@@ -242,17 +250,68 @@ const ExerciseAssignedListPage: FC = () => {
     }
   }
 
+  // Fetch students for a specific assign_key
+  const fetchStudents = useCallback(async (assignKey: string) => {
+    // If already loaded or currently loading, skip
+    if (loadedStudents[assignKey] || loadingStudents[assignKey]) {
+      return
+    }
+
+    setLoadingStudents(prev => ({ ...prev, [assignKey]: true }))
+    
+    try {
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/student-exercises/assignments/${assignKey}/students`)
+      const response = await axios.get(`${API_URL}/student-exercises/assignments/${assignKey}/students`, {
+        headers,
+        withCredentials: true
+      })
+      
+      if (response.data.success) {
+        // Flatten the students array to get all assignments with student info
+        const students = response.data.data?.students || []
+        const flattenedAssignments = students.flatMap((student: any) => 
+          student.assignments.map((assignment: any) => ({
+            ...assignment,
+            student: {
+              id: student.student_id,
+              name: student.name,
+              email: student.email
+            },
+            exercise: {
+              exercise_id: assignment.exercise_id,
+              title: assignment.exercise_title
+            }
+          }))
+        )
+        
+        setLoadedStudents(prev => ({
+          ...prev,
+          [assignKey]: flattenedAssignments
+        }))
+      }
+    } catch (error: any) {
+      console.error('Error fetching students:', error)
+      toast.error('Failed to load student assignments', 'Error')
+    } finally {
+      setLoadingStudents(prev => ({ ...prev, [assignKey]: false }))
+    }
+  }, [loadedStudents, loadingStudents])
+
   const toggleCardCollapse = useCallback((assignKey: string) => {
     setCollapsedCards(prev => {
       const newSet = new Set(prev)
-      if (newSet.has(assignKey)) {
+      const isCurrentlyCollapsed = newSet.has(assignKey)
+      
+      if (isCurrentlyCollapsed) {
         newSet.delete(assignKey)
+        // Fetch students when expanding
+        fetchStudents(assignKey)
       } else {
         newSet.add(assignKey)
       }
       return newSet
     })
-  }, [])
+  }, [fetchStudents])
 
   const handleExerciseClick = useCallback((exerciseId: string) => {
     navigate(`/exercises/edit/${exerciseId}`)
@@ -342,14 +401,15 @@ const ExerciseAssignedListPage: FC = () => {
   // Memoized assignment group cards to prevent unnecessary re-renders
   const assignmentGroupCards = useMemo(() => {
     return assignmentGroups.map((assignmentGroup) => {
-      // Flatten all assignments from all exercises in this group
-      const allAssignments = assignmentGroup.exercises.flatMap(exercise => exercise.assignments)
+      // Get students for this assignment group (if loaded)
+      const students = loadedStudents[assignmentGroup.assign_key] || []
+      const isLoadingStudentsForThisGroup = loadingStudents[assignmentGroup.assign_key] || false
       
-      // Group assignments by due date
-      const assignmentsByDueDate = allAssignments.reduce((groups, assignment) => {
+      // Group students by due date
+      const studentsByDueDate = students.reduce((groups: Record<string, any[]>, student: any) => {
         let dueDateKey = 'No Due Date'
-        if (assignment.due_date) {
-          const dueDate = new Date(assignment.due_date)
+        if (student.due_date) {
+          const dueDate = new Date(student.due_date)
           if (!isNaN(dueDate.getTime())) {
             dueDateKey = dueDate.toLocaleDateString()
           }
@@ -358,9 +418,9 @@ const ExerciseAssignedListPage: FC = () => {
         if (!groups[dueDateKey]) {
           groups[dueDateKey] = []
         }
-        groups[dueDateKey].push(assignment)
+        groups[dueDateKey].push(student)
         return groups
-      }, {} as Record<string, typeof allAssignments>)
+      }, {})
 
       return (
         <div key={assignmentGroup.assign_key} className='col-lg-4 col-md-6 col-sm-12'>
@@ -426,7 +486,19 @@ const ExerciseAssignedListPage: FC = () => {
                 
                 {!collapsedCards.has(assignmentGroup.assign_key) && (
                   <div className='mt-3'>
-                    {Object.entries(assignmentsByDueDate).map(([dueDate, assignments]) => {
+                    {isLoadingStudentsForThisGroup ? (
+                      <div className='text-center py-3'>
+                        <div className='spinner-border spinner-border-sm text-primary' role='status'>
+                          <span className='visually-hidden'>Loading...</span>
+                        </div>
+                        <span className='ms-2 text-muted'>Loading students...</span>
+                      </div>
+                    ) : students.length === 0 ? (
+                      <div className='text-center py-3 text-muted'>
+                        No students assigned
+                      </div>
+                    ) : (
+                      Object.entries(studentsByDueDate).map(([dueDate, assignments]) => {
                       return (
                         <div key={dueDate} className='mb-3'>
                           <div className='d-flex align-items-center mb-2'>
@@ -491,7 +563,8 @@ const ExerciseAssignedListPage: FC = () => {
                           </div>
                         </div>
                       )
-                    })}
+                    })
+                    )}
                   </div>
                 )}
               </div>
@@ -510,21 +583,22 @@ const ExerciseAssignedListPage: FC = () => {
         </div>
       )
     })
-  }, [assignmentGroups, collapsedCards, toggleCardCollapse, handleSubmitForStudent])
+  }, [assignmentGroups, collapsedCards, toggleCardCollapse, handleSubmitForStudent, loadedStudents, loadingStudents, navigate])
 
   // Memoized assignment group list rows for list view
   const assignmentGroupListRows = useMemo(() => {
     return (
       <div className='exercise-list'>
         {assignmentGroups.map((assignmentGroup) => {
-          // Flatten all assignments from all exercises in this group
-          const allAssignments = assignmentGroup.exercises.flatMap(exercise => exercise.assignments)
+          // Get students for this assignment group (if loaded)
+          const students = loadedStudents[assignmentGroup.assign_key] || []
+          const isLoadingStudentsForThisGroup = loadingStudents[assignmentGroup.assign_key] || false
           
-          // Group assignments by due date (same logic as card view)
-          const assignmentsByDueDate = allAssignments.reduce((groups, assignment) => {
+          // Group students by due date (same logic as card view)
+          const studentsByDueDate = students.reduce((groups: Record<string, any[]>, student: any) => {
             let dueDateKey = 'No Due Date'
-            if (assignment.due_date) {
-              const dueDate = new Date(assignment.due_date)
+            if (student.due_date) {
+              const dueDate = new Date(student.due_date)
               if (!isNaN(dueDate.getTime())) {
                 dueDateKey = dueDate.toLocaleDateString()
               }
@@ -533,9 +607,9 @@ const ExerciseAssignedListPage: FC = () => {
             if (!groups[dueDateKey]) {
               groups[dueDateKey] = []
             }
-            groups[dueDateKey].push(assignment)
+            groups[dueDateKey].push(student)
             return groups
-          }, {} as Record<string, typeof allAssignments>)
+          }, {})
 
           return (
             <div key={assignmentGroup.assign_key} className={`exercise-list-item`}>
@@ -607,7 +681,19 @@ const ExerciseAssignedListPage: FC = () => {
                     <h6 className='mb-0'>Students</h6>
                   </div>
                   <div className='assignments-content'>
-                    {Object.entries(assignmentsByDueDate).map(([dueDate, assignments]) => (
+                    {isLoadingStudentsForThisGroup ? (
+                      <div className='text-center py-3'>
+                        <div className='spinner-border spinner-border-sm text-primary' role='status'>
+                          <span className='visually-hidden'>Loading...</span>
+                        </div>
+                        <span className='ms-2 text-muted'>Loading students...</span>
+                      </div>
+                    ) : students.length === 0 ? (
+                      <div className='text-center py-3 text-muted'>
+                        No students assigned
+                      </div>
+                    ) : (
+                      Object.entries(studentsByDueDate).map(([dueDate, assignments]) => (
                       <div key={dueDate} className='assignment-group'>
                         <div className='due-date-header'>
                           <i className='fas fa-calendar text-primary me-2'></i>
@@ -670,7 +756,8 @@ const ExerciseAssignedListPage: FC = () => {
                           ))}
                         </div>
                       </div>
-                    ))}
+                    ))
+                    )}
                   </div>
                 </div>
               )}
@@ -679,7 +766,7 @@ const ExerciseAssignedListPage: FC = () => {
         })}
       </div>
     )
-  }, [assignmentGroups, collapsedCards, toggleCardCollapse, handleSubmitForStudent])
+  }, [assignmentGroups, collapsedCards, toggleCardCollapse, handleSubmitForStudent, loadedStudents, loadingStudents, navigate])
 
   // Show full-page loading only for initial load or errors
   if (isInitialLoad && loading) {
