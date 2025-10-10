@@ -87,14 +87,17 @@ export const renderHtmlSafely = (
     dangerousAttrs.forEach(attr => el.removeAttribute(attr))
   })
   
-  // Limit image size for preview
+  // Limit image size for preview with responsive sizing
   const images = tempDiv.querySelectorAll('img')
   images.forEach(img => {
-    img.style.maxWidth = `${maxImageWidth}px`
+    img.style.maxWidth = `min(100%, ${maxImageWidth}px)`
     img.style.maxHeight = `${maxImageHeight}px`
+    img.style.width = 'auto'
+    img.style.height = 'auto'
     img.style.objectFit = 'contain'
     img.style.marginRight = '5px'
     img.style.verticalAlign = 'middle'
+    img.style.display = 'inline-block'
   })
   
   return tempDiv.innerHTML
@@ -167,14 +170,17 @@ export const getHtmlPreview = (
     dangerousAttrs.forEach(attr => el.removeAttribute(attr))
   })
   
-  // Limit image size for preview
+  // Limit image size for preview with responsive sizing
   const images = tempDiv.querySelectorAll('img')
   images.forEach(img => {
-    img.style.maxWidth = `${maxImageWidth}px`
+    img.style.maxWidth = `min(100%, ${maxImageWidth}px)`
     img.style.maxHeight = `${maxImageHeight}px`
+    img.style.width = 'auto'
+    img.style.height = 'auto'
     img.style.objectFit = 'contain'
     img.style.marginRight = '5px'
     img.style.verticalAlign = 'middle'
+    img.style.display = 'inline-block'
   })
   
   // Get all text nodes and truncate them if needed

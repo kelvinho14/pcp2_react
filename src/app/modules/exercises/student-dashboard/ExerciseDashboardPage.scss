@@ -203,6 +203,14 @@
       border-color: #dc3545 !important;
     }
     
+    &.status-graded {
+      border-color: #3699ff !important;
+    }
+    
+    &.status-submitted_by_teacher {
+      border-color: #17a2b8 !important;
+    }
+    
     // Days remaining color based on actual due date, not status
     .days-value {
       &.overdue {
@@ -457,6 +465,14 @@
       
       &.status-overdue {
         border-left-color: #dc3545 !important;
+      }
+      
+      &.status-graded {
+        border-left-color: #3699ff !important;
+      }
+      
+      &.status-submitted_by_teacher {
+        border-left-color: #17a2b8 !important;
       }
       
               .list-item-header {

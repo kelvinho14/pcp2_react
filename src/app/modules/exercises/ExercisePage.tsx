@@ -4,6 +4,7 @@ import TopBarProgress from 'react-topbar-progress-indicator'
 import {getCSSVariableValue} from '../../../_metronic/assets/ts/_utils'
 import {WithChildren} from '../../../_metronic/helpers'
 import StudentRouteGuard from './StudentRouteGuard'
+import NonStudentRouteGuard from '../token/NonStudentRouteGuard'
 
 const ExerciseFormPage = lazy(() => import('./ExerciseFormPage'))
 const ExerciseListPage = lazy(() => import('./exercise-list/ExerciseListPage'))
@@ -11,29 +12,38 @@ const ExerciseAssignedListPage = lazy(() => import('./exercise-assigned-list/Exe
 const ExerciseDashboardPage = lazy(() => import('./student-dashboard/ExerciseDashboardPage'))
 const ExerciseAttemptPage = lazy(() => import('./exercise-attempt/ExerciseAttemptPage'))
 const ExerciseProgressPage = lazy(() => import('./exercise-progress/ExerciseProgressPage'))
+const ExerciseMyResultPage = lazy(() => import('./student-result/ExerciseMyResultPage'))
 
 const ExercisePage: FC = () => {
   return (
     <Routes>
       <Route path='create' element={
-        <SuspensedView>
-          <ExerciseFormPage />
-        </SuspensedView>
+        <NonStudentRouteGuard>
+          <SuspensedView>
+            <ExerciseFormPage />
+          </SuspensedView>
+        </NonStudentRouteGuard>
       } />
       <Route path='edit/:exerciseId' element={
-        <SuspensedView>
-          <ExerciseFormPage />
-        </SuspensedView>
+        <NonStudentRouteGuard>
+          <SuspensedView>
+            <ExerciseFormPage />
+          </SuspensedView>
+        </NonStudentRouteGuard>
       } />
       <Route path='list' element={
-        <SuspensedView>
-          <ExerciseListPage />
-        </SuspensedView>
+        <NonStudentRouteGuard>
+          <SuspensedView>
+            <ExerciseListPage />
+          </SuspensedView>
+        </NonStudentRouteGuard>
       } />
       <Route path='assignedlist' element={
-        <SuspensedView>
-          <ExerciseAssignedListPage />
-        </SuspensedView>
+        <NonStudentRouteGuard>
+          <SuspensedView>
+            <ExerciseAssignedListPage />
+          </SuspensedView>
+        </NonStudentRouteGuard>
       } />
       <Route path='dashboard' element={
         <StudentRouteGuard>
@@ -47,10 +57,17 @@ const ExercisePage: FC = () => {
           <ExerciseAttemptPage />
         </SuspensedView>
       } />
-      <Route path='progress/:exerciseId' element={
+      <Route path='myresult/:assignmentId' element={
         <SuspensedView>
-          <ExerciseProgressPage />
+          <ExerciseMyResultPage />
         </SuspensedView>
+      } />
+      <Route path='progress/:exerciseId' element={
+        <NonStudentRouteGuard>
+          <SuspensedView>
+            <ExerciseProgressPage />
+          </SuspensedView>
+        </NonStudentRouteGuard>
       } />
       <Route path='*' element={<Navigate to='list' />} />
     </Routes>

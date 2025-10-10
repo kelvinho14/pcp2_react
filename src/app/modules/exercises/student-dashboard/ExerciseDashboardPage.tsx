@@ -97,7 +97,9 @@ const ExerciseDashboardPage: FC = () => {
       case '0': return 'not_started'
       case '1': return 'in_progress'
       case '2': return 'completed'
+      case '3': return 'graded'
       case '4': return 'overdue'
+      case '5': return 'submitted_by_teacher'
       default: return 'not_started'
     }
   }
@@ -108,7 +110,9 @@ const ExerciseDashboardPage: FC = () => {
       case 'completed': return ASSIGNMENT_STATUS.SUBMITTED
       case 'in_progress': return ASSIGNMENT_STATUS.IN_PROGRESS
       case 'not_started': return ASSIGNMENT_STATUS.ASSIGNED
+      case 'graded': return ASSIGNMENT_STATUS.GRADED
       case 'overdue': return ASSIGNMENT_STATUS.OVERDUE
+      case 'submitted_by_teacher': return ASSIGNMENT_STATUS.SUBMITTEDBYTEACHER
       default: return ASSIGNMENT_STATUS.ASSIGNED
     }
   }
@@ -119,7 +123,9 @@ const ExerciseDashboardPage: FC = () => {
       case 'completed': return 'success'
       case 'in_progress': return 'warning'
       case 'not_started': return 'dark'
+      case 'graded': return 'primary'
       case 'overdue': return 'danger'
+      case 'submitted_by_teacher': return 'info'
       default: return 'dark'
     }
   }
@@ -129,7 +135,9 @@ const ExerciseDashboardPage: FC = () => {
       case 'completed': return 'fas fa-check-circle'
       case 'in_progress': return 'fas fa-clock'
       case 'not_started': return 'fas fa-hourglass-start'
+      case 'graded': return 'fas fa-star'
       case 'overdue': return 'fas fa-exclamation-triangle'
+      case 'submitted_by_teacher': return 'fas fa-user-tie'
       default: return 'fas fa-circle'
     }
   }
@@ -139,7 +147,9 @@ const ExerciseDashboardPage: FC = () => {
       case 'completed': return 'badge-light-success'
       case 'in_progress': return 'badge-light-warning'
       case 'not_started': return 'badge-light-secondary'
+      case 'graded': return 'badge-light-primary'
       case 'overdue': return 'badge-light-danger'
+      case 'submitted_by_teacher': return 'badge-light-info'
       default: return 'badge-light-secondary'
     }
   }
@@ -424,19 +434,31 @@ const ExerciseDashboardPage: FC = () => {
               
               {/* Action Buttons */}
               <div className='action-buttons'>
-                <button 
-                  className='btn btn-primary btn-sm'
-                  onClick={() => {
-                    if (exercise.assignments[0]?.message_for_student) {
-                      handleStartExercise(exercise)
-                    } else {
-                      navigate(`/exercises/attempt/${exercise.assignments[0]?.assignment_id}`)
-                    }
-                  }}
-                >
-                  <i className='fas fa-play me-1'></i>
-                  Start
-                </button>
+                {(studentStatus === 'not_started' || studentStatus === 'in_progress') ? (
+                  <button 
+                    className='btn btn-primary btn-sm'
+                    onClick={() => {
+                      if (exercise.assignments[0]?.message_for_student) {
+                        handleStartExercise(exercise)
+                      } else {
+                        navigate(`/exercises/attempt/${exercise.assignments[0]?.assignment_id}`)
+                      }
+                    }}
+                  >
+                    <i className='fas fa-play me-1'></i>
+                    Start
+                  </button>
+                ) : (
+                  <button 
+                    className='btn btn-info btn-sm'
+                    onClick={() => {
+                      navigate(`/exercises/myresult/${exercise.assignments[0]?.assignment_id}`)
+                    }}
+                  >
+                    <i className='fas fa-eye me-1'></i>
+                    View Results
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -514,19 +536,31 @@ const ExerciseDashboardPage: FC = () => {
               </span>
             </div>
             <div className='item-actions'>
-              <button 
-                className='btn btn-sm btn-primary'
-                onClick={() => {
-                  if (exercise.assignments[0]?.message_for_student) {
-                    handleStartExercise(exercise)
-                  } else {
-                    navigate(`/exercises/attempt/${exercise.assignments[0]?.assignment_id}`)
-                  }
-                }}
-              >
-                <i className='fas fa-play'></i>
-                Start
-              </button>
+              {(studentStatus === 'not_started' || studentStatus === 'in_progress') ? (
+                <button 
+                  className='btn btn-sm btn-primary'
+                  onClick={() => {
+                    if (exercise.assignments[0]?.message_for_student) {
+                      handleStartExercise(exercise)
+                    } else {
+                      navigate(`/exercises/attempt/${exercise.assignments[0]?.assignment_id}`)
+                    }
+                  }}
+                >
+                  <i className='fas fa-play'></i>
+                  Start
+                </button>
+              ) : (
+                <button 
+                  className='btn btn-sm btn-info'
+                  onClick={() => {
+                    navigate(`/exercises/myresult/${exercise.assignments[0]?.assignment_id}`)
+                  }}
+                >
+                  <i className='fas fa-eye'></i>
+                  View Results
+                </button>
+              )}
             </div>
           </div>
         </div>
