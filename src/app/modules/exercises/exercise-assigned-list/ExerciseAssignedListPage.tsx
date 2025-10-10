@@ -10,6 +10,7 @@ import {ASSIGNMENT_STATUS, getStatusLabel, getStatusColor, AssignmentStatus} fro
 import {useNavigate} from 'react-router-dom'
 import {toast} from '../../../../_metronic/helpers/toast'
 import {ConfirmationDialog} from '../../../../_metronic/helpers/ConfirmationDialog'
+import {formatApiTimestamp} from '../../../../_metronic/helpers/dateUtils'
 import './ExerciseAssignedListPage.scss'
 
 // Completely isolated filters component that doesn't re-render with parent
@@ -162,7 +163,8 @@ const ExerciseAssignedListPage: FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
   const { 
-    exercises, 
+    assignmentGroups,
+    exercises, // Keep for backward compatibility
     summary, 
     pagination, 
     loading, 
@@ -240,13 +242,13 @@ const ExerciseAssignedListPage: FC = () => {
     }
   }
 
-  const toggleCardCollapse = useCallback((exerciseId: string) => {
+  const toggleCardCollapse = useCallback((assignKey: string) => {
     setCollapsedCards(prev => {
       const newSet = new Set(prev)
-      if (newSet.has(exerciseId)) {
-        newSet.delete(exerciseId)
+      if (newSet.has(assignKey)) {
+        newSet.delete(assignKey)
       } else {
-        newSet.add(exerciseId)
+        newSet.add(assignKey)
       }
       return newSet
     })
@@ -328,20 +330,23 @@ const ExerciseAssignedListPage: FC = () => {
     setIsInitialLoad(false)
   }, [dispatch]) // Only run on mount
 
-  // Set cards to collapsed by default when exercises are first loaded
+  // Set cards to collapsed by default when assignment groups are first loaded
   useEffect(() => {
-    if (exercises.length > 0 && !hasInitializedCollapse.current) {
+    if (assignmentGroups.length > 0 && !hasInitializedCollapse.current) {
       // Set all cards to collapsed by default on initial load
-      setCollapsedCards(new Set(exercises.map(exercise => exercise.id)))
+      setCollapsedCards(new Set(assignmentGroups.map(group => group.assign_key)))
       hasInitializedCollapse.current = true
     }
-  }, [exercises.length])
+  }, [assignmentGroups.length])
 
-  // Memoized exercise cards to prevent unnecessary re-renders
-  const exerciseCards = useMemo(() => {
-    return exercises.map((exercise) => {
+  // Memoized assignment group cards to prevent unnecessary re-renders
+  const assignmentGroupCards = useMemo(() => {
+    return assignmentGroups.map((assignmentGroup) => {
+      // Flatten all assignments from all exercises in this group
+      const allAssignments = assignmentGroup.exercises.flatMap(exercise => exercise.assignments)
+      
       // Group assignments by due date
-      const assignmentsByDueDate = exercise.assignments.reduce((groups, assignment) => {
+      const assignmentsByDueDate = allAssignments.reduce((groups, assignment) => {
         let dueDateKey = 'No Due Date'
         if (assignment.due_date) {
           const dueDate = new Date(assignment.due_date)
@@ -355,23 +360,20 @@ const ExerciseAssignedListPage: FC = () => {
         }
         groups[dueDateKey].push(assignment)
         return groups
-      }, {} as Record<string, typeof exercise.assignments>)
+      }, {} as Record<string, typeof allAssignments>)
 
       return (
-        <div key={exercise.id} className='col-lg-4 col-md-6 col-sm-12'>
+        <div key={assignmentGroup.assign_key} className='col-lg-4 col-md-6 col-sm-12'>
           <div className='card h-100 shadow-sm border-0'>
             <div className='card-header border-0 pt-6'>
               <div className='card-title'>
                 <div className='d-flex align-items-center'>
                   <div>
                     <h5 
-                      className='mb-1 cursor-pointer text-hover-primary exercise-title-ellipsis'
-                      onClick={() => navigate(`/exercises/progress/${exercise.id}`)}
-                      style={{ cursor: 'pointer' }}
+                      className='mb-1 text-hover-primary exercise-title-ellipsis'
                     >
-                      {exercise.title}
+                      {assignmentGroup.exercises[0]?.title || 'Assignment Group'}
                     </h5>
-                    <span className='badge badge-light-primary fs-7'>{exercise.question_no} Question{exercise.question_no !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
               </div>
@@ -380,15 +382,15 @@ const ExerciseAssignedListPage: FC = () => {
             <div className='card-body pt-0'>
               <div className='mb-4'>
                 <div className='d-flex justify-content-between align-items-center mb-2'>
-                  <span className='text-muted fs-7'>Progress</span>
-                  <span className='fw-bold fs-6'>{exercise.progress}%</span>
+                  <span className='text-muted fs-7'>Assigned</span>
+                  <span className='fw-bold fs-6'>{formatApiTimestamp(assignmentGroup.assigned_at, { format: 'dateOnly' })}</span>
                 </div>
-                <div className='progress h-8px'>
-                  <div 
-                    className={`progress-bar bg-${getProgressBarColor(exercise.progress)}`}
-                    style={{width: `${exercise.progress}%`}}
-                  ></div>
-                </div>
+                {assignmentGroup.due_date && (
+                  <div className='d-flex justify-content-between align-items-center mb-2'>
+                    <span className='text-muted fs-7'>Due Date</span>
+                    <span className='fw-bold fs-6'>{formatApiTimestamp(assignmentGroup.due_date, { format: 'custom' })}</span>
+                  </div>
+                )}
               </div>
               
               <div className='row g-3 mb-4'>
@@ -397,7 +399,7 @@ const ExerciseAssignedListPage: FC = () => {
                     <i className='fas fa-user-graduate text-muted me-2'></i>
                     <div>
                       <div className='text-muted fs-7'>Students</div>
-                      <div className='fw-bold'>{exercise.student_stats.total}</div>
+                      <div className='fw-bold'>{assignmentGroup.student_stats.total}</div>
                     </div>
                   </div>
                 </div>
@@ -405,7 +407,7 @@ const ExerciseAssignedListPage: FC = () => {
                   <div className='d-flex align-items-center'>
                     <div>
                       <div className='text-muted fs-7'>Completed</div>
-                      <div className='fw-bold'>{exercise.student_stats.completed}</div>
+                      <div className='fw-bold'>{assignmentGroup.student_stats.completed}</div>
                     </div>
                   </div>
                 </div>
@@ -415,14 +417,14 @@ const ExerciseAssignedListPage: FC = () => {
               <div className='mb-4 border rounded p-3'>
                 <div 
                   className='d-flex align-items-center justify-content-between cursor-pointer'
-                  onClick={() => toggleCardCollapse(exercise.id)}
+                  onClick={() => toggleCardCollapse(assignmentGroup.assign_key)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <h6 className='fw-bold mb-0'>Assignments by Due Date</h6>
-                  <i className={`fas fa-chevron-${collapsedCards.has(exercise.id) ? 'down' : 'up'} text-muted`}></i>
+                  <h6 className='fw-bold mb-0'>Students</h6>
+                  <i className={`fas fa-chevron-${collapsedCards.has(assignmentGroup.assign_key) ? 'down' : 'up'} text-muted`}></i>
                 </div>
                 
-                {!collapsedCards.has(exercise.id) && (
+                {!collapsedCards.has(assignmentGroup.assign_key) && (
                   <div className='mt-3'>
                     {Object.entries(assignmentsByDueDate).map(([dueDate, assignments]) => {
                       return (
@@ -495,7 +497,10 @@ const ExerciseAssignedListPage: FC = () => {
               </div>
               
               <div className='d-flex align-items-center justify-content-end'>
-                <button className='btn btn-sm btn-light-primary' onClick={() => navigate(`/exercises/progress/${exercise.id}`)}>
+                <button 
+                  className='btn btn-sm btn-light-primary' 
+                  onClick={() => navigate(`/exercises/progress/${assignmentGroup.exercises[0]?.exercise_id}`)}
+                >
                   <i className='fas fa-eye me-1'></i>
                   View Details
                 </button>
@@ -505,15 +510,18 @@ const ExerciseAssignedListPage: FC = () => {
         </div>
       )
     })
-  }, [exercises, collapsedCards, toggleCardCollapse, handleExerciseClick, handleSubmitForStudent])
+  }, [assignmentGroups, collapsedCards, toggleCardCollapse, handleSubmitForStudent])
 
-  // Memoized exercise list rows for list view
-  const exerciseListRows = useMemo(() => {
+  // Memoized assignment group list rows for list view
+  const assignmentGroupListRows = useMemo(() => {
     return (
       <div className='exercise-list'>
-        {exercises.map((exercise) => {
+        {assignmentGroups.map((assignmentGroup) => {
+          // Flatten all assignments from all exercises in this group
+          const allAssignments = assignmentGroup.exercises.flatMap(exercise => exercise.assignments)
+          
           // Group assignments by due date (same logic as card view)
-          const assignmentsByDueDate = exercise.assignments.reduce((groups, assignment) => {
+          const assignmentsByDueDate = allAssignments.reduce((groups, assignment) => {
             let dueDateKey = 'No Due Date'
             if (assignment.due_date) {
               const dueDate = new Date(assignment.due_date)
@@ -527,57 +535,55 @@ const ExerciseAssignedListPage: FC = () => {
             }
             groups[dueDateKey].push(assignment)
             return groups
-          }, {} as Record<string, typeof exercise.assignments>)
+          }, {} as Record<string, typeof allAssignments>)
 
           return (
-            <div key={exercise.id} className={`exercise-list-item status-${exercise.status}`}>
-              <div className='list-item-header' onClick={() => toggleCardCollapse(exercise.id)} style={{cursor: 'pointer', flex: 1}}>
+            <div key={assignmentGroup.assign_key} className={`exercise-list-item`}>
+              <div className='list-item-header' onClick={() => toggleCardCollapse(assignmentGroup.assign_key)} style={{cursor: 'pointer', flex: 1}}>
                 <div className='item-content'>
                   <div className='item-title'>
                     <div className='d-flex align-items-center'>
                       <div>
                         <h6 
-                          className='mb-1 cursor-pointer text-hover-primary exercise-title-ellipsis'
-                          onClick={e => { e.stopPropagation(); navigate(`/exercises/progress/${exercise.id}`); }}
-                          style={{ cursor: 'pointer' }}
+                          className='mb-1 text-hover-primary exercise-title-ellipsis'
                         >
-                          {exercise.title}
+                          {assignmentGroup.exercises[0]?.title || 'Assignment Group'}
                         </h6>
-                        <span className='badge badge-light-primary fs-7'>{exercise.question_no} Question{exercise.question_no !== 1 ? 's' : ''}</span>
                       </div>
                     </div>
                   </div>
                   <div className='item-progress'>
                     <div className='progress-info'>
-                      <span className='progress-text'>{exercise.progress}% Complete</span>
-                      <div className='mini-progress'>
-                        <div 
-                          className={`progress-fill bg-${getProgressBarColor(exercise.progress)}`}
-                          style={{width: `${exercise.progress}%`}}
-                        ></div>
-                      </div>
+                      <span className='progress-text'>
+                        Assigned: {formatApiTimestamp(assignmentGroup.assigned_at, { format: 'dateOnly' })}
+                      </span>
+                      {assignmentGroup.due_date && (
+                        <span className='progress-text'>
+                          Due: {formatApiTimestamp(assignmentGroup.due_date, { format: 'custom' })}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
                 
                 <div className='item-stats'>
                   <div className='stat-item'>
-                    <div className='stat-number'>{exercise.student_stats.total}</div>
+                    <div className='stat-number'>{assignmentGroup.student_stats.total}</div>
                     <div className='stat-label'>Students</div>
                   </div>
                   <div className='stat-item'>
-                    <div className='stat-number text-success'>{exercise.student_stats.completed}</div>
+                    <div className='stat-number text-success'>{assignmentGroup.student_stats.completed}</div>
                     <div className='stat-label'>Completed</div>
                   </div>
                   <div className='stat-item'>
-                    <div className='stat-number text-warning'>{exercise.student_stats.in_progress}</div>
+                    <div className='stat-number text-warning'>{assignmentGroup.student_stats.in_progress}</div>
                     <div className='stat-label'>
-                      {exercise.student_stats.total > 0 && exercise.student_stats.in_progress > 0
+                      {assignmentGroup.student_stats.total > 0 && assignmentGroup.student_stats.in_progress > 0
                         ? 'In Progress'
-                        : exercise.student_stats.total > 0 && exercise.student_stats.completed === 0 && exercise.student_stats.in_progress === 0
+                        : assignmentGroup.student_stats.total > 0 && assignmentGroup.student_stats.completed === 0 && assignmentGroup.student_stats.in_progress === 0
                           ? 'In Progress'
-                          : exercise.student_stats.total > 0 && exercise.student_stats.completed > 0
-                            ? `${Math.round((exercise.student_stats.in_progress / exercise.student_stats.total) * 100)}%`
+                          : assignmentGroup.student_stats.total > 0 && assignmentGroup.student_stats.completed > 0
+                            ? `${Math.round((assignmentGroup.student_stats.in_progress / assignmentGroup.student_stats.total) * 100)}%`
                             : '0%'}
                     </div>
                   </div>
@@ -586,7 +592,7 @@ const ExerciseAssignedListPage: FC = () => {
                 <div className='item-actions'>
                   <button 
                     className='btn btn-sm btn-light-primary'
-                    onClick={e => { e.stopPropagation(); navigate(`/exercises/progress/${exercise.id}`); }}
+                    onClick={e => { e.stopPropagation(); navigate(`/exercises/progress/${assignmentGroup.exercises[0]?.exercise_id}`); }}
                   >
                     <i className='fas fa-eye me-1'></i>
                     View Details
@@ -595,10 +601,10 @@ const ExerciseAssignedListPage: FC = () => {
               </div>
               
               {/* Assignments Section */}
-              {!collapsedCards.has(exercise.id) && (
+              {!collapsedCards.has(assignmentGroup.assign_key) && (
                 <div className='list-item-assignments'>
                   <div className='assignments-header'>
-                    <h6 className='mb-0'>Assignments by Due Date</h6>
+                    <h6 className='mb-0'>Students</h6>
                   </div>
                   <div className='assignments-content'>
                     {Object.entries(assignmentsByDueDate).map(([dueDate, assignments]) => (
@@ -673,7 +679,7 @@ const ExerciseAssignedListPage: FC = () => {
         })}
       </div>
     )
-  }, [exercises, collapsedCards, toggleCardCollapse, handleExerciseClick, handleSubmitForStudent])
+  }, [assignmentGroups, collapsedCards, toggleCardCollapse, handleSubmitForStudent])
 
   // Show full-page loading only for initial load or errors
   if (isInitialLoad && loading) {
@@ -907,7 +913,7 @@ const ExerciseAssignedListPage: FC = () => {
               </div>
             </div>
           )}
-          {exerciseCards}
+          {assignmentGroupCards}
         </div>
       ) : (
         <div className='mt-6 position-relative'>
@@ -929,7 +935,7 @@ const ExerciseAssignedListPage: FC = () => {
               </div>
             </div>
           )}
-          {exerciseListRows}
+          {assignmentGroupListRows}
         </div>
       )}
 
@@ -993,11 +999,11 @@ const ExerciseAssignedListPage: FC = () => {
       )}
 
       {/* No results message */}
-      {exercises.length === 0 && !loading && !isInitialLoad && (
+      {assignmentGroups.length === 0 && !loading && !isInitialLoad && (
         <div className='card mt-8'>
           <div className='card-body text-center py-10'>
             <i className='fas fa-search fs-3x text-muted mb-4'></i>
-            <h4 className='text-muted mb-2'>No exercises found</h4>
+            <h4 className='text-muted mb-2'>No assignments found</h4>
             <p className='text-muted'>Try adjusting your filters or search terms.</p>
           </div>
         </div>

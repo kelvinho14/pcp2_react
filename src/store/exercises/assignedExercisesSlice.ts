@@ -12,20 +12,48 @@ export interface Assignment {
     name: string
     email: string
   }
-  due_date: string
-  message_for_student: string
+  due_date: string | null
+  message_for_student: string | null
   status: string
   assigned_at: string
-  assigned_by: {
-    id: string
-    name: string
-    email: string
-  }
   progress: number
   answered_questions: number
   total_questions: number
 }
 
+export interface AssignmentGroupExercise {
+  exercise_id: string
+  title: string
+  question_count: number
+  progress: number
+  assignments: Assignment[]
+}
+
+export interface AssignmentGroup {
+  assign_key: string
+  total_assignments: number
+  exercise_count: number
+  student_count: number
+  assigned_at: string
+  due_date: string | null
+  assigned_by: {
+    id: string
+    name: string
+    email: string
+  }
+  student_stats: {
+    total: number
+    completed: number
+    in_progress: number
+    not_started: number
+    submitted: number
+    overdue: number
+    submitted_by_teacher: number
+  }
+  exercises: AssignmentGroupExercise[]
+}
+
+// Keep the old interface for backward compatibility
 export interface AssignedExercise {
   id: string
   title: string
@@ -65,11 +93,11 @@ export interface AssignedExercisesResponse {
       completed: number
       in_progress: number
       not_started: number
-      overdue: number
       submitted: number
+      overdue: number
       submitted_by_teacher: number
     }
-    exercises: AssignedExercise[]
+    assignment_groups: AssignmentGroup[]
     pagination: {
       current_page: number
       per_page: number
@@ -80,14 +108,15 @@ export interface AssignedExercisesResponse {
 }
 
 interface AssignedExercisesState {
-  exercises: AssignedExercise[]
+  assignmentGroups: AssignmentGroup[]
+  exercises: AssignedExercise[] // Keep for backward compatibility
   summary: {
     total: number
     completed: number
     in_progress: number
     not_started: number
-    overdue: number
     submitted: number
+    overdue: number
     submitted_by_teacher: number
   }
   pagination: {
@@ -111,14 +140,15 @@ interface AssignedExercisesState {
 }
 
 const initialState: AssignedExercisesState = {
-  exercises: [],
+  assignmentGroups: [],
+  exercises: [], // Keep for backward compatibility
   summary: {
     total: 0,
     completed: 0,
     in_progress: 0,
     not_started: 0,
-    overdue: 0,
     submitted: 0,
+    overdue: 0,
     submitted_by_teacher: 0
   },
   pagination: {
@@ -280,7 +310,7 @@ const assignedExercisesSlice = createSlice({
       .addCase(fetchAssignedExercises.fulfilled, (state, action) => {
         state.loading = false
         state.loadingFilters = false
-        state.exercises = action.payload.exercises
+        state.assignmentGroups = action.payload.assignment_groups || []
         state.summary = action.payload.summary
         state.pagination = action.payload.pagination
         state.lastFetchTime = Date.now()
@@ -289,7 +319,7 @@ const assignedExercisesSlice = createSlice({
         if (action.payload._cacheKey) {
           state.cache[action.payload._cacheKey] = {
             data: {
-              exercises: action.payload.exercises,
+              assignment_groups: action.payload.assignment_groups,
               summary: action.payload.summary,
               pagination: action.payload.pagination
             },
@@ -308,14 +338,19 @@ const assignedExercisesSlice = createSlice({
       })
       .addCase(deleteAssignment.fulfilled, (state, action) => {
         state.loading = false
-        // Remove the deleted assignment from all exercises
-        state.exercises = state.exercises.map(exercise => ({
-          ...exercise,
-          assignments: exercise.assignments.filter(assignment => assignment.assignment_id !== action.payload)
+        // Remove the deleted assignment from all assignment groups
+        state.assignmentGroups = state.assignmentGroups.map(group => ({
+          ...group,
+          exercises: group.exercises.map(exercise => ({
+            ...exercise,
+            assignments: exercise.assignments.filter(assignment => assignment.assignment_id !== action.payload)
+          }))
         }))
         
         // Update summary stats by recalculating from remaining assignments
-        const allAssignments = state.exercises.flatMap(exercise => exercise.assignments)
+        const allAssignments = state.assignmentGroups.flatMap(group => 
+          group.exercises.flatMap(exercise => exercise.assignments)
+        )
         state.summary = {
           total: allAssignments.length,
           completed: allAssignments.filter(a => parseInt(a.status, 10) === 2).length, // SUBMITTED
