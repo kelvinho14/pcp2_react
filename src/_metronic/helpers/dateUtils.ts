@@ -52,7 +52,7 @@ export const resetDateFormatConfig = () => {
 export const formatApiTimestamp = (
   apiTimestamp: string | null | undefined,
   options: {
-    format?: 'date' | 'time' | 'datetime' | 'relative' | 'full' | 'custom'
+    format?: 'date' | 'time' | 'datetime' | 'relative' | 'full' | 'custom' | 'dateOnly'
     showTimezone?: boolean
     locale?: string
     hour12?: boolean
@@ -125,6 +125,11 @@ export const formatApiTimestamp = (
           return date.toLocaleString(locale)
         }
         return formatCustomDate(date, customFormat)
+
+      case 'dateOnly':
+        // Use config format but only show the date part (YYYY-MM-DD)
+        const dateOnlyFormat = customFormat?.split(' ')[0] || 'YYYY-MM-DD'
+        return formatCustomDate(date, dateOnlyFormat)
 
       case 'full':
         const fullOptions: Intl.DateTimeFormatOptions = {

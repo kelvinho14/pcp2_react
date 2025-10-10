@@ -514,8 +514,8 @@ const ExerciseAttemptPage: FC = () => {
       await dispatch(submitExercise(assignmentId)).unwrap()
       toast.success('Exercise submitted successfully!', 'Success')
       setHasUnsavedChanges(false)
-      // Navigate with refresh parameter to force cache clear
-      navigate('/exercises/dashboard?refresh=true')
+      // Navigate to the result page
+      navigate(`/exercises/myresult/${assignmentId}`)
     } catch (err) {
       console.error('Error submitting exercise:', err)
       toast.error('Failed to submit exercise. Please try again.', 'Error')
