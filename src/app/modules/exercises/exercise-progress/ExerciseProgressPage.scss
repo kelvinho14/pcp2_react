@@ -135,10 +135,62 @@
 
     .table-sm {
       font-size: 0.875rem;
+      table-layout: fixed;
+      width: 100%;
       
       th, td {
         padding: 0.5rem;
         vertical-align: top;
+      }
+      
+      // Set consistent column widths for alignment
+      th:nth-child(1), td:nth-child(1) { // Student column
+        width: 25%;
+        min-width: 120px;
+      }
+      
+      th:nth-child(2), td:nth-child(2) { // Answer column
+        width: 15%;
+        min-width: 80px;
+      }
+      
+      th:nth-child(3), td:nth-child(3) { // Score column
+        width: 40%;
+        min-width: 200px;
+        max-width: 400px;
+      }
+      
+      th:nth-child(4), td:nth-child(4) { // Status column (hidden for MC)
+        width: 10%;
+        min-width: 80px;
+      }
+      
+      th:nth-child(5), td:nth-child(5) { // Answered column
+        width: 10%;
+        min-width: 120px;
+        text-align: right;
+        
+        span {
+          color: #000000 !important;
+        }
+      }
+    }
+
+    // Fix for tag display in score column
+    .tag-scores-container {
+      min-width: 200px;
+      max-width: 400px;
+      white-space: normal;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      
+      .badge {
+        white-space: normal;
+        word-wrap: break-word;
+        max-width: 100%;
+        display: inline-block;
+        margin: 2px;
+        overflow-wrap: break-word;
       }
     }
   }
@@ -460,11 +512,25 @@
   &.connected {
     color: #28a745;
     border-color: #28a745;
+    animation: fadeInOut 2s ease-in-out infinite;
+    
+    i {
+      color: #28a745;
+    }
   }
   
   &.disconnected {
     color: #dc3545;
     border-color: #dc3545;
+  }
+}
+
+@keyframes fadeInOut {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
   }
 }
 

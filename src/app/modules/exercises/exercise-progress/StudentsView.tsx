@@ -1,6 +1,6 @@
 import React, { FC } from 'react';
 import { roundNumber } from '../../../../_metronic/helpers/mathUtils';
-import { getCompletedQuestionsCount, getTotalQuestionsCount } from './utils';
+import { getCompletedQuestionsCount, getTotalQuestionsCount, getStudentScoreString } from './utils';
 import { StudentProgress } from './types';
 
 interface StudentsViewProps {
@@ -13,9 +13,8 @@ interface StudentsViewProps {
   getProgressPercentage: (student: StudentProgress) => number;
   getStatusColor: (status: number) => string;
   formatDate: (dateString?: string) => string;
-  selectedStudent: string | null;
-  setSelectedStudent: (id: string | null) => void;
   hasStudentChange?: (studentId: string) => boolean;
+  totalQuestions?: number;
 }
 
 const StudentsView: FC<StudentsViewProps> = ({
@@ -28,9 +27,8 @@ const StudentsView: FC<StudentsViewProps> = ({
   getProgressPercentage,
   getStatusColor,
   formatDate,
-  selectedStudent,
-  setSelectedStudent,
   hasStudentChange,
+  totalQuestions,
 }) => {
   // Get progress bar color based on percentage (not status)
   const getProgressBarColor = (progress: number) => {
@@ -60,7 +58,6 @@ const StudentsView: FC<StudentsViewProps> = ({
             <th className='w-100px'>Score</th>
             <th className='w-150px'>Assigned</th>
             <th className='w-150px'>Due Date</th>
-            <th className='w-100px'>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -94,30 +91,17 @@ const StudentsView: FC<StudentsViewProps> = ({
                   <span className='fw-bold fs-7'>{roundNumber(getProgressPercentage(student))}%</span>
                 </div>
                 <div className='text-muted fs-7'>
-                  {getCompletedQuestionsCount(student.question_progress)} of {getTotalQuestionsCount(student.question_progress)} questions
+                  {getCompletedQuestionsCount(student.question_progress)} of {totalQuestions || getTotalQuestionsCount(student.question_progress)} questions
                 </div>
               </td>
               <td>
-                {student.total_score !== undefined ? (
-                  <span className='fw-bold fs-6 text-success'>{student.total_score}/{student.max_total_score}</span>
-                ) : (
-                  <span className='text-muted fs-7'>N/A</span>
-                )}
+                <span className='fw-bold fs-6 text-success'>{getStudentScoreString(student.question_progress)}</span>
               </td>
               <td>
                 <span className='text-muted fs-7'>{formatDate(student.assigned_date)}</span>
               </td>
               <td>
                 <span className='text-muted fs-7'>{student.due_date ? formatDate(student.due_date) : 'No due date'}</span>
-              </td>
-              <td>
-                <button
-                  className='btn btn-sm btn-light-primary'
-                  onClick={() => setSelectedStudent(selectedStudent === student.student_id ? null : student.student_id)}
-                >
-                  <i className='fas fa-eye me-1'></i>
-                  {selectedStudent === student.student_id ? 'Hide' : 'View'} Details
-                </button>
               </td>
             </tr>
           );

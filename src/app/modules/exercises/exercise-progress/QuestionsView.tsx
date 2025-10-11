@@ -144,7 +144,7 @@ const QuestionsView: FC<QuestionsViewProps> = ({
     else if (totalScore > 0) totalColor = 'text-warning';
 
     return (
-      <div className='d-flex flex-wrap gap-2 align-items-center'>
+      <div className='tag-scores-container d-flex flex-wrap gap-2 align-items-center'>
         {tagBadges}
         <span className={`fw-bold fs-7 ms-4 ${totalColor}`}>
           <i className='fas fa-calculator me-1'></i>Total: {totalScore}/{totalMax}
@@ -236,10 +236,10 @@ const QuestionsView: FC<QuestionsViewProps> = ({
               </div>
               <div className='mb-4'>
                 <strong>Correct Answer:</strong>
-                <div className='mt-2 p-3 bg-light-success rounded'>
+                <div className='mt-2 p-3 rounded'>
                   {question.question_type === 'mc' && question.correct_option ? (
                     <>
-                      <span className='badge badge-light-primary me-2'>Option {question.correct_option}</span>
+                      <span className='badge bg-light-success me-2'>Option {question.correct_option}</span>
                       {/* If correct_answer contains an image, make it clickable */}
                       {getImageSrc(String(question.correct_answer)) ? (
                         <img
@@ -308,8 +308,7 @@ const QuestionsView: FC<QuestionsViewProps> = ({
                         <th>Student</th>
                         <th>Answer</th>
                         <th>Score</th>
-                        {/* Only show Status column for LQ */}
-                        {!isMC && <th>Status</th>}
+                        <th className={isMC ? 'invisible' : ''}>Status</th>
                         <th>Answered</th>
                       </tr>
                     </thead>
@@ -334,8 +333,8 @@ const QuestionsView: FC<QuestionsViewProps> = ({
                                 <span className='text-muted fs-7'>—</span>
                               ) : isMC ? (
                                 answer.student_option ? (
-                                  <div className={`p-2 rounded ${answer.student_option === question.correct_option ? 'bg-light-success' : 'bg-light-danger'}`}>
-                                    <span className='badge badge-light-primary me-2'>{answer.student_option}</span>
+                                  <div className={`p-2 rounded`}>
+                                    <span className={`badge  me-2 ${answer.student_option === question.correct_option ? 'bg-light-success' : 'bg-light-danger'}`}>{answer.student_option}</span>
                                   </div>
                                 ) : (
                                   <span className='text-muted fs-7'>No answer</span>
@@ -388,12 +387,9 @@ const QuestionsView: FC<QuestionsViewProps> = ({
                               <span className='text-muted fs-7'>N/A</span>
                             )}
                           </td>
-                          {/* Only show Status column for LQ */}
-                          {!isMC && (
-                            <td>
-                              {getQuestionStatusBadge(answer.status)}
-                            </td>
-                          )}
+                          <td className={isMC ? 'invisible' : ''}>
+                            {getQuestionStatusBadge(answer.status)}
+                          </td>
                           <td>
                             <span className='text-muted fs-7'>
                               {!hasStudentStarted(answer) ? '—' : formatDate(answer.answered_at)}

@@ -56,9 +56,19 @@ export const useExerciseProgressWebSocket = ({
     onProgressUpdate?.(data)
   }, [onProgressUpdate])
 
-  // Handle 'exercise_progress_update' message type from backend
+  // Handle 'assignment_progress_update' message type from backend
   const handleProgressUpdateMessage = useCallback((data: any) => {
-    if (data.exercise_id === exerciseId) {
+    console.log('📨 Received WebSocket message:', data)
+    
+    // Handle assignment_progress_update message type
+    if (data.type === 'assignment_progress_update' && data.assign_key === exerciseId) {
+      console.log('🔄 Assignment progress update received for exercise:', exerciseId)
+      if (onRefreshRequested) {
+        onRefreshRequested()
+      }
+    }
+    // Legacy support for exercise_progress_update
+    else if (data.exercise_id === exerciseId) {
       if (onProgressUpdate) {
         onProgressUpdate(data)
       } else if (onRefreshRequested) {
@@ -70,18 +80,28 @@ export const useExerciseProgressWebSocket = ({
   // Subscribe to Redis channels and message type
   useEffect(() => {
     if (exerciseId && currentUser) {
+      console.log('🔌 Setting up WebSocket subscriptions for exercise:', exerciseId)
+      
       // Subscribe to exercise-specific progress channel
-      const progressChannel = `exercise_progress_${exerciseId}`
+      const progressChannel = `assign_progress_${exerciseId}`
+      console.log('📡 Subscribing to Redis channel:', progressChannel)
       webSocketService.subscribeToChannel(progressChannel, handleProgressUpdate)
-      // Subscribe to message type from backend
+      
+      // Subscribe to assignment progress update message type from backend
+      console.log('📡 Subscribing to message type: assignment_progress_update')
+      webSocketService.subscribe('assignment_progress_update', handleProgressUpdateMessage)
+      
+      // Legacy support for exercise_progress_update
+      console.log('📡 Subscribing to message type: exercise_progress_update')
       webSocketService.subscribe('exercise_progress_update', handleProgressUpdateMessage)
     }
 
     return () => {
       // Cleanup subscriptions
       if (exerciseId) {
-        const progressChannel = `exercise_progress_${exerciseId}`
+        const progressChannel = `assign_progress_${exerciseId}`
         webSocketService.unsubscribeFromChannel(progressChannel, handleProgressUpdate)
+        webSocketService.unsubscribe('assignment_progress_update', handleProgressUpdateMessage)
         webSocketService.unsubscribe('exercise_progress_update', handleProgressUpdateMessage)
       }
     }
