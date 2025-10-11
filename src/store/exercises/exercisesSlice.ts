@@ -464,7 +464,7 @@ export const fetchExerciseProgress = createAsyncThunk(
     }
   }) => {
     try {
-      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/${exerciseId}/progress`)
+      const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/assignments/${exerciseId}/progress`)
       const queryParams = new URLSearchParams({
         page: params.page.toString(),
         items_per_page: params.items_per_page.toString(),
@@ -473,7 +473,7 @@ export const fetchExerciseProgress = createAsyncThunk(
         ...(params.search && { search: params.search }),
       })
       
-      const response = await axios.get(`${API_URL}/exercises/${exerciseId}/progress?${queryParams}`, { 
+      const response = await axios.get(`${API_URL}/exercises/assignments/${exerciseId}/progress?${queryParams}`, { 
         headers,
         withCredentials: true 
       })

@@ -140,7 +140,7 @@ export const useExerciseProgress = ({ exerciseId }: UseExerciseProgressProps): U
       refreshData()
     }
     isInitialLoad.current = false
-  }, [currentPage, itemsPerPage, searchTerm, sortBy, sortOrder])
+  }, [currentPage, itemsPerPage, sortBy, sortOrder])
   
   return {
     // Data
