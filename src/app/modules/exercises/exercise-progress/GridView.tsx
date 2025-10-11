@@ -8,6 +8,7 @@ interface GridViewProps {
   ASSIGNMENT_STATUS: any;
   hasStudentChange?: (studentId: string) => boolean;
   hasQuestionChange?: (questionId: string) => boolean;
+  totalQuestions?: number;
 }
 
 const GridView: FC<GridViewProps> = ({ 
@@ -15,7 +16,8 @@ const GridView: FC<GridViewProps> = ({
   exerciseProgress, 
   ASSIGNMENT_STATUS,
   hasStudentChange,
-  hasQuestionChange
+  hasQuestionChange,
+  totalQuestions
 }) => {
   const [mcFilter, setMcFilter] = useState<'all' | 'correct' | 'incorrect'>('all');
 
@@ -116,13 +118,6 @@ const GridView: FC<GridViewProps> = ({
                 <div className='d-flex align-items-center gap-4' style={{width: '100%'}}>
                   {/* Avatar + Name */}
                   <div className='d-flex align-items-center gap-2' style={{minWidth: 120}}>
-                    <div className='symbol symbol-40px'>
-                      <div className='symbol-label bg-light-primary'>
-                        <span className='fs-7 fw-bold text-primary'>
-                          {student.student_name?.charAt(0)?.toUpperCase() || '?'}
-                        </span>
-                      </div>
-                    </div>
                     <span className='fw-bold fs-6'>{student.student_name}</span>
                   </div>
                   {/* Progress Center */}
@@ -137,7 +132,7 @@ const GridView: FC<GridViewProps> = ({
                       <span className='fw-bold fs-7 ms-2'>{Math.round(getProgressPercentage(student))}%</span>
                     </div>
                     <div className='text-muted fs-7'>
-                      {getCompletedQuestionsCount(student.question_progress)} of {getTotalQuestionsCount(student.question_progress)} questions
+                      {getCompletedQuestionsCount(student.question_progress)} of {totalQuestions || getTotalQuestionsCount(student.question_progress)} questions
                     </div>
                   </div>
                   {/* Score Right */}

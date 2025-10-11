@@ -16,7 +16,6 @@ import { ExerciseSummary, ViewModeToggle } from './components'
 const ExerciseProgressPage: FC = () => {
   const {exerciseId} = useParams<{exerciseId: string}>()
   const navigate = useNavigate()
-  const [selectedStudent, setSelectedStudent] = useState<string | null>(null)
 
   // Use custom hook for data management
   const {
@@ -117,17 +116,6 @@ const ExerciseProgressPage: FC = () => {
             <h2 className='welcome-title'>{exercise?.title || 'Exercise Progress Overview'}</h2>
             <p className='welcome-subtitle'>
               This page shows real-time progress for this exercise. 
-              {isWebSocketConnected ? (
-                <span className='text-success ms-2'>
-                  <i className='fas fa-wifi me-1'></i>
-                  Live updates enabled
-                </span>
-              ) : (
-                <span className='text-warning ms-2'>
-                  <i className='fas fa-exclamation-triangle me-1'></i>
-                  Manual refresh required
-                </span>
-              )}
             </p>
           </div>
         </div>
@@ -203,6 +191,7 @@ const ExerciseProgressPage: FC = () => {
               ASSIGNMENT_STATUS={ASSIGNMENT_STATUS}
               hasStudentChange={hasStudentChange}
               hasQuestionChange={hasQuestionChange}
+              totalQuestions={exercise?.question_count}
             />
           ) : (
             <StudentsView
@@ -215,61 +204,9 @@ const ExerciseProgressPage: FC = () => {
               getProgressPercentage={getProgressPercentage}
               getStatusColor={(status: number) => getStatusColor(status as any)}
               formatDate={formatDate}
-              selectedStudent={selectedStudent}
-              setSelectedStudent={setSelectedStudent}
               hasStudentChange={hasStudentChange}
+              totalQuestions={exercise?.question_count}
             />
-          )}
-
-          {/* Question Details for Selected Student */}
-          {selectedStudent && (
-            <div className='mt-6'>
-              <h4 className='mb-4'>Question Details</h4>
-              <div className='table-responsive'>
-                <table className='table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3'>
-                  <thead>
-                    <tr className='fw-bold text-muted'>
-                      <th className='w-50px'>#</th>
-                      <th className='w-100px'>Type</th>
-                      <th>Question</th>
-                      <th className='w-100px'>Status</th>
-                      <th className='w-100px'>Score</th>
-                      <th className='w-150px'>Answered</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {exerciseProgress
-                      .find((s: any) => s.student_id === selectedStudent)
-                      ?.question_progress.map((question: any, index: number) => (
-                        <tr key={question.question_id}>
-                          <td>
-                            <span className='fw-bold'>{index + 1}</span>
-                          </td>
-                          <td>
-                            {getQuestionTypeBadge(question.question_type)}
-                          </td>
-                          <td>
-                            <div className='fw-bold text-dark'>{question.question_name}</div>
-                          </td>
-                          <td>
-                            {getQuestionStatusBadge(question.status)}
-                          </td>
-                          <td>
-                            {question.score !== undefined ? (
-                              <span className='fw-bold fs-6 text-success'>{question.score}%</span>
-                            ) : (
-                              <span className='text-muted fs-7'>N/A</span>
-                            )}
-                          </td>
-                          <td>
-                            <span className='text-muted fs-7'>{formatDate(question.answered_at)}</span>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           )}
         </KTCardBody>
       </KTCard>

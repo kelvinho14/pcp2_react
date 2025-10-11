@@ -440,35 +440,23 @@ const ExerciseAssignedListPage: FC = () => {
             </div>
             
             <div className='card-body pt-0'>
-              <div className='mb-4'>
-                <div className='d-flex justify-content-between align-items-center mb-2'>
-                  <span className='text-muted fs-7'>Assigned</span>
-                  <span className='fw-bold fs-6'>{formatApiTimestamp(assignmentGroup.assigned_at, { format: 'dateOnly' })}</span>
-                </div>
-                {assignmentGroup.due_date && (
-                  <div className='d-flex justify-content-between align-items-center mb-2'>
-                    <span className='text-muted fs-7'>Due Date</span>
-                    <span className='fw-bold fs-6'>{formatApiTimestamp(assignmentGroup.due_date, { format: 'custom' })}</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className='row g-3 mb-4'>
-                <div className='col-6'>
-                  <div className='d-flex align-items-center'>
-                    <i className='fas fa-user-graduate text-muted me-2'></i>
-                    <div>
-                      <div className='text-muted fs-7'>Students</div>
-                      <div className='fw-bold'>{assignmentGroup.student_stats.total}</div>
-                    </div>
+              <div className='row text-center mb-4'>
+                <div className='col-4'>
+                  <div className='d-flex align-items-center justify-content-start'>
+                    <span className='text-muted fs-7 me-2'>Students:</span>
+                    <span className='fw-bold fs-4'>{assignmentGroup.student_stats.total}</span>
                   </div>
                 </div>
-                <div className='col-6'>
-                  <div className='d-flex align-items-center'>
-                    <div>
-                      <div className='text-muted fs-7'>Completed</div>
-                      <div className='fw-bold'>{assignmentGroup.student_stats.completed}</div>
-                    </div>
+                <div className='col-4'>
+                  <div className='d-flex align-items-center justify-content-center'>
+                    <span className='text-muted fs-7 me-2'>Completed:</span>
+                    <span className='fw-bold fs-4'>{assignmentGroup.student_stats.completed}</span>
+                  </div>
+                </div>
+                <div className='col-4'>
+                  <div className='d-flex align-items-center justify-content-end'>
+                    <span className='text-muted fs-7 me-2'>Assigned:</span>
+                    <span className='fw-bold fs-6'>{formatApiTimestamp(assignmentGroup.assigned_at, { format: 'dateOnly' })}</span>
                   </div>
                 </div>
               </div>
@@ -546,7 +534,7 @@ const ExerciseAssignedListPage: FC = () => {
                                   </div>
                                 </div>
                                 <div className='d-flex align-items-center justify-content-between'>
-                                  <div className='progress-container flex-grow-1 me-2'>
+                                  <div className='progress-container flex-grow-1 me-2' style={{ minWidth: '60px' }}>
                                     <div className='progress' style={{ height: '6px' }}>
                                       <div 
                                         className={`progress-bar bg-${getProgressBarColor(assignment.progress)}`}
@@ -554,7 +542,7 @@ const ExerciseAssignedListPage: FC = () => {
                                       ></div>
                                     </div>
                                   </div>
-                                  <span className='fs-7 text-muted'>
+                                  <span className='fs-7 text-muted text-nowrap' style={{ minWidth: '90px' }}>
                                     {assignment.answered_questions}/{assignment.total_questions} questions
                                   </span>
                                 </div>
@@ -569,10 +557,10 @@ const ExerciseAssignedListPage: FC = () => {
                 )}
               </div>
               
-              <div className='d-flex align-items-center justify-content-end'>
+              <div className='d-flex align-items-center justify-content-center'>
                 <button 
                   className='btn btn-sm btn-light-primary' 
-                  onClick={() => navigate(`/exercises/progress/${assignmentGroup.exercises[0]?.exercise_id}`)}
+                  onClick={() => navigate(`/exercises/progress/${assignmentGroup.assign_key}`)}
                 >
                   <i className='fas fa-eye me-1'></i>
                   View Details
@@ -666,7 +654,7 @@ const ExerciseAssignedListPage: FC = () => {
                 <div className='item-actions'>
                   <button 
                     className='btn btn-sm btn-light-primary'
-                    onClick={e => { e.stopPropagation(); navigate(`/exercises/progress/${assignmentGroup.exercises[0]?.exercise_id}`); }}
+                    onClick={e => { e.stopPropagation(); navigate(`/exercises/progress/${assignmentGroup.assign_key}`); }}
                   >
                     <i className='fas fa-eye me-1'></i>
                     View Details
@@ -711,7 +699,7 @@ const ExerciseAssignedListPage: FC = () => {
                                   <span className='fw-medium'>{assignment.student.name}</span>
                                 </div>
                                 {/* Progress */}
-                                <div style={{minWidth: 160, flex: '1 1 160px'}} className='d-flex flex-column align-items-start'>
+                                <div style={{minWidth: 180, flex: '1 1 180px'}} className='d-flex flex-column align-items-start'>
                                   <div className='d-flex align-items-center mb-1'>
                                     <span className='fw-bold fs-7 me-2'>{assignment.progress}%</span>
                                     <div className='progress h-3px' style={{width: 80}}>
@@ -721,7 +709,7 @@ const ExerciseAssignedListPage: FC = () => {
                                       ></div>
                                     </div>
                                   </div>
-                                  <span className='fw-bold fs-7'>{assignment.answered_questions}/{assignment.total_questions} Questions</span>
+                                  <span className='fw-bold fs-7 text-nowrap'>{assignment.answered_questions}/{assignment.total_questions} Questions</span>
                                 </div>
                                 {/* Status Label */}
                                 <div style={{minWidth: 100, flex: '0 0 100px'}} className='d-flex align-items-center'>
