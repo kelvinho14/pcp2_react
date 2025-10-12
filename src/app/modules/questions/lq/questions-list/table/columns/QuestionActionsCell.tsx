@@ -10,9 +10,10 @@ import {toast} from '../../../../../../../_metronic/helpers/toast'
 
 type Props = {
   id: ID
+  isAssigned?: boolean
 }
 
-const QuestionActionsCell: FC<Props> = ({id}) => {
+const QuestionActionsCell: FC<Props> = ({id, isAssigned = false}) => {
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
@@ -72,9 +73,14 @@ const QuestionActionsCell: FC<Props> = ({id}) => {
         {/* begin::Menu item */}
         <div className='menu-item px-3'>
           <a
-            className='menu-link px-3'
+            className={`menu-link px-3 ${isAssigned ? 'disabled text-muted' : ''}`}
             data-kt-questions-table-filter='delete_row'
-            onClick={handleDeleteClick}
+            onClick={isAssigned ? undefined : handleDeleteClick}
+            style={{ 
+              cursor: isAssigned ? 'not-allowed' : 'pointer',
+              opacity: isAssigned ? 0.5 : 1
+            }}
+            title={isAssigned ? 'Cannot delete - question is assigned to exercises' : 'Delete question'}
           >
             Delete
           </a>

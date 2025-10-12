@@ -71,9 +71,38 @@ const questionsColumns: ReadonlyArray<Column<Question>> = [
     },
   },
   {
+    Header: 'Assigned',
+    accessor: 'is_assigned',
+    id: 'is_assigned',
+    Cell: ({ ...props }) => {
+      const isAssigned = props.data[props.row.index].is_assigned
+      return (
+        <div className='d-flex align-items-center'>
+          {isAssigned === 1 ? (
+            <>
+              <i className='fas fa-check-circle text-success fs-4 me-2'></i>
+            </>
+          ) : (
+            <>
+              <i className='fas fa-times-circle text-muted fs-4 me-2'></i>
+            </>
+          )}
+        </div>
+      )
+    },
+  },
+  {
     Header: 'Actions',
     id: 'actions',
-    Cell: ({ ...props }) => <QuestionActionsCell id={props.data[props.row.index].q_id as unknown as ID} />,
+    Cell: ({ ...props }) => {
+      const question = props.data[props.row.index]
+      return (
+        <QuestionActionsCell 
+          id={question.q_id as unknown as ID} 
+          isAssigned={question.is_assigned === 1}
+        />
+      )
+    },
   },
 ]
 

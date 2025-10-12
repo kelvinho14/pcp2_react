@@ -190,6 +190,11 @@ const ExerciseAssignedListPage: FC = () => {
   const [loadedStudents, setLoadedStudents] = useState<Record<string, any[]>>({})
   const [loadingStudents, setLoadingStudents] = useState<Record<string, boolean>>({})
 
+  // Helper function to generate unique card ID
+  const getCardId = useCallback((assignKey: string, exerciseId: string) => {
+    return `${assignKey}_${exerciseId}`
+  }, [])
+
   // Keep filters ref updated
   useEffect(() => {
     filtersRef.current = filters
@@ -220,9 +225,17 @@ const ExerciseAssignedListPage: FC = () => {
   const handleDeleteAssignment = async (assignmentId: string, studentName: string) => {
     try {
       await dispatch(deleteAssignment(assignmentId)).unwrap()
-      // The assignment is automatically removed from the state by the reducer
-      // No need to refetch data - the reducer handles the state update
-      // This prevents the card from collapsing and maintains the current view state
+      
+      // Update local loadedStudents state to remove the deleted assignment
+      setLoadedStudents(prev => {
+        const updated = { ...prev }
+        Object.keys(updated).forEach(assignKey => {
+          updated[assignKey] = updated[assignKey].filter(
+            assignment => assignment.assignment_id !== assignmentId
+          )
+        })
+        return updated
+      })
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to delete assignment'
       toast.error(errorMessage, 'Error')
@@ -251,13 +264,13 @@ const ExerciseAssignedListPage: FC = () => {
   }
 
   // Fetch students for a specific assign_key
-  const fetchStudents = useCallback(async (assignKey: string) => {
+  const fetchStudents = useCallback(async (assignKey: string, cardId: string, exerciseId: string) => {
     // If already loaded or currently loading, skip
-    if (loadedStudents[assignKey] || loadingStudents[assignKey]) {
+    if (loadedStudents[cardId] || loadingStudents[cardId]) {
       return
     }
 
-    setLoadingStudents(prev => ({ ...prev, [assignKey]: true }))
+    setLoadingStudents(prev => ({ ...prev, [cardId]: true }))
     
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/student-exercises/assignments/${assignKey}/students`)
@@ -270,44 +283,46 @@ const ExerciseAssignedListPage: FC = () => {
         // Flatten the students array to get all assignments with student info
         const students = response.data.data?.students || []
         const flattenedAssignments = students.flatMap((student: any) => 
-          student.assignments.map((assignment: any) => ({
-            ...assignment,
-            student: {
-              id: student.student_id,
-              name: student.name,
-              email: student.email
-            },
-            exercise: {
-              exercise_id: assignment.exercise_id,
-              title: assignment.exercise_title
-            }
-          }))
+          student.assignments
+            .filter((assignment: any) => assignment.exercise_id === exerciseId)
+            .map((assignment: any) => ({
+              ...assignment,
+              student: {
+                id: student.student_id,
+                name: student.name,
+                email: student.email
+              },
+              exercise: {
+                exercise_id: assignment.exercise_id,
+                title: assignment.exercise_title
+              }
+            }))
         )
         
         setLoadedStudents(prev => ({
           ...prev,
-          [assignKey]: flattenedAssignments
+          [cardId]: flattenedAssignments
         }))
       }
     } catch (error: any) {
       console.error('Error fetching students:', error)
       toast.error('Failed to load student assignments', 'Error')
     } finally {
-      setLoadingStudents(prev => ({ ...prev, [assignKey]: false }))
+      setLoadingStudents(prev => ({ ...prev, [cardId]: false }))
     }
   }, [loadedStudents, loadingStudents])
 
-  const toggleCardCollapse = useCallback((assignKey: string) => {
+  const toggleCardCollapse = useCallback((cardId: string, assignKey: string, exerciseId: string) => {
     setCollapsedCards(prev => {
       const newSet = new Set(prev)
-      const isCurrentlyCollapsed = newSet.has(assignKey)
+      const isCurrentlyCollapsed = newSet.has(cardId)
       
       if (isCurrentlyCollapsed) {
-        newSet.delete(assignKey)
+        newSet.delete(cardId)
         // Fetch students when expanding
-        fetchStudents(assignKey)
+        fetchStudents(assignKey, cardId, exerciseId)
       } else {
-        newSet.add(assignKey)
+        newSet.add(cardId)
       }
       return newSet
     })
@@ -393,17 +408,22 @@ const ExerciseAssignedListPage: FC = () => {
   useEffect(() => {
     if (assignmentGroups.length > 0 && !hasInitializedCollapse.current) {
       // Set all cards to collapsed by default on initial load
-      setCollapsedCards(new Set(assignmentGroups.map(group => group.assign_key)))
+      setCollapsedCards(new Set(assignmentGroups.map(group => 
+        getCardId(group.assign_key, group.exercises[0]?.exercise_id || '')
+      )))
       hasInitializedCollapse.current = true
     }
-  }, [assignmentGroups.length])
+  }, [assignmentGroups.length, getCardId])
 
   // Memoized assignment group cards to prevent unnecessary re-renders
   const assignmentGroupCards = useMemo(() => {
     return assignmentGroups.map((assignmentGroup) => {
+      const exerciseId = assignmentGroup.exercises[0]?.exercise_id || ''
+      const cardId = getCardId(assignmentGroup.assign_key, exerciseId)
+      
       // Get students for this assignment group (if loaded)
-      const students = loadedStudents[assignmentGroup.assign_key] || []
-      const isLoadingStudentsForThisGroup = loadingStudents[assignmentGroup.assign_key] || false
+      const students = loadedStudents[cardId] || []
+      const isLoadingStudentsForThisGroup = loadingStudents[cardId] || false
       
       // Group students by due date
       const studentsByDueDate = students.reduce((groups: Record<string, any[]>, student: any) => {
@@ -423,7 +443,7 @@ const ExerciseAssignedListPage: FC = () => {
       }, {})
 
       return (
-        <div key={assignmentGroup.assign_key} className='col-lg-4 col-md-6 col-sm-12'>
+        <div key={cardId} className='col-lg-4 col-md-6 col-sm-12'>
           <div className='card h-100 shadow-sm border-0'>
             <div className='card-header border-0 pt-6'>
               <div className='card-title'>
@@ -465,14 +485,14 @@ const ExerciseAssignedListPage: FC = () => {
               <div className='mb-4 border rounded p-3'>
                 <div 
                   className='d-flex align-items-center justify-content-between cursor-pointer'
-                  onClick={() => toggleCardCollapse(assignmentGroup.assign_key)}
+                  onClick={() => toggleCardCollapse(cardId, assignmentGroup.assign_key, exerciseId)}
                   style={{ cursor: 'pointer' }}
                 >
                   <h6 className='fw-bold mb-0'>Students</h6>
-                  <i className={`fas fa-chevron-${collapsedCards.has(assignmentGroup.assign_key) ? 'down' : 'up'} text-muted`}></i>
+                  <i className={`fas fa-chevron-${collapsedCards.has(cardId) ? 'down' : 'up'} text-muted`}></i>
                 </div>
                 
-                {!collapsedCards.has(assignmentGroup.assign_key) && (
+                {!collapsedCards.has(cardId) && (
                   <div className='mt-3'>
                     {isLoadingStudentsForThisGroup ? (
                       <div className='text-center py-3'>
@@ -571,16 +591,19 @@ const ExerciseAssignedListPage: FC = () => {
         </div>
       )
     })
-  }, [assignmentGroups, collapsedCards, toggleCardCollapse, handleSubmitForStudent, loadedStudents, loadingStudents, navigate])
+  }, [assignmentGroups, collapsedCards, toggleCardCollapse, handleSubmitForStudent, loadedStudents, loadingStudents, navigate, getCardId])
 
   // Memoized assignment group list rows for list view
   const assignmentGroupListRows = useMemo(() => {
     return (
       <div className='exercise-list'>
         {assignmentGroups.map((assignmentGroup) => {
+          const exerciseId = assignmentGroup.exercises[0]?.exercise_id || ''
+          const cardId = getCardId(assignmentGroup.assign_key, exerciseId)
+          
           // Get students for this assignment group (if loaded)
-          const students = loadedStudents[assignmentGroup.assign_key] || []
-          const isLoadingStudentsForThisGroup = loadingStudents[assignmentGroup.assign_key] || false
+          const students = loadedStudents[cardId] || []
+          const isLoadingStudentsForThisGroup = loadingStudents[cardId] || false
           
           // Group students by due date (same logic as card view)
           const studentsByDueDate = students.reduce((groups: Record<string, any[]>, student: any) => {
@@ -600,8 +623,8 @@ const ExerciseAssignedListPage: FC = () => {
           }, {})
 
           return (
-            <div key={assignmentGroup.assign_key} className={`exercise-list-item`}>
-              <div className='list-item-header' onClick={() => toggleCardCollapse(assignmentGroup.assign_key)} style={{cursor: 'pointer', flex: 1}}>
+            <div key={cardId} className={`exercise-list-item`}>
+              <div className='list-item-header' onClick={() => toggleCardCollapse(cardId, assignmentGroup.assign_key, exerciseId)} style={{cursor: 'pointer', flex: 1}}>
                 <div className='item-content'>
                   <div className='item-title'>
                     <div className='d-flex align-items-center'>
@@ -663,7 +686,7 @@ const ExerciseAssignedListPage: FC = () => {
               </div>
               
               {/* Assignments Section */}
-              {!collapsedCards.has(assignmentGroup.assign_key) && (
+              {!collapsedCards.has(cardId) && (
                 <div className='list-item-assignments'>
                   <div className='assignments-header'>
                     <h6 className='mb-0'>Students</h6>
@@ -754,7 +777,7 @@ const ExerciseAssignedListPage: FC = () => {
         })}
       </div>
     )
-  }, [assignmentGroups, collapsedCards, toggleCardCollapse, handleSubmitForStudent, loadedStudents, loadingStudents, navigate])
+  }, [assignmentGroups, collapsedCards, toggleCardCollapse, handleSubmitForStudent, loadedStudents, loadingStudents, navigate, getCardId])
 
   // Show full-page loading only for initial load or errors
   if (isInitialLoad && loading) {

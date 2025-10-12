@@ -28,6 +28,7 @@ import clsx from 'clsx'
 import {toast} from '../../../_metronic/helpers/toast'
 import SimpleTagSelect, {SimpleTagData} from '../questions/components/SimpleTagSelect'
 import { hasImages, renderHtmlSafely, getTextPreview } from '../../../_metronic/helpers/htmlRenderer'
+import { formatApiTimestamp } from '../../../_metronic/helpers/dateUtils'
 import {
   DndContext,
   closestCenter,
@@ -68,13 +69,14 @@ const exerciseValidationSchema = Yup.object().shape({
 
 
 // Sortable Row Component for @dnd-kit
-const SortableRow: FC<{ question: LinkedQuestion; index: number; onUnlink: (questionId: string) => void; unlinking: boolean; navigate: any; getQuestionTypeBadge: (type: string) => JSX.Element }> = ({ 
+const SortableRow: FC<{ question: LinkedQuestion; index: number; onUnlink: (questionId: string) => void; unlinking: boolean; navigate: any; getQuestionTypeBadge: (type: string) => JSX.Element; isExerciseAssigned: boolean }> = ({ 
   question, 
   index, 
   onUnlink, 
   unlinking, 
   navigate, 
-  getQuestionTypeBadge 
+  getQuestionTypeBadge,
+  isExerciseAssigned
 }) => {
   const {
     attributes,
@@ -83,7 +85,7 @@ const SortableRow: FC<{ question: LinkedQuestion; index: number; onUnlink: (ques
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: question.question_id })
+  } = useSortable({ id: question.question_id, disabled: isExerciseAssigned })
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -99,23 +101,14 @@ const SortableRow: FC<{ question: LinkedQuestion; index: number; onUnlink: (ques
       style={style}
       className={isDragging ? 'table-active dragging' : ''}
     >
-      <td className="text-center fw-bold" {...attributes} {...listeners}>
+      <td className="text-center fw-bold" {...(isExerciseAssigned ? {} : attributes)} {...(isExerciseAssigned ? {} : listeners)}>
         <div className="d-flex align-items-center justify-content-center">
-          <i className="fas fa-grip-vertical text-muted me-2"></i>
+          <i className={`fas fa-grip-vertical ${isExerciseAssigned ? 'text-muted' : 'text-muted'} me-2`} style={{ cursor: isExerciseAssigned ? 'not-allowed' : 'grab', opacity: isExerciseAssigned ? 0.3 : 1 }}></i>
           <span>{index + 1}</span>
         </div>
       </td>
       <td>
         {getQuestionTypeBadge(question.type)}
-      </td>
-      <td>
-        <div className='d-flex align-items-center'>
-          <div className='d-flex justify-content-start flex-column'>
-            <span className='text-dark fw-bold text-hover-primary fs-6'>
-              {question.name}
-            </span>
-          </div>
-        </div>
       </td>
       <td>
         <div className='d-flex flex-column' style={{ maxWidth: '400px' }}>
@@ -133,7 +126,7 @@ const SortableRow: FC<{ question: LinkedQuestion; index: number; onUnlink: (ques
       </td>
       <td>
         <div className='text-muted fw-semibold fs-6'>
-          {new Date(question.created_at).toLocaleDateString()}
+          {formatApiTimestamp(question.created_at, { format: 'custom' })}
         </div>
       </td>
       <td>
@@ -150,7 +143,12 @@ const SortableRow: FC<{ question: LinkedQuestion; index: number; onUnlink: (ques
             className='btn btn-sm btn-light-danger indicator'
             data-kt-indicator={unlinking ? 'on' : 'off'}
             onClick={() => onUnlink(question.question_id)}
-            disabled={unlinking}
+            disabled={unlinking || isExerciseAssigned}
+            style={{ 
+              opacity: isExerciseAssigned ? 0.5 : 1, 
+              cursor: isExerciseAssigned ? 'not-allowed' : 'pointer' 
+            }}
+            title={isExerciseAssigned ? 'Cannot unlink - exercise is assigned to students' : 'Unlink question'}
           >
             <span className='indicator-label'>
               <i className='fas fa-trash'></i>
@@ -212,6 +210,9 @@ const ExerciseFormPage: FC = () => {
 
   // Get current exercise data if in edit mode
   const exerciseFromList = isEditMode ? exercises.find((ex: Exercise) => ex.exercise_id === exerciseId) : null
+  
+  // Check if exercise is assigned
+  const isExerciseAssigned = isEditMode && currentExercise?.is_assigned === 1
 
   // Fetch exercise types and tags on component mount
   useEffect(() => {
@@ -364,7 +365,7 @@ const ExerciseFormPage: FC = () => {
     setActiveId(null)
     const { active, over } = event
 
-    if (!over || active.id === over.id) {
+    if (!over || active.id === over.id || isExerciseAssigned) {
       return
     }
 
@@ -400,6 +401,7 @@ const ExerciseFormPage: FC = () => {
   }
 
   const handleUnlinkQuestion = (questionId: string) => {
+    if (isExerciseAssigned) return
     setQuestionToUnlink(questionId)
     setShowUnlinkConfirm(true)
   }
@@ -671,50 +673,63 @@ const ExerciseFormPage: FC = () => {
 
       {/* Linked Questions Table - Only show in edit mode */}
       {isEditMode && (
-        <div className='card mt-6'>
-          <div className='card-header'>
-            <h3 className='card-title'>Linked Questions ({linkedQuestions.length})</h3>
-          </div>
-          <div className='card-body'>
-            {linkedQuestions.length === 0 ? (
-              <div className='text-center py-4'>
-                <p className='text-muted'>No questions linked to this exercise yet.</p>
+        <>
+          {/* Warning Banner for Assigned Exercises */}
+          {isExerciseAssigned && linkedQuestions.length > 0 && (
+            <div className='alert alert-warning d-flex align-items-center mt-6 mb-0' role='alert'>
+              <i className='fas fa-exclamation-triangle fs-2 me-3'></i>
+              <div>
+                <h5 className='mb-1'>
+                  This exercise is assigned to students. Question management is locked.
+                </h5>
               </div>
-            ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={linkedQuestions.map(q => q.question_id)}
-                  strategy={verticalListSortingStrategy}
+            </div>
+          )}
+          
+          <div className='card mt-6'>
+            <div className='card-header'>
+              <h3 className='card-title'>Linked Questions ({linkedQuestions.length})</h3>
+            </div>
+            <div className='card-body'>
+              {linkedQuestions.length === 0 ? (
+                <div className='text-center py-4'>
+                  <p className='text-muted'>No questions linked to this exercise yet.</p>
+                </div>
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
                 >
-                  <div className="table-responsive">
-                    <table className='table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3'>
-                      <thead>
-                        <tr className='fw-bold text-muted'>
-                          <th className='min-w-50px'>#</th>
-                          <th className='min-w-125px'>Type</th>
-                          <th className='min-w-125px'>Name</th>
-                          <th className='min-w-400px'>Question Content</th>
-                          <th className='min-w-125px'>Created</th>
-                          <th className='min-w-100px'>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {linkedQuestions.map((question: LinkedQuestion, index: number) => (
-                          <SortableRow
-                            key={question.question_id}
-                            question={question}
-                            index={index}
-                            onUnlink={handleUnlinkQuestion}
-                            unlinking={unlinking}
-                            navigate={navigate}
-                            getQuestionTypeBadge={getQuestionTypeBadge}
-                          />
-                        ))}
+                  <SortableContext
+                    items={linkedQuestions.map(q => q.question_id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="table-responsive">
+                      <table className='table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3'>
+                        <thead>
+                          <tr className='fw-bold text-muted'>
+                            <th className='min-w-50px'>#</th>
+                            <th className='min-w-125px'>Type</th>
+                            <th className='min-w-400px'>Question Content</th>
+                            <th className='min-w-125px'>Created</th>
+                            <th className='min-w-100px'>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {linkedQuestions.map((question: LinkedQuestion, index: number) => (
+                            <SortableRow
+                              key={question.question_id}
+                              question={question}
+                              index={index}
+                              onUnlink={handleUnlinkQuestion}
+                              unlinking={unlinking}
+                              navigate={navigate}
+                              getQuestionTypeBadge={getQuestionTypeBadge}
+                              isExerciseAssigned={isExerciseAssigned}
+                            />
+                          ))}
                       </tbody>
                     </table>
                   </div>
@@ -734,6 +749,7 @@ const ExerciseFormPage: FC = () => {
                               unlinking={false}
                               navigate={() => {}}
                               getQuestionTypeBadge={getQuestionTypeBadge}
+                              isExerciseAssigned={isExerciseAssigned}
                             />
                           </tbody>
                         </table>
@@ -745,6 +761,7 @@ const ExerciseFormPage: FC = () => {
             )}
           </div>
         </div>
+        </>
       )}
 
       <ConfirmationDialog
