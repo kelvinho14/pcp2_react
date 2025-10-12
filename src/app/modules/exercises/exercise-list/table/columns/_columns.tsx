@@ -94,6 +94,27 @@ const exercisesColumns: ReadonlyArray<Column<Exercise>> = [
     },
   },
   {
+    Header: 'Assigned',
+    accessor: 'is_assigned',
+    id: 'is_assigned',
+    Cell: ({ ...props }) => {
+      const isAssigned = props.data[props.row.index].is_assigned
+      return (
+        <div className='d-flex align-items-center'>
+          {isAssigned === 1 ? (
+            <>
+              <i className='fas fa-check-circle text-success fs-4 me-2'></i>
+            </>
+          ) : (
+            <>
+              <i className='fas fa-times-circle text-muted fs-4 me-2'></i>
+            </>
+          )}
+        </div>
+      )
+    },
+  },
+  {
     Header: 'Created',
     accessor: 'created_at',
     id: 'created_at',
@@ -114,7 +135,15 @@ const exercisesColumns: ReadonlyArray<Column<Exercise>> = [
   {
     Header: 'Actions',
     id: 'actions',
-    Cell: ({ ...props }) => <ExerciseActionsCell id={props.data[props.row.index].exercise_id as unknown as ID} />,
+    Cell: ({ ...props }) => {
+      const exercise = props.data[props.row.index]
+      return (
+        <ExerciseActionsCell 
+          id={exercise.exercise_id as unknown as ID} 
+          isAssigned={exercise.is_assigned === 1}
+        />
+      )
+    },
   },
 ]
 

@@ -23,6 +23,7 @@ export interface Exercise {
   created_at: string
   updated_at: string
   question_count: number
+  is_assigned?: number
   tags?: Array<{
     tag_id: string
     name: string
@@ -40,6 +41,7 @@ export interface LinkedQuestion {
   answer_content: string
   options?: string[]
   correct_option?: string
+  is_assigned?: number
 }
 
 export interface ExerciseFormData {
@@ -187,12 +189,13 @@ export const bulkDeleteExercises = createAsyncThunk(
   async (exerciseIds: string[]) => {
     try {
       const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises`)
-      await axios.delete(`${API_URL}/exercises`, { 
+      const response = await axios.delete(`${API_URL}/exercises`, { 
         data: { exercise_ids: exerciseIds },
         headers,
         withCredentials: true 
       })
-      toast.success(`${exerciseIds.length} exercise(s) deleted successfully!`, 'Success')
+      const successMessage = response.data?.message || `${exerciseIds.length} exercise(s) deleted successfully!`
+      toast.success(successMessage, 'Success')
       return exerciseIds
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to delete exercises'

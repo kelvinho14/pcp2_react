@@ -46,6 +46,7 @@ export interface Question {
   tags?: Array<{ tag_id?: string; name?: string; score?: number }>
   created_at?: string
   updated_at?: string
+  is_assigned?: number
 }
 
 // Async thunks

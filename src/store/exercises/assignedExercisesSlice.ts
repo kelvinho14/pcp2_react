@@ -343,13 +343,13 @@ const assignedExercisesSlice = createSlice({
           ...group,
           exercises: group.exercises.map(exercise => ({
             ...exercise,
-            assignments: exercise.assignments.filter(assignment => assignment.assignment_id !== action.payload)
+            assignments: exercise.assignments?.filter(assignment => assignment.assignment_id !== action.payload) || []
           }))
         }))
         
         // Update summary stats by recalculating from remaining assignments
         const allAssignments = state.assignmentGroups.flatMap(group => 
-          group.exercises.flatMap(exercise => exercise.assignments)
+          group.exercises.flatMap(exercise => exercise.assignments || [])
         )
         state.summary = {
           total: allAssignments.length,
