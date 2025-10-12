@@ -116,7 +116,7 @@ const ExercisesTable = ({ search, selectedTypes, statusFilter, selectedTags, tag
               })
             ) : (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={8}>
                   <div className='d-flex text-center w-100 align-content-center justify-content-center'>
                     No matching records found
                   </div>

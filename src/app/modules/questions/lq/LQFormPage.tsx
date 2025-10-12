@@ -162,6 +162,9 @@ const LQFormPage: FC = () => {
         }
       ]
 
+  // Check if question is assigned
+  const isAssigned = isEditMode && currentQuestion?.is_assigned === 1
+
   const formik = useFormik<LQFormData>({
     initialValues: {
       teacherRemark: '',
@@ -409,6 +412,18 @@ const LQFormPage: FC = () => {
         {isEditMode ? 'Edit Long Question' : 'Create Long Question'}
       </PageTitle>
       
+      {/* Warning Banner for Assigned Questions */}
+      {isAssigned && (
+        <div className='alert alert-warning d-flex align-items-center mb-5' role='alert'>
+          <i className='fas fa-exclamation-triangle fs-2 me-3'></i>
+          <div>
+            <h5 className='mb-1'>
+              This question cannot be edited because it has been assigned to one or more exercises.
+            </h5>
+          </div>
+        </div>
+      )}
+      
       <KTCard>
         <div className='card-header'>
           <h3 className='card-title'>
@@ -426,23 +441,27 @@ const LQFormPage: FC = () => {
                 Question
               </label>
               <div className='col-lg-9'>
-                <AIEditorWithButton
-                  field='question'
-                  value={formik.values.question}
-                  onBlur={(content) => {
-                    formik.setFieldValue('question', content)
-                    formik.setFieldTouched('question', true)
-                  }}
-                  isProcessing={processingField !== null}
-                  processingField={processingField}
-                  onAIClick={handleAIImageToText}
-                  onImageUpload={handleImageUpload}
-                  questionType='lq'
-                  questionId={currentQuestionId || qId}
-                  height={400}
-                  placeholder='Enter the question content...'
-                  editorKey={`question-editor-${isEditMode ? qId : 'create'}`}
-                />
+                <div style={{ opacity: isAssigned ? 0.6 : 1, pointerEvents: isAssigned ? 'none' : 'auto' }}>
+                  <AIEditorWithButton
+                    field='question'
+                    value={formik.values.question}
+                    onBlur={(content) => {
+                      if (!isAssigned) {
+                        formik.setFieldValue('question', content)
+                        formik.setFieldTouched('question', true)
+                      }
+                    }}
+                    isProcessing={processingField !== null}
+                    processingField={processingField}
+                    onAIClick={handleAIImageToText}
+                    onImageUpload={handleImageUpload}
+                    questionType='lq'
+                    questionId={currentQuestionId || qId}
+                    height={400}
+                    placeholder='Enter the question content...'
+                    editorKey={`question-editor-${isEditMode ? qId : 'create'}`}
+                  />
+                </div>
                 {formik.touched.question && formik.errors.question && (
                   <div className='fv-plugins-message-container invalid-feedback d-block'>
                     <div>{formik.errors.question}</div>
@@ -457,23 +476,27 @@ const LQFormPage: FC = () => {
                 Answer
               </label>
               <div className='col-lg-9'>
-                <AIEditorWithButton
-                  field='answer'
-                  value={formik.values.answer}
-                  onBlur={(content) => {
-                    formik.setFieldValue('answer', content)
-                    formik.setFieldTouched('answer', true)
-                  }}
-                  isProcessing={processingField !== null}
-                  processingField={processingField}
-                  onAIClick={handleAIImageToText}
-                  onImageUpload={handleImageUpload}
-                  questionType='lq'
-                  questionId={currentQuestionId || qId}
-                  height={400}
-                  placeholder='Enter the answer content...'
-                  editorKey={`answer-editor-${isEditMode ? qId : 'create'}`}
-                />
+                <div style={{ opacity: isAssigned ? 0.6 : 1, pointerEvents: isAssigned ? 'none' : 'auto' }}>
+                  <AIEditorWithButton
+                    field='answer'
+                    value={formik.values.answer}
+                    onBlur={(content) => {
+                      if (!isAssigned) {
+                        formik.setFieldValue('answer', content)
+                        formik.setFieldTouched('answer', true)
+                      }
+                    }}
+                    isProcessing={processingField !== null}
+                    processingField={processingField}
+                    onAIClick={handleAIImageToText}
+                    onImageUpload={handleImageUpload}
+                    questionType='lq'
+                    questionId={currentQuestionId || qId}
+                    height={400}
+                    placeholder='Enter the answer content...'
+                    editorKey={`answer-editor-${isEditMode ? qId : 'create'}`}
+                  />
+                </div>
                 {formik.touched.answer && formik.errors.answer && (
                   <div className='fv-plugins-message-container invalid-feedback d-block'>
                     <div>{formik.errors.answer}</div>
@@ -505,10 +528,13 @@ const LQFormPage: FC = () => {
                     placeholder='Enter what the answer should contain...'
                     value={formik.values.rubricShouldHave}
                     onChange={(e) => {
-                      formik.setFieldValue('rubricShouldHave', e.target.value)
-                      formik.setFieldTouched('rubricShouldHave', true)
+                      if (!isAssigned) {
+                        formik.setFieldValue('rubricShouldHave', e.target.value)
+                        formik.setFieldTouched('rubricShouldHave', true)
+                      }
                     }}
                     onBlur={() => formik.setFieldTouched('rubricShouldHave', true)}
+                    disabled={isAssigned}
                   />
                   {formik.touched.rubricShouldHave && formik.errors.rubricShouldHave && (
                     <div className='fv-plugins-message-container invalid-feedback d-block'>
@@ -534,10 +560,13 @@ const LQFormPage: FC = () => {
                     placeholder='Enter what the answer should not have...'
                     value={formik.values.rubricShouldNotHave}
                     onChange={(e) => {
-                      formik.setFieldValue('rubricShouldNotHave', e.target.value)
-                      formik.setFieldTouched('rubricShouldNotHave', true)
+                      if (!isAssigned) {
+                        formik.setFieldValue('rubricShouldNotHave', e.target.value)
+                        formik.setFieldTouched('rubricShouldNotHave', true)
+                      }
                     }}
                     onBlur={() => formik.setFieldTouched('rubricShouldNotHave', true)}
+                    disabled={isAssigned}
                   />
                   {formik.touched.rubricShouldNotHave && formik.errors.rubricShouldNotHave && (
                     <div className='fv-plugins-message-container invalid-feedback d-block'>
@@ -552,7 +581,7 @@ const LQFormPage: FC = () => {
                     type='button'
                     className='btn btn-sm btn-primary'
                     style={{ backgroundColor: '#009ef7', borderColor: '#009ef7' }}
-                    disabled={!formik.values.question.trim() || !formik.values.answer.trim() || processingField !== null}
+                    disabled={!formik.values.question.trim() || !formik.values.answer.trim() || processingField !== null || isAssigned}
                     onClick={async () => {
                       if (formik.values.question.trim() && formik.values.answer.trim()) {
                         try {
@@ -597,13 +626,14 @@ const LQFormPage: FC = () => {
                 Tags with Scores
               </label>
               <div className='col-lg-9'>
-                <TagWithScore
-                  options={tags}
-                  selectedTags={formik.values.selectedTags}
-                  onChange={(tags) => formik.setFieldValue('selectedTags', tags)}
-                  placeholder='Select tags or type to create new ones (optional)'
-                />
-                
+                <div style={{ opacity: isAssigned ? 0.6 : 1, pointerEvents: isAssigned ? 'none' : 'auto' }}>
+                  <TagWithScore
+                    options={tags}
+                    selectedTags={formik.values.selectedTags}
+                    onChange={(tags) => !isAssigned && formik.setFieldValue('selectedTags', tags)}
+                    placeholder='Select tags or type to create new ones (optional)'
+                  />
+                </div>
               </div>
             </div>
 
@@ -624,6 +654,7 @@ const LQFormPage: FC = () => {
                   rows={3}
                   placeholder='Enter any teacher remarks or notes...'
                   {...formik.getFieldProps('teacherRemark')}
+                  disabled={isAssigned}
                 />
                 {formik.touched.teacherRemark && formik.errors.teacherRemark && (
                   <div className='fv-plugins-message-container invalid-feedback'>
@@ -642,7 +673,7 @@ const LQFormPage: FC = () => {
                       <button
                         type='button'
                         className='btn btn-primary btn-lg'
-                        disabled={isSubmitting || creating || !formik.isValid}
+                        disabled={isSubmitting || creating || !formik.isValid || isAssigned}
                         onClick={async () => {
                           if (formik.isValid) {
                             setIsSubmitting(true)
@@ -688,7 +719,7 @@ const LQFormPage: FC = () => {
                       <button
                         type='button'
                         className='btn btn-success btn-lg'
-                        disabled={isSubmitting || creating || !formik.isValid}
+                        disabled={isSubmitting || creating || !formik.isValid || isAssigned}
                         onClick={async () => {
                           if (formik.isValid) {
                             setIsSubmitting(true)

@@ -158,6 +158,9 @@ const MCFormPage: FC = () => {
         }
       ]
 
+  // Check if question is assigned
+  const isAssigned = isEditMode && currentQuestion?.is_assigned === 1
+
   const formik = useFormik<MCFormData>({
     initialValues: {
       teacherRemark: '',
@@ -345,6 +348,18 @@ const MCFormPage: FC = () => {
         {isEditMode ? 'Edit Multiple Choice Question' : 'Create Multiple Choice Question'}
       </PageTitle>
       
+      {/* Warning Banner for Assigned Questions */}
+      {isAssigned && (
+        <div className='alert alert-warning d-flex align-items-center mb-5' role='alert'>
+          <i className='fas fa-exclamation-triangle fs-2 me-3'></i>
+          <div>
+            <h5 className='mb-1'>
+              This question cannot be edited because it has been assigned to one or more exercises. 
+            </h5>
+          </div>
+        </div>
+      )}
+      
       <KTCard>
         <div className='card-header'>
           <h3 className='card-title'>
@@ -362,23 +377,27 @@ const MCFormPage: FC = () => {
                 Question
               </label>
               <div className='col-lg-9'>
-                <AIEditorWithButton
-                  field='question'
-                  value={formik.values.question}
-                  onBlur={(content) => {
-                    formik.setFieldValue('question', content)
-                    formik.setFieldTouched('question', true)
-                  }}
-                  isProcessing={processingField !== null}
-                  processingField={processingField}
-                  onAIClick={handleAIImageToText}
-                  onImageUpload={handleImageUpload}
-                  questionType='mc'
-                  questionId={currentQuestionId || qId}
-                  height={300}
-                  placeholder='Enter the question content...'
-                  editorKey={`question-editor-${isEditMode ? qId : 'create'}`}
-                />
+                <div style={{ opacity: isAssigned ? 0.6 : 1, pointerEvents: isAssigned ? 'none' : 'auto' }}>
+                  <AIEditorWithButton
+                    field='question'
+                    value={formik.values.question}
+                    onBlur={(content) => {
+                      if (!isAssigned) {
+                        formik.setFieldValue('question', content)
+                        formik.setFieldTouched('question', true)
+                      }
+                    }}
+                    isProcessing={processingField !== null}
+                    processingField={processingField}
+                    onAIClick={handleAIImageToText}
+                    onImageUpload={handleImageUpload}
+                    questionType='mc'
+                    questionId={currentQuestionId || qId}
+                    height={300}
+                    placeholder='Enter the question content...'
+                    editorKey={`question-editor-${isEditMode ? qId : 'create'}`}
+                  />
+                </div>
                 {formik.touched.question && formik.errors.question && (
                   <div className='fv-plugins-message-container invalid-feedback d-block'>
                     <div>{formik.errors.question}</div>
@@ -393,23 +412,27 @@ const MCFormPage: FC = () => {
                 Answer
               </label>
               <div className='col-lg-9'>
-                <AIEditorWithButton
-                  field='answer'
-                  value={formik.values.answer}
-                  onBlur={(content) => {
-                    formik.setFieldValue('answer', content)
-                    formik.setFieldTouched('answer', true)
-                  }}
-                  isProcessing={processingField !== null}
-                  processingField={processingField}
-                  onAIClick={handleAIImageToText}
-                  onImageUpload={handleImageUpload}
-                  questionType='mc'
-                  questionId={currentQuestionId || qId}
-                  height={300}
-                  placeholder='Enter the answer content...'
-                  editorKey={`answer-editor-${isEditMode ? qId : 'create'}`}
-                />
+                <div style={{ opacity: isAssigned ? 0.6 : 1, pointerEvents: isAssigned ? 'none' : 'auto' }}>
+                  <AIEditorWithButton
+                    field='answer'
+                    value={formik.values.answer}
+                    onBlur={(content) => {
+                      if (!isAssigned) {
+                        formik.setFieldValue('answer', content)
+                        formik.setFieldTouched('answer', true)
+                      }
+                    }}
+                    isProcessing={processingField !== null}
+                    processingField={processingField}
+                    onAIClick={handleAIImageToText}
+                    onImageUpload={handleImageUpload}
+                    questionType='mc'
+                    questionId={currentQuestionId || qId}
+                    height={300}
+                    placeholder='Enter the answer content...'
+                    editorKey={`answer-editor-${isEditMode ? qId : 'create'}`}
+                  />
+                </div>
                 {formik.touched.answer && formik.errors.answer && (
                   <div className='fv-plugins-message-container invalid-feedback d-block'>
                     <div>{formik.errors.answer}</div>
@@ -438,7 +461,8 @@ const MCFormPage: FC = () => {
                                 name='correctOption'
                                 id={`correct-${index}`}
                                 checked={option.is_correct}
-                                onChange={() => handleOptionChange(index, 'is_correct', true)}
+                                onChange={() => !isAssigned && handleOptionChange(index, 'is_correct', true)}
+                                disabled={isAssigned}
                               />
                               <label className='form-check-label' htmlFor={`correct-${index}`}>
                                 Correct Answer
@@ -450,16 +474,19 @@ const MCFormPage: FC = () => {
                           <TinyMCEEditor
                             value={option.content}
                             onBlur={(content) => {
-                              const newOptions = [...formik.values.options]
-                              newOptions[index] = { ...newOptions[index], content }
-                              formik.setFieldValue('options', newOptions)
-                              formik.setFieldTouched('options', true)
+                              if (!isAssigned) {
+                                const newOptions = [...formik.values.options]
+                                newOptions[index] = { ...newOptions[index], content }
+                                formik.setFieldValue('options', newOptions)
+                                formik.setFieldTouched('options', true)
+                              }
                             }}
                             onImageUpload={(fileId, url, questionId) => handleImageUpload(fileId, url, option.option_letter, questionId)}
                             questionType='mc'
                             questionId={currentQuestionId || qId}
                             height={200}
                             placeholder={`Enter content for option ${option.option_letter}...`}
+                            disabled={isAssigned}
                           />
                         </div>
                       </div>
@@ -485,12 +512,14 @@ const MCFormPage: FC = () => {
                 Tags with Scores
               </label>
               <div className='col-lg-9'>
-                <TagWithScore
-                  options={tags}
-                  selectedTags={formik.values.selectedTags}
-                  onChange={(tags) => formik.setFieldValue('selectedTags', tags)}
-                  placeholder='Select tags or type to create new ones (optional)'
-                />
+                <div style={{ opacity: isAssigned ? 0.6 : 1, pointerEvents: isAssigned ? 'none' : 'auto' }}>
+                  <TagWithScore
+                    options={tags}
+                    selectedTags={formik.values.selectedTags}
+                    onChange={(tags) => !isAssigned && formik.setFieldValue('selectedTags', tags)}
+                    placeholder='Select tags or type to create new ones (optional)'
+                  />
+                </div>
               </div>
             </div>
 
@@ -511,6 +540,7 @@ const MCFormPage: FC = () => {
                   rows={3}
                   placeholder='Enter any teacher remarks or notes...'
                   {...formik.getFieldProps('teacherRemark')}
+                  disabled={isAssigned}
                 />
                 {formik.touched.teacherRemark && formik.errors.teacherRemark && (
                   <div className='fv-plugins-message-container invalid-feedback'>
@@ -529,7 +559,7 @@ const MCFormPage: FC = () => {
                       <button
                         type='button'
                         className='btn btn-primary btn-lg'
-                        disabled={isSubmitting || creating || !formik.isValid}
+                        disabled={isSubmitting || creating || !formik.isValid || isAssigned}
                         onClick={async () => {
                           if (formik.isValid) {
                             setIsSubmitting(true)
@@ -549,8 +579,7 @@ const MCFormPage: FC = () => {
                               toast.success('Multiple Choice Question updated successfully!', 'Success')
                               // Stay on this page - no navigation
                             } catch (error) {
-                              console.error('Error updating MC:', error)
-                              toast.error('Failed to update Multiple Choice Question. Please try again.', 'Error')
+                              
                             } finally {
                               setIsSubmitting(false)
                             }
@@ -570,7 +599,7 @@ const MCFormPage: FC = () => {
                       <button
                         type='button'
                         className='btn btn-success btn-lg'
-                        disabled={isSubmitting || creating || !formik.isValid}
+                        disabled={isSubmitting || creating || !formik.isValid || isAssigned}
                         onClick={async () => {
                           if (formik.isValid) {
                             setIsSubmitting(true)
@@ -590,8 +619,7 @@ const MCFormPage: FC = () => {
                               toast.success('Multiple Choice Question updated successfully!', 'Success')
                               navigate('/questions/mc/list')
                             } catch (error) {
-                              console.error('Error updating MC:', error)
-                              toast.error('Failed to update Multiple Choice Question. Please try again.', 'Error')
+                              
                             } finally {
                               setIsSubmitting(false)
                             }
