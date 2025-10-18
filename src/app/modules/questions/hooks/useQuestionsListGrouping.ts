@@ -11,6 +11,7 @@ import {
 } from '../../../../store/questions/questionsSlice'
 import { toast } from '../../../../_metronic/helpers/toast'
 import { transformQuestionsForBackend, transformSingleQuestionForBackend } from '../components/questionTransformers'
+import { QUESTION_VISIBILITY } from '../../../constants/questionVisibility'
 
 type QuestionType = 'mc' | 'lq' // Will extend to 'tf' | 'matching' later
 type Difficulty = 'easy' | 'medium' | 'hard' | 'challenging'
@@ -44,7 +45,15 @@ export const useQuestionsListGrouping = (questionType: QuestionType, useListView
   const handleAcceptGeneratedQuestions = async (questions: any[], questionIds?: Map<number, string>) => {
     try {
       const questionData = transformQuestionsForBackend(questions, questionIds)
-      await dispatch(createMultipleQuestions(questionData)).unwrap()
+      
+      // Add AI metadata and SUBJECT_SHARED visibility for questions created from MC/LQ list
+      const questionsWithMetadata = questionData.map((q: any) => ({
+        ...q,
+        is_ai_generated: true,
+        visibility: QUESTION_VISIBILITY.SUBJECT_SHARED,
+      }))
+      
+      await dispatch(createMultipleQuestions(questionsWithMetadata)).unwrap()
       toast.success(`${questions.length} questions created successfully!`, 'Success')
       clearSelected()
       setShowGeneratedQuestionsModal(false)
@@ -59,7 +68,15 @@ export const useQuestionsListGrouping = (questionType: QuestionType, useListView
   const handleAcceptSingleQuestion = async (question: any, questionId?: string) => {
     try {
       const questionData = transformSingleQuestionForBackend(question, questionId)
-      await dispatch(createSingleQuestion(questionData)).unwrap()
+      
+      // Add AI metadata and SUBJECT_SHARED visibility for questions created from MC/LQ list
+      const questionWithMetadata = {
+        ...questionData,
+        is_ai_generated: true,
+        visibility: QUESTION_VISIBILITY.SUBJECT_SHARED,
+      }
+      
+      await dispatch(createSingleQuestion(questionWithMetadata)).unwrap()
       toast.success('Question created successfully!', 'Success')
       // Refresh the questions list
       dispatch(fetchQuestions({ type: questionType, page: 1, items_per_page: 10 }))

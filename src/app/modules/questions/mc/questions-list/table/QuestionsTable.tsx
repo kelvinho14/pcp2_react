@@ -92,7 +92,7 @@ const QuestionsTable = ({ search, selectedTags, tagLogic }: Props) => {
       <div className='table-responsive'>
         <table
           id='kt_table_questions'
-          className='table align-middle table-row-dashed fs-6 gy-5 dataTable no-footer table-row-hover'
+          className='table align-middle table-row-dashed table-row-gray-300 fs-6 gy-5 dataTable no-footer table-row-hover'
           {...getTableProps()}
         >
           <thead>
