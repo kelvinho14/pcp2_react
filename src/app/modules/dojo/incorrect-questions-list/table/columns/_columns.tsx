@@ -13,7 +13,7 @@ export const createIncorrectQuestionsColumns = (
   showAnswer: boolean
 ): ReadonlyArray<Column<IncorrectQuestionItem>> => [
   {
-    Header: 'Question & Options',
+    Header: 'Question & Answers',
     accessor: 'question_content',
     Cell: ({row}) => <QuestionCell question={row.original} showAnswer={showAnswer} />,
   },

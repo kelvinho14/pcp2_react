@@ -7,7 +7,7 @@ import {AttemptTimeCell} from './AttemptTimeCell.tsx'
 
 export const createPracticeQuestionsColumns = (onQuestionClick?: (questionId: string) => void): ReadonlyArray<Column<PracticeQuestionItem>> => [
   {
-    Header: 'Question & Options',
+    Header: 'Question & Answers',
     accessor: 'question_content',
     Cell: ({row}) => <PracticeQuestionWithOptionsCell question={row.original} />,
   },
