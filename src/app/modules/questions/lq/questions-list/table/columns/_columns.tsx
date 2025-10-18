@@ -19,13 +19,15 @@ const questionsColumns: ReadonlyArray<Column<Question>> = [
     accessor: 'question_content',
     id: 'content_preview',
     Cell: ({ ...props }) => {
-      const questionContent = props.data[props.row.index].question_content || ''
-      const answerContent = props.data[props.row.index].lq_question?.answer_content || ''
+      const question = props.data[props.row.index]
+      const questionContent = question.question_content || ''
+      const answerContent = question.lq_question?.answer_content || ''
+      const isAIGenerated = question.is_ai_generated
       const navigate = useNavigate()
       
       
       const handleContentClick = () => {
-        navigate(`/questions/lq/edit/${props.data[props.row.index].q_id}`)
+        navigate(`/questions/lq/edit/${question.q_id}`)
       }
       
       return (
@@ -39,6 +41,16 @@ const questionsColumns: ReadonlyArray<Column<Question>> = [
             style={{ maxWidth: '500px', minWidth: '400px', cursor: 'pointer' }}
             onClick={handleContentClick}
           >
+            {/* AI Generated Badge */}
+            {isAIGenerated && (
+              <div className="mb-2">
+                <span className="badge badge-light-primary">
+                  <i className='fas fa-robot me-1'></i>
+                  AI Generated
+                </span>
+              </div>
+            )}
+            
             {/* Question Content */}
               <div className="mb-2">
                 <div className="fw-bold mb-1" style={{ fontSize: '0.75rem', color: '#6f42c1', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Question:</div>

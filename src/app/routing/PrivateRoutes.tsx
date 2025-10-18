@@ -5,7 +5,7 @@ import TopBarProgress from 'react-topbar-progress-indicator'
 import {DashboardWrapper} from '../pages/dashboard/DashboardWrapper'
 import {MenuTestPage} from '../pages/MenuTestPage'
 import {getCSSVariableValue} from '../../_metronic/assets/ts/_utils'
-import {WithChildren} from '../../_metronic/helpers'
+import {WithChildren, KTIcon} from '../../_metronic/helpers'
 import BuilderPageWrapper from '../pages/layout-builder/BuilderPageWrapper'
 
 const PrivateRoutes = () => {
@@ -29,6 +29,8 @@ const PrivateRoutes = () => {
   const SettingsPage = lazy(() => import('../modules/settings/SettingsPage'))
   const TokenSubscriptionPage = lazy(() => import('../modules/token/TokenSubscriptionPage'))
   const NonStudentRouteGuard = lazy(() => import('../modules/token/NonStudentRouteGuard'))
+  const IncorrectQuestionsListPage = lazy(() => import('../modules/dojo/incorrect-questions-list/IncorrectQuestionsListPage'))
+  const PracticeQuestionsListPage = lazy(() => import('../modules/dojo/practice-questions-list/PracticeQuestionsListPage'))
 
 
   return (
@@ -70,6 +72,26 @@ const PrivateRoutes = () => {
           element={
             <SuspensedView>
               <VideoPage />
+            </SuspensedView>
+          }
+        />
+        <Route
+          path='dojo'
+          element={<Navigate to='/dojo/weak-spots' replace />}
+        />
+        <Route
+          path='dojo/weak-spots'
+          element={
+            <SuspensedView>
+              <IncorrectQuestionsListPage />
+            </SuspensedView>
+          }
+        />
+        <Route
+          path='dojo/practice'
+          element={
+            <SuspensedView>
+              <PracticeQuestionsListPage />
             </SuspensedView>
           }
         />

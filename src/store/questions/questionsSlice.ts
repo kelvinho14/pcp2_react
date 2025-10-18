@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import axios from 'axios'
 import { toast } from '../../_metronic/helpers/toast'
 import { getHeadersWithSchoolSubject } from '../../_metronic/helpers/axios'
+import { QUESTION_VISIBILITY } from '../../app/constants/questionVisibility'
 
 const API_URL = import.meta.env.VITE_APP_API_URL
 
@@ -47,6 +48,13 @@ export interface Question {
   created_at?: string
   updated_at?: string
   is_assigned?: number
+  is_ai_generated?: boolean
+  source_question_id?: string
+  ai_generation_metadata?: {
+    difficulty?: string
+  }
+  visibility?: number
+  generation_count?: number
 }
 
 // Async thunks
@@ -94,6 +102,9 @@ export const fetchQuestions = createAsyncThunk(
     if (order) params.order = order
     if (search) params.search = search
     if (type) params.type = type
+    
+    // Add visibility parameter for subject scope
+    params.visibility = QUESTION_VISIBILITY.SUBJECT_SHARED
     
     // Build the URL with proper tag_ids format
     let url = `${API_URL}/questions`
