@@ -62,10 +62,10 @@ const AIGenerateSimilarModal: FC<AIGenerateSimilarModalProps> = ({
                   onClick={() => setSelectedQuestionType('lq')}
                   disabled={isLoading}
                 >
-                  <div className='d-flex flex-column align-items-center'>
+                  {/*<div className='d-flex flex-column align-items-center'>
                     <i className='fa fa-solid fa-pencil fs-1 mb-2' />
                     <span className='fw-bold'>Long Question</span>
-                  </div>
+                  </div>*/}
                 </button>
               </div>
             </div>

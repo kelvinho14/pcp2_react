@@ -10,6 +10,7 @@ import {PageDataProvider} from './core'
 import {ActivityDrawer, DrawerMessenger, InviteUsers, UpgradePlan} from '../partials'
 import {MenuComponent} from '../assets/ts/components'
 import {useIsDesktop} from '../hooks/useResponsive'
+import PageTransitionWrapper from '../../components/DoorTransition/PageTransitionWrapper'
 
 const MasterLayout = () => {
   const location = useLocation()
@@ -51,7 +52,9 @@ const MasterLayout = () => {
             {/* begin::Content */}
             <div id='kt_content' className='content d-flex flex-column flex-column-fluid'>
               <Content>
-                <Outlet />
+                <PageTransitionWrapper enableTransition={true} transitionDuration={1.2}>
+                  <Outlet />
+                </PageTransitionWrapper>
               </Content>
             </div>
             {/* end::Content */}

@@ -92,15 +92,11 @@ const tabsForStudents: ReadonlyArray<Tab> = [
     paths: ['/videos'],
   },
   {
-    link: 'tasks',
-    icon: 'shield-tick',
-    tooltip: 'Tasks',
-  },
-  {
-    link: 'notifications',
-    icon: 'abstract-26',
-    tooltip: 'Notifications',
-  },
+    link: 'dojo',
+    icon: 'fa-solid fa-torii-gate',
+    tooltip: 'Dojo',
+    paths: ['/dojo'],
+  }
 ]
 
 type Props = {

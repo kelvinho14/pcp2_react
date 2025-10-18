@@ -13,6 +13,7 @@ import {NotificationsTab} from './NotificationsTab'
 import {VideoTab} from './VideoTab'
 import {TeacherVideoTab} from './TeacherVideoTab'
 import {TasksTab} from './TasksTab'
+import {DojoTab} from './DojoTab'
 import { useAuth } from '../../../../../app/modules/auth/core/Auth'
 import {StudentExerciseTab} from './StudentExerciseTab'
 import { ROLES } from '../../../../../app/constants/roles'
@@ -31,6 +32,8 @@ const SelectedTab: FC<Props> = ({link}) => {
         return <StudentExerciseTab />
       case 'video':
         return <VideoTab />
+      case 'dojo':
+        return <DojoTab />
     }
   } else if (roleType === ROLES.ADMIN) {
     switch (link) {

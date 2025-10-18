@@ -16,6 +16,8 @@ import migrationsReducer from './admin/migrationsSlice'
 import notificationsReducer from './notifications/notificationsSlice'
 import creditsReducer from './credits/creditsSlice'
 import customDropdownsReducer from './customDropdowns/customDropdownsSlice'
+import incorrectQuestionsReducer from './dojo/incorrectQuestionsSlice'
+import practiceQuestionsReducer from './dojo/practiceQuestionsSlice'
 
 export const store = configureStore({
   reducer: {
@@ -36,6 +38,8 @@ export const store = configureStore({
     notifications: notificationsReducer,
     credits: creditsReducer,
     customDropdowns: customDropdownsReducer,
+    incorrectQuestions: incorrectQuestionsReducer,
+    practiceQuestions: practiceQuestionsReducer,
   },
 })
 
