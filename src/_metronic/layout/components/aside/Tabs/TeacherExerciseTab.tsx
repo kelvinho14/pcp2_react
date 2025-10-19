@@ -70,7 +70,7 @@ const TeacherExerciseTab = () => {
               </div>
           </div>
           <AsideMenuItem to='/exercises/create' title='Create' hasBullet={true} />
-          <AsideMenuItem to='/exercises/list' title='Exercise Bank' hasBullet={true} />
+          <AsideMenuItem to='/exercises' title='Exercise Bank' hasBullet={true} />
           <AsideMenuItem to='/exercises/assignedlist' title='Assigned Exercise' hasBullet={true} />
 
         </div>

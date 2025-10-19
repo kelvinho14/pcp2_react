@@ -100,6 +100,22 @@ export const renderHtmlSafely = (
     img.style.display = 'inline-block'
   })
   
+  // Add text wrapping styles to prevent overflow
+  const allStyledElements = tempDiv.querySelectorAll('*')
+  allStyledElements.forEach(el => {
+    const element = el as HTMLElement
+    element.style.wordWrap = 'break-word'
+    element.style.overflowWrap = 'break-word'
+    element.style.wordBreak = 'break-word'
+    element.style.maxWidth = '100%'
+  })
+  
+  // Also apply to the root div
+  tempDiv.style.wordWrap = 'break-word'
+  tempDiv.style.overflowWrap = 'break-word'
+  tempDiv.style.wordBreak = 'break-word'
+  tempDiv.style.maxWidth = '100%'
+  
   return tempDiv.innerHTML
 }
 
@@ -182,6 +198,22 @@ export const getHtmlPreview = (
     img.style.verticalAlign = 'middle'
     img.style.display = 'inline-block'
   })
+  
+  // Add text wrapping styles to prevent overflow
+  const allStyledElements = tempDiv.querySelectorAll('*')
+  allStyledElements.forEach(el => {
+    const element = el as HTMLElement
+    element.style.wordWrap = 'break-word'
+    element.style.overflowWrap = 'break-word'
+    element.style.wordBreak = 'break-word'
+    element.style.maxWidth = '100%'
+  })
+  
+  // Also apply to the root div
+  tempDiv.style.wordWrap = 'break-word'
+  tempDiv.style.overflowWrap = 'break-word'
+  tempDiv.style.wordBreak = 'break-word'
+  tempDiv.style.maxWidth = '100%'
   
   // Get all text nodes and truncate them if needed
   const walker = document.createTreeWalker(
