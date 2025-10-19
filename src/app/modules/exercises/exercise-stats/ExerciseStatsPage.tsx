@@ -1,4 +1,4 @@
-import { FC, useEffect, useState, useCallback } from 'react'
+import { FC, useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { PageTitle } from '../../../../_metronic/layout/core'
 import { KTCard, KTCardBody } from '../../../../_metronic/helpers'
@@ -10,6 +10,8 @@ import { TablePagination } from '../../../../_metronic/helpers/TablePagination'
 import BaseModal from '../../../../components/Modal/BaseModal'
 import { renderHtmlSafely } from '../../../../_metronic/helpers/htmlRenderer'
 import { getStatusLabel, getStatusColor } from '../../../constants/assignmentStatus'
+import Highcharts from 'highcharts'
+import HighchartsReact from 'highcharts-react-official'
 
 const exerciseStatsBreadcrumbs: Array<PageLink> = [
   {
@@ -130,6 +132,7 @@ const ExerciseStatsPage: FC = () => {
   const [questionDetails, setQuestionDetails] = useState<QuestionDetails | null>(null)
   const [questionLoading, setQuestionLoading] = useState(false)
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null)
+  const [questionDistributionTab, setQuestionDistributionTab] = useState<'table' | 'chart'>('table')
 
   const fetchExerciseStats = useCallback(async () => {
     if (!exerciseId) {
@@ -205,6 +208,17 @@ const ExerciseStatsPage: FC = () => {
     }
   }, [])
 
+  // Add global function for chart label clicks
+  useEffect(() => {
+    (window as any).openQuestionDetails = (questionId: string) => {
+      fetchQuestionDetails(questionId)
+    }
+    
+    return () => {
+      delete (window as any).openQuestionDetails
+    }
+  }, [fetchQuestionDetails])
+
   // Navigation functions
   const navigateToQuestion = useCallback((direction: 'prev' | 'next') => {
     const allQuestions = getAllQuestions()
@@ -234,6 +248,236 @@ const ExerciseStatsPage: FC = () => {
     console.log(`Navigating ${direction}: from Q${allQuestions[currentIndex].position} to Q${nextQuestion.position}`)
     fetchQuestionDetails(nextQuestion.question_id)
   }, [currentQuestionId, getAllQuestions, fetchQuestionDetails])
+
+  // Chart: Question Performance
+  const questionPerformanceChartOptions = useMemo(() => {
+    if (!stats || !stats.question_statistics || stats.question_statistics.length === 0) {
+      return null
+    }
+
+    const sortedQuestions = [...stats.question_statistics].sort((a, b) => a.position - b.position)
+
+    return {
+      chart: {
+        type: 'column',
+        height: 400,
+        events: {
+          load: function(this: any) {
+            // Add click listeners to x-axis labels after chart loads
+            const chart = this
+            const xAxis = chart.xAxis[0]
+            
+            // Wait for labels to be rendered
+            setTimeout(() => {
+              const ticks = xAxis.ticks
+              Object.keys(ticks).forEach(key => {
+                const tick = ticks[key]
+                if (tick && tick.label && tick.label.element) {
+                  const labelElement = tick.label.element
+                  const categoryText = tick.label.textStr
+                  const questionNumber = parseInt(categoryText.replace('Q', ''))
+                  const questionData = sortedQuestions.find(q => q.position === questionNumber)
+                  
+                  if (questionData) {
+                    labelElement.style.cursor = 'pointer'
+                    labelElement.style.color = '#009ef7'
+                    labelElement.style.textDecoration = 'underline'
+                    
+                    labelElement.addEventListener('click', function() {
+                      if ((window as any).openQuestionDetails) {
+                        (window as any).openQuestionDetails(questionData.question_id)
+                      }
+                    })
+                  }
+                }
+              })
+            }, 100)
+          }
+        }
+      },
+      title: {
+        text: '',
+        align: 'left',
+      },
+      subtitle: {
+        text: 'Correct answer percentage per question',
+        align: 'left',
+      },
+      xAxis: {
+        categories: sortedQuestions.map(q => `Q${q.position}`),
+        crosshair: true,
+        title: {
+          text: 'Question Number',
+        },
+        labels: {
+          style: {
+            cursor: 'pointer',
+            color: '#009ef7',
+            textDecoration: 'underline',
+          },
+        },
+      },
+      yAxis: {
+        min: 0,
+        max: 100,
+        title: {
+          text: 'Correct Percentage (%)',
+        },
+        plotLines: [{
+          value: 50,
+          color: '#ff6b6b',
+          dashStyle: 'ShortDash',
+          width: 2,
+          label: {
+            text: '50% threshold',
+            align: 'right',
+          },
+        }],
+      },
+      tooltip: {
+        shared: true,
+        formatter: function(this: any) {
+          const point = this.points[0]
+          const questionData = sortedQuestions[point.point.index]
+          return `<b>Q${point.x+1}</b><br/>` +
+                 `Correct: ${point.y.toFixed(1)}%<br/>` +
+                 `Attempts: ${questionData.total_attempts}<br/>` +
+                 `<i>Click on label to view details</i>`
+        },
+      },
+      plotOptions: {
+        column: {
+          colorByPoint: false,
+          zones: [{
+            value: 50,
+            color: '#f1416c',
+          }, {
+            value: 70,
+            color: '#ffc700',
+          }, {
+            color: '#50cd89',
+          }],
+          dataLabels: {
+            enabled: true,
+            format: '{y:.0f}%',
+          },
+          cursor: 'pointer',
+          point: {
+            events: {
+              click: function(this: any) {
+                const questionData = sortedQuestions[this.index]
+                fetchQuestionDetails(questionData.question_id)
+              },
+            },
+          },
+        },
+      },
+      series: [{
+        name: 'Correct %',
+        data: sortedQuestions.map(q => parseFloat(q.correct_percentage.toFixed(1))),
+      }],
+      credits: {
+        enabled: false,
+      },
+      legend: {
+        enabled: false,
+      },
+    }
+  }, [stats, fetchQuestionDetails])
+
+  // Chart: Student Score Distribution
+  const studentScoreDistributionChartOptions = useMemo(() => {
+    if (!stats || !stats.students || !stats.students.items || stats.students.items.length === 0) {
+      return null
+    }
+
+    // Sort students by score percentage for better visualization
+    const sortedStudents = [...stats.students.items].sort((a, b) => a.score_percentage - b.score_percentage)
+
+    return {
+      chart: {
+        type: 'column',
+        height: 400,
+      },
+      title: {
+        text: 'Student Score Distribution',
+        align: 'left',
+      },
+      subtitle: {
+        text: `Individual student scores (${stats.students.pagination.total_items} students)`,
+        align: 'left',
+      },
+      xAxis: {
+        categories: sortedStudents.map(student => `${student.total_score}/${student.max_score}`),
+        crosshair: true,
+        title: {
+          text: 'Student Scores',
+        },
+        labels: {
+          rotation: -45,
+          style: {
+            fontSize: '12px',
+          },
+        },
+      },
+      yAxis: {
+        min: 0,
+        max: 100,
+        title: {
+          text: 'Score Percentage (%)',
+        },
+        plotLines: [{
+          value: 50,
+          color: '#ff6b6b',
+          dashStyle: 'ShortDash',
+          width: 2,
+          label: {
+            text: '50% threshold',
+            align: 'right',
+          },
+        }],
+      },
+      tooltip: {
+        formatter: function(this: any) {
+          const student = sortedStudents[this.point.index]
+          return `<b>${student.student_name}</b><br/>` +
+                 `Score: ${student.total_score}/${student.max_score}<br/>` +
+                 `Percentage: ${student.score_percentage.toFixed(1)}%<br/>` +
+                 `Status: ${getStatusLabel(student.status as any)}`
+        },
+      },
+      plotOptions: {
+        column: {
+          colorByPoint: true,
+          colors: sortedStudents.map(student => {
+            if (student.score_percentage >= 80) return '#50cd89' // Green
+            if (student.score_percentage >= 60) return '#ffc700' // Yellow
+            if (student.score_percentage >= 40) return '#ff9f43' // Orange
+            return '#f1416c' // Red
+          }),
+          dataLabels: {
+            enabled: true,
+            format: '{y:.1f}%',
+            style: {
+              fontSize: '11px',
+              fontWeight: 'bold',
+            },
+          },
+        },
+      },
+      series: [{
+        name: 'Score %',
+        data: sortedStudents.map(student => student.score_percentage),
+      }],
+      credits: {
+        enabled: false,
+      },
+      legend: {
+        enabled: false,
+      },
+    }
+  }, [stats])
+
 
   if (loading) {
     return (
@@ -372,6 +616,27 @@ const ExerciseStatsPage: FC = () => {
           </KTCard>
         </div>
 
+      </div>
+
+      {/* Student Score Distribution Chart */}
+      <div className='row g-5 g-xl-10 mb-5 mb-xl-10'>
+        <div className='col-xl-12'>
+          <KTCard>
+            <KTCardBody>
+              {studentScoreDistributionChartOptions ? (
+                <HighchartsReact
+                  highcharts={Highcharts}
+                  options={studentScoreDistributionChartOptions}
+                />
+              ) : (
+                <div className='text-center py-5'>
+                  <i className='fas fa-chart-bar fs-3x text-muted mb-3'></i>
+                  <p className='text-muted'>No student data available for chart</p>
+                </div>
+              )}
+            </KTCardBody>
+          </KTCard>
+        </div>
       </div>
 
 
@@ -517,80 +782,135 @@ const ExerciseStatsPage: FC = () => {
         <div className='col-xl-12'>
           <KTCard>
             <KTCardBody>
-              <h3 className='card-title align-items-start flex-column'>
-                <span className='card-label fw-bold fs-3 mb-1'>Question distribution</span>
-              </h3>
-              <div className='mt-5'>
-                {stats.question_statistics.length > 0 ? (
-                  <div className='table-responsive'>
-                    <table className='table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4'>
-                      <thead>
-                        <tr className='fw-bold text-muted'>
-                          <th className='min-w-200px'>Question</th>
-                          <th className='min-w-100px text-center'>Correct %</th>
-                          <th className='min-w-100px text-center'>A</th>
-                          <th className='min-w-100px text-center'>B</th>
-                          <th className='min-w-100px text-center'>C</th>
-                          <th className='min-w-100px text-center'>D</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stats.question_statistics.map((question, index) => {
-                          // Create options array with all A, B, C, D options
-                          const options = ['A', 'B', 'C', 'D'].map(letter => {
-                            const option = question.options?.find(opt => opt.option_letter === letter)
-                            return {
-                              letter,
-                              percentage: option ? option.selection_percentage : 0,
-                              isCorrect: option ? option.is_correct : false
-                            }
-                          })
-                          
-                          return (
-                            <tr key={index}>
-                              <td>
-                                <div className='d-flex align-items-center'>
-                                  <div 
-                                    className='symbol symbol-40px me-3'
-                                    style={{ cursor: 'pointer' }}
-                                    onClick={() => fetchQuestionDetails(question.question_id)}
-                                    title='View question details'
-                                  >
-                                    <span className='symbol-label bg-warning'>
-                                      <i className='fas fa-question text-white fs-6'></i>
-                                    </span>
-                                  </div>
-                                  <div className='d-flex justify-content-start flex-column'>
-                                    <span className='text-gray-800 fw-bold fs-6'>Q{question.position}</span>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className='text-center'>
-                                <span className='text-gray-800 fw-bold fs-6'>
-                                  {question.correct_percentage.toFixed(0)}%
-                                </span>
-                              </td>
-                              {options.map((option, optIndex) => (
-                                <td key={optIndex} className='text-center'>
-                                  <span 
-                                    className={`fw-bold fs-6 px-2 py-1 rounded ${
-                                      option.isCorrect ? 'bg-success text-white' : 'text-gray-800'
-                                    }`}
-                                  >
-                                    {option.percentage.toFixed(0)}%
-                                  </span>
-                                </td>
-                              ))}
+              <div className='d-flex justify-content-between align-items-center mb-5'>
+                <h3 className='card-title align-items-start flex-column mb-0'>
+                  <span className='card-label fw-bold fs-3'>Question distribution</span>
+                </h3>
+                
+                {/* Tabs */}
+                <div className='d-flex'>
+                  <ul className='nav nav-tabs nav-line-tabs nav-line-tabs-2x border-transparent fs-4 fw-bold flex-nowrap'>
+                    <li className='nav-item'>
+                      <button
+                        className={`nav-link text-active-primary ms-0 ${
+                          questionDistributionTab === 'table' ? 'active' : ''
+                        }`}
+                        onClick={() => setQuestionDistributionTab('table')}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer' }}
+                      >
+                        <i className='fas fa-table me-2'></i>
+                        Table
+                      </button>
+                    </li>
+                    <li className='nav-item'>
+                      <button
+                        className={`nav-link text-active-primary ${
+                          questionDistributionTab === 'chart' ? 'active' : ''
+                        }`}
+                        onClick={() => setQuestionDistributionTab('chart')}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer' }}
+                      >
+                        <i className='fas fa-chart-bar me-2'></i>
+                        Chart
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className='tab-content'>
+                {/* Table Tab */}
+                {questionDistributionTab === 'table' && (
+                  <div className='tab-pane fade show active'>
+                    {stats.question_statistics.length > 0 ? (
+                      <div className='table-responsive'>
+                        <table className='table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4'>
+                          <thead>
+                            <tr className='fw-bold text-muted'>
+                              <th className='min-w-200px'>Question</th>
+                              <th className='min-w-100px text-center'>Correct %</th>
+                              <th className='min-w-100px text-center'>A</th>
+                              <th className='min-w-100px text-center'>B</th>
+                              <th className='min-w-100px text-center'>C</th>
+                              <th className='min-w-100px text-center'>D</th>
                             </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+                          </thead>
+                          <tbody>
+                            {stats.question_statistics.map((question, index) => {
+                              // Create options array with all A, B, C, D options
+                              const options = ['A', 'B', 'C', 'D'].map(letter => {
+                                const option = question.options?.find(opt => opt.option_letter === letter)
+                                return {
+                                  letter,
+                                  percentage: option ? option.selection_percentage : 0,
+                                  isCorrect: option ? option.is_correct : false
+                                }
+                              })
+                              
+                              return (
+                                <tr key={index}>
+                                  <td>
+                                    <div className='d-flex align-items-center'>
+                                      <div 
+                                        className='symbol symbol-40px me-3'
+                                        style={{ cursor: 'pointer' }}
+                                        onClick={() => fetchQuestionDetails(question.question_id)}
+                                        title='View question details'
+                                      >
+                                        <span className='symbol-label bg-warning'>
+                                          <i className='fas fa-question text-white fs-6'></i>
+                                        </span>
+                                      </div>
+                                      <div className='d-flex justify-content-start flex-column'>
+                                        <span className='text-gray-800 fw-bold fs-6'>Q{question.position}</span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className='text-center'>
+                                    <span className='text-gray-800 fw-bold fs-6'>
+                                      {question.correct_percentage.toFixed(0)}%
+                                    </span>
+                                  </td>
+                                  {options.map((option, optIndex) => (
+                                    <td key={optIndex} className='text-center'>
+                                      <span 
+                                        className={`fw-bold fs-6 px-2 py-1 rounded ${
+                                          option.isCorrect ? 'bg-success text-white' : 'text-gray-800'
+                                        }`}
+                                      >
+                                        {option.percentage.toFixed(0)}%
+                                      </span>
+                                    </td>
+                                  ))}
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className='text-center py-5'>
+                        <i className='fas fa-chart-bar fs-3x text-muted mb-3'></i>
+                        <p className='text-muted'>No question statistics available</p>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className='text-center py-5'>
-                    <i className='fas fa-chart-bar fs-3x text-muted mb-3'></i>
-                    <p className='text-muted'>No question statistics available</p>
+                )}
+
+                {/* Chart Tab */}
+                {questionDistributionTab === 'chart' && (
+                  <div className='tab-pane fade show active'>
+                    {questionPerformanceChartOptions ? (
+                      <HighchartsReact
+                        highcharts={Highcharts}
+                        options={questionPerformanceChartOptions}
+                      />
+                    ) : (
+                      <div className='text-center py-5'>
+                        <i className='fas fa-chart-bar fs-3x text-muted mb-3'></i>
+                        <p className='text-muted'>No question performance data available</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
