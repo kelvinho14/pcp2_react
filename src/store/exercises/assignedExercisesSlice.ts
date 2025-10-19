@@ -158,8 +158,8 @@ const initialState: AssignedExercisesState = {
     total_pages: 0
   },
   filters: {
-    order_by: 'due_date',
-    order: 'asc'
+    order_by: 'assigned_date',
+    order: 'desc'
   },
   filtersCollapsed: true,
   loading: false,

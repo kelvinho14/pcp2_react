@@ -33,7 +33,6 @@ const AsideMenuItem: FC<Props & WithChildren> = ({
   const {config} = useLayout()
   const {aside} = config
   const isDesktop = useIsDesktop()
-
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault()
     
