@@ -133,6 +133,12 @@ const ExerciseStatsPage: FC = () => {
   const [questionLoading, setQuestionLoading] = useState(false)
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null)
   const [questionDistributionTab, setQuestionDistributionTab] = useState<'table' | 'chart'>('table')
+  
+  // Student Result Modal state
+  const [showStudentResultModal, setShowStudentResultModal] = useState(false)
+  const [studentResult, setStudentResult] = useState<any>(null)
+  const [studentResultLoading, setStudentResultLoading] = useState(false)
+  const [currentStudentIndex, setCurrentStudentIndex] = useState<number>(0)
 
   const fetchExerciseStats = useCallback(async () => {
     if (!exerciseId) {
@@ -208,6 +214,31 @@ const ExerciseStatsPage: FC = () => {
     }
   }, [])
 
+  const fetchStudentResult = useCallback(async (assignmentId: string, studentId: string, studentIndex?: number) => {
+    setStudentResultLoading(true)
+    try {
+      const API_URL = import.meta.env.VITE_APP_API_URL
+      const response = await axios.get(
+        `${API_URL}/exercises/assignments/${assignmentId}/students/${studentId}/result`,
+        {
+          headers: getHeadersWithSchoolSubject(`${API_URL}/exercises/assignments/${assignmentId}/students/${studentId}/result`),
+          withCredentials: true
+        }
+      )
+      
+      setStudentResult(response.data.data)
+      if (studentIndex !== undefined) {
+        setCurrentStudentIndex(studentIndex)
+      }
+      setShowStudentResultModal(true)
+    } catch (err: any) {
+      console.error('Error fetching student result:', err)
+      setError(err.response?.data?.message || 'Failed to fetch student result')
+    } finally {
+      setStudentResultLoading(false)
+    }
+  }, [])
+
   // Add global function for chart label clicks
   useEffect(() => {
     (window as any).openQuestionDetails = (questionId: string) => {
@@ -218,6 +249,23 @@ const ExerciseStatsPage: FC = () => {
       delete (window as any).openQuestionDetails
     }
   }, [fetchQuestionDetails])
+
+  // Student navigation functions
+  const navigateToStudent = useCallback((direction: 'prev' | 'next') => {
+    if (!stats || !stats.students || !stats.students.items || stats.students.items.length <= 1) return
+    
+    const students = stats.students.items
+    let newIndex: number
+    
+    if (direction === 'prev') {
+      newIndex = currentStudentIndex > 0 ? currentStudentIndex - 1 : students.length - 1
+    } else {
+      newIndex = currentStudentIndex < students.length - 1 ? currentStudentIndex + 1 : 0
+    }
+    
+    const student = students[newIndex]
+    fetchStudentResult(student.assignment_id, student.student_id, newIndex)
+  }, [stats, currentStudentIndex, fetchStudentResult])
 
   // Navigation functions
   const navigateToQuestion = useCallback((direction: 'prev' | 'next') => {
@@ -392,7 +440,10 @@ const ExerciseStatsPage: FC = () => {
     }
 
     // Sort students by score percentage for better visualization
-    const sortedStudents = [...stats.students.items].sort((a, b) => a.score_percentage - b.score_percentage)
+    // Filter out students with null scores and sort by percentage
+    const sortedStudents = [...stats.students.items]
+      .filter(student => student.score_percentage !== null)
+      .sort((a, b) => (a.score_percentage || 0) - (b.score_percentage || 0))
 
     return {
       chart: {
@@ -441,8 +492,8 @@ const ExerciseStatsPage: FC = () => {
         formatter: function(this: any) {
           const student = sortedStudents[this.point.index]
           return `<b>${student.student_name}</b><br/>` +
-                 `Score: ${student.total_score}/${student.max_score}<br/>` +
-                 `Percentage: ${student.score_percentage.toFixed(1)}%<br/>` +
+                 `Score: ${student.total_score || 0}/${student.max_score || 0}<br/>` +
+                 `Percentage: ${student.score_percentage ? student.score_percentage.toFixed(1) : '0.0'}%<br/>` +
                  `Status: ${getStatusLabel(student.status as any)}`
         },
       },
@@ -450,9 +501,10 @@ const ExerciseStatsPage: FC = () => {
         column: {
           colorByPoint: true,
           colors: sortedStudents.map(student => {
-            if (student.score_percentage >= 80) return '#50cd89' // Green
-            if (student.score_percentage >= 60) return '#ffc700' // Yellow
-            if (student.score_percentage >= 40) return '#ff9f43' // Orange
+            const percentage = student.score_percentage || 0
+            if (percentage >= 80) return '#50cd89' // Green
+            if (percentage >= 60) return '#ffc700' // Yellow
+            if (percentage >= 40) return '#ff9f43' // Orange
             return '#f1416c' // Red
           }),
           dataLabels: {
@@ -467,7 +519,7 @@ const ExerciseStatsPage: FC = () => {
       },
       series: [{
         name: 'Score %',
-        data: sortedStudents.map(student => student.score_percentage),
+        data: sortedStudents.map(student => student.score_percentage || 0),
       }],
       credits: {
         enabled: false,
@@ -617,6 +669,104 @@ const ExerciseStatsPage: FC = () => {
         </div>
 
       </div>
+
+      {/* Student Statistics Cards */}
+      {stats && stats.students && stats.students.items && stats.students.items.length > 0 && (() => {
+        const students = stats.students.items.filter(student => student.score_percentage !== null)
+        if (students.length === 0) return null
+        
+        const scores = students.map(student => student.score_percentage || 0)
+        const totalScores = students.map(student => student.total_score || 0)
+        const maxScores = students.map(student => student.max_score || 0)
+        
+        // Calculate average
+        const averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length
+        const averageTotal = totalScores.reduce((sum, score) => sum + score, 0) / totalScores.length
+        const averageMax = maxScores.reduce((sum, score) => sum + score, 0) / maxScores.length
+        
+        // Calculate median
+        const sortedScores = [...scores].sort((a, b) => a - b)
+        const medianScore = sortedScores.length % 2 === 0
+          ? (sortedScores[sortedScores.length / 2 - 1] + sortedScores[sortedScores.length / 2]) / 2
+          : sortedScores[Math.floor(sortedScores.length / 2)]
+        
+        const sortedTotalScores = [...totalScores].sort((a, b) => a - b)
+        const medianTotal = sortedTotalScores.length % 2 === 0
+          ? (sortedTotalScores[sortedTotalScores.length / 2 - 1] + sortedTotalScores[sortedTotalScores.length / 2]) / 2
+          : sortedTotalScores[Math.floor(sortedTotalScores.length / 2)]
+        
+        const sortedMaxScores = [...maxScores].sort((a, b) => a - b)
+        const medianMax = sortedMaxScores.length % 2 === 0
+          ? (sortedMaxScores[sortedMaxScores.length / 2 - 1] + sortedMaxScores[sortedMaxScores.length / 2]) / 2
+          : sortedMaxScores[Math.floor(sortedMaxScores.length / 2)]
+        
+        // Calculate range
+        const minScore = Math.min(...totalScores)
+        const maxScore = Math.max(...totalScores)
+        const minMaxScore = Math.min(...maxScores)
+        const maxMaxScore = Math.max(...maxScores)
+        
+        return (
+          <div className='row g-5 g-xl-10 mb-5 mb-xl-10'>
+            <div className='col-md-4'>
+              <KTCard className='h-100'>
+                <KTCardBody className='d-flex flex-column justify-content-center'>
+                  <div className='d-flex align-items-center'>
+                    <div className='symbol symbol-50px me-5'>
+                      <span className='symbol-label bg-light-success'>
+                        <i className='fas fa-chart-line fs-2x text-success'></i>
+                      </span>
+                    </div>
+                    <div className='d-flex flex-column'>
+                      <span className='text-gray-800 fw-bold fs-2'>{averageScore.toFixed(1)}%</span>
+                      <span className='text-muted fw-semibold'>Average</span>
+                      <span className='text-gray-600 fs-7'>{averageTotal.toFixed(1)} / {averageMax.toFixed(1)}</span>
+                    </div>
+                  </div>
+                </KTCardBody>
+              </KTCard>
+            </div>
+
+            <div className='col-md-4'>
+              <KTCard className='h-100'>
+                <KTCardBody className='d-flex flex-column justify-content-center'>
+                  <div className='d-flex align-items-center'>
+                    <div className='symbol symbol-50px me-5'>
+                      <span className='symbol-label bg-light-primary'>
+                        <i className='fas fa-chart-bar fs-2x text-primary'></i>
+                      </span>
+                    </div>
+                    <div className='d-flex flex-column'>
+                      <span className='text-gray-800 fw-bold fs-2'>{medianScore.toFixed(1)}%</span>
+                      <span className='text-muted fw-semibold'>Median</span>
+                      <span className='text-gray-600 fs-7'>{medianTotal.toFixed(1)} / {medianMax.toFixed(1)}</span>
+                    </div>
+                  </div>
+                </KTCardBody>
+              </KTCard>
+            </div>
+
+            <div className='col-md-4'>
+              <KTCard className='h-100'>
+                <KTCardBody className='d-flex flex-column justify-content-center'>
+                  <div className='d-flex align-items-center'>
+                    <div className='symbol symbol-50px me-5'>
+                      <span className='symbol-label bg-light-warning'>
+                        <i className='fas fa-chart-area fs-2x text-warning'></i>
+                      </span>
+                    </div>
+                    <div className='d-flex flex-column'>
+                      <span className='text-gray-800 fw-bold fs-2'>{minScore} - {maxScore}</span>
+                      <span className='text-muted fw-semibold'>Range</span>
+                      <span className='text-gray-600 fs-7'>out of {maxMaxScore}</span>
+                    </div>
+                  </div>
+                </KTCardBody>
+              </KTCard>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Student Score Distribution Chart */}
       <div className='row g-5 g-xl-10 mb-5 mb-xl-10'>
@@ -950,17 +1100,24 @@ const ExerciseStatsPage: FC = () => {
                                   </span>
                                 </div>
                                 <div className='d-flex justify-content-start flex-column'>
-                                  <span className='text-gray-800 fw-bold fs-6'>{student.student_name}</span>
+                                  <span 
+                                    className='text-primary fw-bold fs-6 cursor-pointer text-hover-primary'
+                                    
+                                    onClick={() => fetchStudentResult(student.assignment_id, student.student_id, index)}
+                                    title='View student result'
+                                  >
+                                    {student.student_name}
+                                  </span>
                                 </div>
                               </div>
                             </td>
                             <td>
                             <div className='d-flex flex-column gap-2 align-items-start'>
                                 <span className='text-gray-800 fw-bold fs-6'>
-                                  {student.total_score} / {student.max_score}
+                                  {student.total_score || 0} / {student.max_score || 0}
                                 </span>
                                 <span className={`badge badge-primary py-1 px-2 fs-7 fw-bold d-inline-block w-auto`}>
-                                  {student.score_percentage.toFixed(1)}%
+                                  {student.score_percentage ? student.score_percentage.toFixed(1) : '0.0'}%
                                 </span>
                               </div>
                             </td>
@@ -1163,6 +1320,538 @@ const ExerciseStatsPage: FC = () => {
                 className="btn btn-light ms-3"
                 onClick={() => navigateToQuestion('next')}
                 title="Next Question"
+              >
+                Next
+                <i className="fas fa-chevron-right ms-2"></i>
+              </button>
+            </div>
+          )}
+        </div>
+      </BaseModal>
+
+      {/* Student Result Modal */}
+      <BaseModal
+        show={showStudentResultModal}
+        onHide={() => setShowStudentResultModal(false)}
+        title={studentResult ? studentResult.exercise.title : "Student Result"}
+        size="xl"
+      >
+        <div className="p-4">
+          {studentResultLoading ? (
+            <div className="text-center py-5">
+              <i className="fas fa-spinner fa-spin fs-2x text-primary mb-3"></i>
+              <p className="text-muted">Loading student result...</p>
+            </div>
+          ) : studentResult ? (
+            <div>
+
+              {/* Student Info Card */}
+              <div className="row mb-4">
+                <div className="col-12">
+                  <div className="card border border-gray-300">
+                    <div className="card-body">
+                      <div className="d-flex align-items-center justify-content-between">
+                        <div className="d-flex align-items-center">
+                          <div className="symbol symbol-50px me-4">
+                            <span className="symbol-label bg-light-primary">
+                              <i className="fas fa-user text-primary fs-2x"></i>
+                            </span>
+                          </div>
+                          <div>
+                            <h5 className="fw-bold mb-1">{studentResult.student.name}</h5>
+                          </div>
+                        </div>
+                        {studentResult.submitted_at && (
+                          <div className="text-end">
+                            <div className="text-muted small">Submitted</div>
+                            <div className="fw-bold">
+                              {formatApiTimestamp(studentResult.submitted_at, { format: 'custom' })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Score and Progress Cards */}
+              <div className="row mb-5">
+                <div className="col-md-6">
+                  <div className="card bg-light-success border-0">
+                    <div className="card-body text-center">
+                      <h6 className="text-muted mb-2">Score</h6>
+                      <h3 className="text-success fw-bold mb-0">
+                        {studentResult.score.total_score} / {studentResult.score.max_total_score}
+                      </h3>
+                      <span className="badge badge-success mt-2">
+                        {studentResult.score.percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="card bg-light-primary border-0">
+                    <div className="card-body text-center">
+                      <h6 className="text-muted mb-2">Progress</h6>
+                      <h3 className="text-primary fw-bold mb-0">
+                        {studentResult.progress.answered_questions} / {studentResult.progress.total_questions}
+                      </h3>
+                      <span className="badge badge-primary mt-2">
+                        {studentResult.progress.percentage.toFixed(1)}% Complete
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
+              {/* Feedback */}
+              {studentResult.feedback && (
+                <div className="bg-light-info rounded p-4 mb-5">
+                  <div className="d-flex align-items-start">
+                    <i className="fas fa-comment-dots text-info me-3 mt-1"></i>
+                    <div className="flex-grow-1">
+                      <h6 className="text-info fw-bold mb-2">Overall Feedback</h6>
+                      <div className="text-gray-800">{studentResult.feedback}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Questions and Answers */}
+              <div className="mb-4">
+                <h5 className="fw-bold mb-4">
+                  <i className="fas fa-question-circle me-2"></i>
+                  Questions & Answers
+                </h5>
+                
+                {studentResult.questions && studentResult.questions.length > 0 ? (
+                  studentResult.questions.map((question: any, index: number) => (
+                    <div key={question.question_id} className="card border border-gray-300 mb-4">
+                      <div className="card-body">
+                        {/* Question Header */}
+                        <div className="d-flex justify-content-between align-items-start mb-3">
+                          <div className="d-flex align-items-start flex-grow-1">
+                            <span className="badge badge-primary me-3 mt-1">Q{index + 1}</span>
+                            <div 
+                              className="flex-grow-1"
+                              dangerouslySetInnerHTML={{ 
+                                __html: renderHtmlSafely(question.question_content, {
+                                  maxImageWidth: 600,
+                                  maxImageHeight: 400
+                                })
+                              }}
+                            />
+                          </div>
+                          <span className="badge badge-secondary ms-2">
+                            {question.question_type === 'mc' ? 'MC' : 
+                             question.question_type === 'lq' ? 'LQ' : 
+                             question.question_type === 'tf' ? 'True/False' : 
+                             question.question_type === 'matching' ? 'Matching' : 'Unknown'}
+                          </span>
+                        </div>
+
+                        {/* Multiple Choice Questions */}
+                        {question.question_type === 'mc' && question.model_answer && (
+                          <div>
+                            <div className="row mb-3">
+                              {question.model_answer.options?.map((option: any) => {
+                                const isCorrect = question.model_answer.correct_option === option.option_letter
+                                const isStudentAnswer = question.student_answer?.your_answer === option.option_letter
+                                const studentAnsweredCorrectly = question.student_answer?.is_correct
+                                
+                                // If student answered correctly, only show the correct answer
+                                // If student answered incorrectly, show both student's answer and correct answer
+                                let shouldShow = false
+                                if (studentAnsweredCorrectly) {
+                                  shouldShow = isCorrect
+                                } else {
+                                  shouldShow = isCorrect || isStudentAnswer
+                                }
+                                
+                                if (!shouldShow) return null
+                                
+                                return (
+                                  <div key={option.option_letter} className="col-md-6 mb-2">
+                                    <div className={`border rounded p-3 ${
+                                      isCorrect ? ' bg-light-success' : 
+                                      isStudentAnswer && !isCorrect ? ' bg-light-danger' : 
+                                      'bg-light'
+                                    }`}>
+                                      <div className="d-flex align-items-start">
+                                        <span className={`badge me-2 ${
+                                          isCorrect ? 'badge-success' : 
+                                          isStudentAnswer && !isCorrect ? 'badge-danger' : 'badge-secondary'
+                                        }`}>
+                                          {option.option_letter}
+                                        </span>
+                                        <div 
+                                          className="flex-grow-1"
+                                          dangerouslySetInnerHTML={{ 
+                                            __html: renderHtmlSafely(option.option_text || '', {
+                                              maxImageWidth: 400,
+                                              maxImageHeight: 300
+                                            })
+                                          }}
+                                        />
+                                        {isCorrect && (
+                                          <i className="fas fa-check-circle text-success ms-2 mt-1"></i>
+                                        )}
+                                        {isStudentAnswer && !isCorrect && (
+                                          <i className="fas fa-times-circle text-danger ms-2 mt-1"></i>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+
+                            {question.model_answer.answer_content && (
+                              <div className="bg-light-info rounded p-3">
+                                <div className="d-flex align-items-start">
+                                  <i className="fas fa-lightbulb text-info me-2 mt-1"></i>
+                                  <div className="flex-grow-1">
+                                    <strong className="text-info">Explanation:</strong>
+                                    <div 
+                                      className="mt-2"
+                                      dangerouslySetInnerHTML={{ 
+                                        __html: renderHtmlSafely(question.model_answer.answer_content, {
+                                          maxImageWidth: 600,
+                                          maxImageHeight: 400
+                                        })
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* True/False Questions */}
+                        {question.question_type === 'tf' && question.model_answer && (
+                          <div>
+                            {/* Show what student answered only if incorrect */}
+                            {question.student_answer && !question.student_answer.is_correct && (
+                              <div className="mb-3 p-3 border rounded bg-light">
+                                <div className="d-flex align-items-center justify-content-between">
+                                  <div>
+                                    <strong className="me-2">Student's Answer:</strong>
+                                    <span className="badge badge-danger">
+                                      {question.student_answer.your_answer ? String(question.student_answer.your_answer).toUpperCase() : 'No answer'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-danger fw-bold">
+                                      <i className="fas fa-times-circle me-1"></i>Incorrect
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="row mb-3">
+                              {['true', 'false'].map((option) => {
+                                const isCorrect = question.model_answer.correct_answer === option
+                                const isStudentAnswer = question.student_answer?.your_answer === option
+                                const studentAnsweredCorrectly = question.student_answer?.is_correct
+                                
+                                // If student answered correctly, only show the correct answer
+                                // If student answered incorrectly, show both student's answer and correct answer
+                                let shouldShow = false
+                                if (studentAnsweredCorrectly) {
+                                  shouldShow = isCorrect
+                                } else {
+                                  shouldShow = isCorrect || isStudentAnswer
+                                }
+                                
+                                if (!shouldShow) return null
+                                
+                                return (
+                                  <div key={option} className="col-md-6 mb-2">
+                                    <div className={`border rounded p-3 ${
+                                      isCorrect ? 'border-success bg-light-success' : 
+                                      isStudentAnswer && !isCorrect ? 'border-danger bg-light-danger' : 
+                                      'bg-light'
+                                    }`}>
+                                      <div className="d-flex align-items-center justify-content-between">
+                                        <div className="d-flex align-items-center">
+                                          <i className={`fas ${option === 'true' ? 'fa-check' : 'fa-times'} fs-4 me-3 ${
+                                            isCorrect ? 'text-success' : isStudentAnswer ? 'text-danger' : 'text-muted'
+                                          }`}></i>
+                                          <span className="fw-bold text-capitalize">{option}</span>
+                                        </div>
+                                        {isCorrect && (
+                                          <i className="fas fa-check-circle text-success"></i>
+                                        )}
+                                        {isStudentAnswer && !isCorrect && (
+                                          <i className="fas fa-times-circle text-danger"></i>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+
+                            {question.model_answer.answer_content && (
+                              <div className="bg-light-info rounded p-3">
+                                <div className="d-flex align-items-start">
+                                  <i className="fas fa-lightbulb text-info me-2 mt-1"></i>
+                                  <div className="flex-grow-1">
+                                    <strong className="text-info">Explanation:</strong>
+                                    <div 
+                                      className="mt-2"
+                                      dangerouslySetInnerHTML={{ 
+                                        __html: renderHtmlSafely(question.model_answer.answer_content, {
+                                          maxImageWidth: 600,
+                                          maxImageHeight: 400
+                                        })
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Long Questions */}
+                        {question.question_type === 'lq' && (
+                          <div>
+                            {question.student_answer?.your_answer ? (
+                              <div className="mb-3">
+                                <strong className="text-muted">Student Answer:</strong>
+                                <div 
+                                  className="border rounded p-3 bg-light mt-2"
+                                  dangerouslySetInnerHTML={{ 
+                                    __html: renderHtmlSafely(question.student_answer.your_answer, {
+                                      maxImageWidth: 600,
+                                      maxImageHeight: 400
+                                    })
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="alert alert-warning">
+                                <i className="fas fa-exclamation-triangle me-2"></i>
+                                No answer provided
+                              </div>
+                            )}
+
+                            {question.model_answer?.answer_content && (
+                              <div className="mb-3">
+                                <strong className="text-muted">Model Answer:</strong>
+                                <div 
+                                  className="border rounded p-3 bg-light-success mt-2"
+                                  dangerouslySetInnerHTML={{ 
+                                    __html: renderHtmlSafely(question.model_answer.answer_content, {
+                                      maxImageWidth: 600,
+                                      maxImageHeight: 400
+                                    })
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {question.model_answer?.rubric_content && (
+                              <div className="alert alert-info">
+                                <strong><i className="fas fa-list-check me-2"></i>Rubric:</strong>
+                                <div 
+                                  className="mt-2"
+                                  dangerouslySetInnerHTML={{ 
+                                    __html: renderHtmlSafely(question.model_answer.rubric_content, {
+                                      maxImageWidth: 600,
+                                      maxImageHeight: 400
+                                    })
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {question.student_answer?.is_graded && question.student_answer?.graded_at && (
+                              <div className="alert alert-success">
+                                <i className="fas fa-check-circle me-2"></i>
+                                Graded on {formatApiTimestamp(question.student_answer.graded_at, { format: 'custom' })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Matching Questions */}
+                        {question.question_type === 'matching' && question.model_answer && (
+                          <div>
+                            <div className="row">
+                              <div className="col-md-6">
+                                <h6 className="text-muted mb-3">Left Items</h6>
+                                {question.model_answer.left_items?.map((item: string, idx: number) => (
+                                  <div key={idx} className="border rounded p-2 bg-light mb-2">
+                                    <span className="badge badge-secondary me-2">{idx + 1}</span>
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="col-md-6">
+                                <h6 className="text-muted mb-3">Right Items</h6>
+                                {question.model_answer.right_items?.map((item: string, idx: number) => (
+                                  <div key={idx} className="border rounded p-2 bg-light mb-2">
+                                    <span className="badge badge-secondary me-2">{String.fromCharCode(65 + idx)}</span>
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="mt-3">
+                              <div className="d-flex justify-content-between mb-2">
+                                <strong className="text-success">Correct Pairs:</strong>
+                                <div>
+                                  {question.model_answer.correct_pairs?.map((pairIdx: number, idx: number) => (
+                                    <span key={idx} className="badge badge-success me-1">
+                                      {idx + 1} → {String.fromCharCode(65 + pairIdx)}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {question.student_answer?.your_answer && (
+                                <div className="d-flex justify-content-between">
+                                  <strong className={question.student_answer.is_correct ? 'text-success' : 'text-danger'}>
+                                    Student Pairs:
+                                  </strong>
+                                  <div>
+                                    {question.student_answer.your_answer.map((pairIdx: number, idx: number) => (
+                                      <span key={idx} className={`badge me-1 ${
+                                        pairIdx === question.model_answer.correct_pairs[idx] 
+                                          ? 'badge-success' 
+                                          : 'badge-danger'
+                                      }`}>
+                                        {idx + 1} → {String.fromCharCode(65 + pairIdx)}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {question.model_answer.answer_content && (
+                              <div className="bg-light-info rounded p-3 mt-3">
+                                <div className="d-flex align-items-start">
+                                  <i className="fas fa-lightbulb text-info me-2 mt-1"></i>
+                                  <div className="flex-grow-1">
+                                    <strong className="text-info">Explanation:</strong>
+                                    <div 
+                                      className="mt-2"
+                                      dangerouslySetInnerHTML={{ 
+                                        __html: renderHtmlSafely(question.model_answer.answer_content, {
+                                          maxImageWidth: 600,
+                                          maxImageHeight: 400
+                                        })
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Score and Feedback Section */}
+                        <div className="mt-4 pt-3 border-top">
+                          <div className="row">
+                            <div className="col-md-6">
+                              {question.student_answer && (
+                                <div className="d-flex align-items-center">
+                                  <strong className="me-3">Score:</strong>
+                                  <span className={`badge fs-6 ${
+                                    (question.student_answer.score || 0) >= (question.student_answer.max_score || 0) * 0.8
+                                      ? 'badge-success'
+                                      : (question.student_answer.score || 0) >= (question.student_answer.max_score || 0) * 0.5
+                                      ? 'badge-warning'
+                                      : 'badge-danger'
+                                  }`}>
+                                    {question.student_answer.score || 0} / {question.student_answer.max_score || 0}
+                                  </span>
+                                  {question.student_answer.is_correct !== undefined && question.student_answer.is_correct !== null && (
+                                    <span className="ms-3">
+                                      {question.student_answer.is_correct ? (
+                                        <i className="fas fa-check-circle text-success fs-4"></i>
+                                      ) : (
+                                        <i className="fas fa-times-circle text-danger fs-4"></i>
+                                      )}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <div className="col-md-6">
+                              {question.student_answer?.feedback && question.student_answer.feedback !== "No scoring tags available" && (
+                                <div>
+                                  <strong className="text-muted">Feedback:</strong>
+                                  <div className="text-muted mt-1">{question.student_answer.feedback}</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-5">
+                    <i className="fas fa-question-circle fs-3x text-muted mb-3"></i>
+                    <p className="text-muted">No questions available</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-5">
+              <i className="fas fa-exclamation-triangle fs-2x text-warning mb-3"></i>
+              <p className="text-muted">No student result available</p>
+            </div>
+          )}
+
+          {/* Student Navigation */}
+          {stats && stats.students && stats.students.items && stats.students.items.length > 1 && (
+            <div className="d-flex justify-content-center align-items-center mt-4 pt-3 border-top">
+              <button
+                className="btn btn-light me-3"
+                onClick={() => navigateToStudent('prev')}
+                title="Previous Student"
+              >
+                <i className="fas fa-chevron-left me-2"></i>
+                Previous
+              </button>
+              
+              <div className="d-flex align-items-center mx-3">
+                <select
+                  className="form-select form-select-sm me-2"
+                  style={{ width: 'auto' }}
+                  value={currentStudentIndex}
+                  onChange={(e) => {
+                    const selectedIndex = parseInt(e.target.value)
+                    if (selectedIndex !== currentStudentIndex) {
+                      const student = stats.students.items[selectedIndex]
+                      fetchStudentResult(student.assignment_id, student.student_id, selectedIndex)
+                    }
+                  }}
+                >
+                  {stats.students.items.map((student, index) => (
+                    <option key={student.student_id} value={index}>
+                      {student.student_name}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-muted">of {stats.students.items.length}</span>
+              </div>
+
+              <button
+                className="btn btn-light ms-3"
+                onClick={() => navigateToStudent('next')}
+                title="Next Student"
               >
                 Next
                 <i className="fas fa-chevron-right ms-2"></i>
