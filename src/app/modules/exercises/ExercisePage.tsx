@@ -13,6 +13,7 @@ const ExerciseDashboardPage = lazy(() => import('./student-dashboard/ExerciseDas
 const ExerciseAttemptPage = lazy(() => import('./exercise-attempt/ExerciseAttemptPage'))
 const ExerciseProgressPage = lazy(() => import('./exercise-progress/ExerciseProgressPage'))
 const ExerciseMyResultPage = lazy(() => import('./student-result/ExerciseMyResultPage'))
+const ExerciseStatsPage = lazy(() => import('./exercise-stats/ExerciseStatsPage'))
 
 const ExercisePage: FC = () => {
   return (
@@ -66,6 +67,13 @@ const ExercisePage: FC = () => {
         <NonStudentRouteGuard>
           <SuspensedView>
             <ExerciseProgressPage />
+          </SuspensedView>
+        </NonStudentRouteGuard>
+      } />
+      <Route path=':exerciseId/stats' element={
+        <NonStudentRouteGuard>
+          <SuspensedView>
+            <ExerciseStatsPage />
           </SuspensedView>
         </NonStudentRouteGuard>
       } />

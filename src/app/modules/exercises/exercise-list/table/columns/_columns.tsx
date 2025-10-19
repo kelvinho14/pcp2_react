@@ -26,7 +26,7 @@ const exercisesColumns: ReadonlyArray<Column<Exercise>> = [
       
       return (
         <div className='d-flex align-items-center'>
-          <div className='d-flex flex-column'>
+          <div className='d-flex flex-column flex-grow-1'>
             <a
               href='#'
               className='text-gray-800 text-hover-primary mb-1'
@@ -42,6 +42,15 @@ const exercisesColumns: ReadonlyArray<Column<Exercise>> = [
                 {truncateText(exercise.description, 50)}
               </span>
             )}
+          </div>
+          <div className='ms-2'>
+            <button
+              className='btn btn-icon btn-sm btn-light-primary'
+              onClick={() => navigate(`/exercises/${exercise.exercise_id}/stats`)}
+              title='View Exercise Statistics'
+            >
+              <i className='fas fa-chart-bar fs-5'></i>
+            </button>
           </div>
         </div>
       )
