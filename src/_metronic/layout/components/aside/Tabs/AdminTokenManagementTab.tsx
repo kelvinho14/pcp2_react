@@ -39,6 +39,23 @@ const AdminTokenManagementTab = () => {
               textAlign='end'
             />
         
+          {/* Admin-only server section */}
+          {currentUser?.role?.role_type === ROLES.ADMIN && (
+            <div className='menu-item'>
+              <div className='menu-content pt-2 pb-2'>
+                <span className='menu-section text-muted text-uppercase fs-8 ls-1'>
+                  <i className='fa-solid fa-server fs-3 me-2'></i>Server
+                </span>
+              </div>
+            </div>
+          )}
+          {/* Admin-only server submenu */}
+          {currentUser?.role?.role_type === ROLES.ADMIN && (
+            <>
+              <AsideMenuItem to='/admin/health-check' title='Health check' hasBullet={true} />
+            </>
+          )}
+
           {/* Admin-only token management section */}
           {currentUser?.role?.role_type === ROLES.ADMIN && (
             <div className='menu-item'>
@@ -63,4 +80,4 @@ const AdminTokenManagementTab = () => {
   )
 }
 
-export {AdminTokenManagementTab} 
+export {AdminTokenManagementTab}
