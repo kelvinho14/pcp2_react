@@ -70,9 +70,6 @@ export function Login() {
 
   const urlError = getUrlError()
 
-  // Check if school_subject_id parameter exists in URL
-  const hasSchoolSubjectId = searchParams.get('school_subject_id') !== null
-
   // Check if user is already logged in when they visit /auth
   useEffect(() => {
     checkExistingUserSession(currentUser)
@@ -195,23 +192,19 @@ export function Login() {
         </div>
       )}
 
-      {/* Google Sign-In Button - Only show if school_subject_id is present */}
-      {hasSchoolSubjectId && (
-        <div className='d-grid mb-8'>
-          <GoogleSignInButton
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            disabled={loading || isProcessing}
-          />
-        </div>
-      )}
+      {/* Google Sign-In Button */}
+      <div className='d-grid mb-8'>
+        <GoogleSignInButton
+          onSuccess={handleGoogleSuccess}
+          onError={handleGoogleError}
+          disabled={loading || isProcessing}
+        />
+      </div>
 
-      {/* Separator - Only show if school_subject_id is present */}
-      {hasSchoolSubjectId && (
-        <div className='separator separator-content my-14'>
-          <span className='w-125px text-gray-500 fw-semibold fs-7'>Or with email</span>
-        </div>
-      )}
+      {/* Separator */}
+      <div className='separator separator-content my-14'>
+        <span className='w-125px text-gray-500 fw-semibold fs-7'>Or with email</span>
+      </div>
 
       {/* begin::Form group */}
       <div className='fv-row mb-8'>
