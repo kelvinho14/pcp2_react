@@ -618,7 +618,7 @@ const HealthCheckPage: FC = () => {
                     </div>
 
                     {/* Redis Info */}
-                    {redisStatus.redis_info && (
+                    {redisStatus?.redis_info && (
                     <div className='mt-5'>
                       <h4 className='text-gray-800 fw-bold fs-4 mb-4'>Redis Information</h4>
                       
@@ -636,21 +636,21 @@ const HealthCheckPage: FC = () => {
                                   <tbody>
                                     <tr>
                                       <td className='fw-bold text-gray-700 fs-7'>Version:</td>
-                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.server_info.version}</td>
+                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.server_info?.version || 'N/A'}</td>
                                     </tr>
                                     <tr>
                                       <td className='fw-bold text-gray-700 fs-7'>Uptime:</td>
                                       <td className='text-gray-800 fs-7'>
-                                        {redisStatus.redis_info.server_info.uptime_days}d {redisStatus.redis_info.server_info.uptime_hours}h
+                                        {redisStatus.redis_info.server_info?.uptime_days || 0}d {redisStatus.redis_info.server_info?.uptime_hours || 0}h
                                       </td>
                                     </tr>
                                     <tr>
                                       <td className='fw-bold text-gray-700 fs-7'>Connected Clients:</td>
-                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.server_info.connected_clients}</td>
+                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.server_info?.connected_clients || 0}</td>
                                     </tr>
                                     <tr>
                                       <td className='fw-bold text-gray-700 fs-7'>Commands Processed:</td>
-                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.server_info.total_commands_processed.toLocaleString()}</td>
+                                      <td className='text-gray-800 fs-7'>{(redisStatus.redis_info.server_info?.total_commands_processed || 0).toLocaleString()}</td>
                                     </tr>
                                   </tbody>
                                 </table>
@@ -671,19 +671,19 @@ const HealthCheckPage: FC = () => {
                                   <tbody>
                                     <tr>
                                       <td className='fw-bold text-gray-700 fs-7'>Memory Used:</td>
-                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.memory.used}</td>
+                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.memory?.used || 'N/A'}</td>
                                     </tr>
                                     <tr>
                                       <td className='fw-bold text-gray-700 fs-7'>Peak Memory:</td>
-                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.memory.peak}</td>
+                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.memory?.peak || 'N/A'}</td>
                                     </tr>
                                     <tr>
                                       <td className='fw-bold text-gray-700 fs-7'>Fragmentation:</td>
-                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.memory.fragmentation_ratio}</td>
+                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.memory?.fragmentation_ratio || 'N/A'}</td>
                                     </tr>
                                     <tr>
                                       <td className='fw-bold text-gray-700 fs-7'>Hit Rate:</td>
-                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.performance.hit_rate}%</td>
+                                      <td className='text-gray-800 fs-7'>{redisStatus.redis_info.performance?.hit_rate || 0}%</td>
                                     </tr>
                                   </tbody>
                                 </table>
@@ -700,20 +700,20 @@ const HealthCheckPage: FC = () => {
                             <div className='card-body p-4'>
                               <h5 className='fw-bold text-gray-800 mb-3'>
                                 <i className='fas fa-key text-primary me-2'></i>
-                                Keys ({redisStatus.redis_info.keys.total_count})
+                                Keys ({redisStatus.redis_info.keys?.total_count || 0})
                               </h5>
                               <div className='mb-3'>
                                 <div className='d-flex justify-content-between mb-2'>
                                   <span className='fw-bold text-gray-700 fs-7'>String Keys:</span>
-                                  <span className='text-gray-800 fs-7'>{redisStatus.redis_info.keys.types.string}</span>
+                                  <span className='text-gray-800 fs-7'>{redisStatus.redis_info.keys?.types?.string || 0}</span>
                                 </div>
                                 <div className='d-flex justify-content-between mb-2'>
                                   <span className='fw-bold text-gray-700 fs-7'>Set Keys:</span>
-                                  <span className='text-gray-800 fs-7'>{redisStatus.redis_info.keys.types.set}</span>
+                                  <span className='text-gray-800 fs-7'>{redisStatus.redis_info.keys?.types?.set || 0}</span>
                                 </div>
                               </div>
                               
-                              {redisStatus.redis_info.keys.samples.string.length > 0 && (
+                              {redisStatus.redis_info.keys.samples?.string?.length > 0 && (
                                 <div className='mb-3'>
                                   <h6 className='fw-bold text-gray-700 fs-7 mb-2'>String Key Samples:</h6>
                                   <div className='bg-light rounded p-2'>
@@ -731,7 +731,7 @@ const HealthCheckPage: FC = () => {
                                 </div>
                               )}
 
-                              {redisStatus.redis_info.keys.samples.set.length > 0 && (
+                              {redisStatus.redis_info.keys.samples?.set?.length > 0 && (
                                 <div>
                                   <h6 className='fw-bold text-gray-700 fs-7 mb-2'>Set Key Samples:</h6>
                                   <div className='bg-light rounded p-2'>
@@ -752,16 +752,16 @@ const HealthCheckPage: FC = () => {
                             <div className='card-body p-4'>
                               <h5 className='fw-bold text-gray-800 mb-3'>
                                 <i className='fas fa-broadcast-tower text-success me-2'></i>
-                                Channels ({redisStatus.redis_info.channels.channel_count})
+                                Channels ({redisStatus.redis_info.channels?.channel_count || 0})
                               </h5>
                               <div className='mb-3'>
                                 <div className='d-flex justify-content-between mb-2'>
                                   <span className='fw-bold text-gray-700 fs-7'>Active Channels:</span>
-                                  <span className='text-gray-800 fs-7'>{redisStatus.redis_info.channels.channel_count}</span>
+                                  <span className='text-gray-800 fs-7'>{redisStatus.redis_info.channels?.channel_count || 0}</span>
                                 </div>
                               </div>
                               
-                              {redisStatus.redis_info.channels.pubsub_channels.length > 0 && (
+                              {redisStatus.redis_info.channels?.pubsub_channels?.length > 0 && (
                                 <div>
                                   <h6 className='fw-bold text-gray-700 fs-7 mb-2'>Pub/Sub Channels:</h6>
                                   <div className='bg-light rounded p-2'>
@@ -842,7 +842,7 @@ const HealthCheckPage: FC = () => {
                   </div>
 
                   {/* All Backups Table */}
-                  {backupStatus.all_backups && backupStatus.all_backups.length > 0 && (
+                  {backupStatus?.all_backups && backupStatus.all_backups.length > 0 && (
                     <div>
                       <div className='table-responsive'>
                         <table className='table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4'>
