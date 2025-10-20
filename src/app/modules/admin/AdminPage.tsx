@@ -14,6 +14,7 @@ import UserEditPage from '../users/UserEditPage'
 import MigrationsPage from './migrations/MigrationsPage'
 import TokenUsagePage from './token/TokenUsagePage'
 import TokenPlanPage from './token/TokenPlanPage'
+import HealthCheckPage from './health-check/HealthCheckPage'
 
 const adminBreadcrumbs: Array<PageLink> = [
   {
@@ -180,6 +181,12 @@ const AdminPage = () => {
                 <TokenPlanPage />
               </>
             }
+          />
+          
+          {/* Health Check Routes */}
+          <Route
+            path='health-check'
+            element={<HealthCheckPage />}
           />
           
           {/* Default redirect */}
