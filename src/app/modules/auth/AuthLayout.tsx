@@ -1,6 +1,8 @@
 import {useEffect, useState} from 'react'
 import {Outlet, Link} from 'react-router-dom'
 import {toAbsoluteUrl} from '../../../_metronic/helpers'
+import TermsModal from './components/TermsModal'
+import PrivacyPolicyModal from './components/PrivacyPolicyModal'
 
 interface Testimony {
   text: string
@@ -42,6 +44,8 @@ const AuthLayout = () => {
 
   const [currentTestimony, setCurrentTestimony] = useState(0)
   const [fade, setFade] = useState(true)
+  const [showTermsModal, setShowTermsModal] = useState(false)
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -79,12 +83,26 @@ const AuthLayout = () => {
         <div className='d-flex flex-center flex-wrap px-5'>
           {/* begin::Links */}
           <div className='d-flex fw-semibold text-primary fs-base'>
-            <a href='#' className='px-5' target='_blank'>
+            <a 
+              href='#' 
+              className='px-5' 
+              onClick={(e) => {
+                e.preventDefault()
+                setShowTermsModal(true)
+              }}
+            >
               Terms
             </a>
 
-            <a href='#' className='px-5' target='_blank'>
-              Plans
+            <a 
+              href='#' 
+              className='px-5' 
+              onClick={(e) => {
+                e.preventDefault()
+                setShowPrivacyModal(true)
+              }}
+            >
+              Privacy Policy
             </a>
 
             <a href='#' className='px-5' target='_blank'>
@@ -179,6 +197,12 @@ const AuthLayout = () => {
         {/* end::Content */}
       </div>
       {/* end::Aside */}
+
+      {/* Terms Modal */}
+      <TermsModal show={showTermsModal} onHide={() => setShowTermsModal(false)} />
+
+      {/* Privacy Policy Modal */}
+      <PrivacyPolicyModal show={showPrivacyModal} onHide={() => setShowPrivacyModal(false)} />
     </div>
   )
 }
