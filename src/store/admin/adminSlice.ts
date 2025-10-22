@@ -110,7 +110,6 @@ export const fetchSubjects = createAsyncThunk(
     if (order) params.order = order
     if (search) params.search = search
 
-    console.log('API_URL for subjects:', API_URL)
     try {
       const response = await axios.get(`${API_URL}/subjects`, { params, withCredentials: true })
       return {
@@ -159,6 +158,9 @@ export const bulkDeleteSubjects = createAsyncThunk(
 )
 
 // Async thunks for Schools
+// Track last fetch request to prevent duplicates
+let lastFetchRequest: string | null = null
+
 export const fetchSchools = createAsyncThunk(
   'admin/fetchSchools',
   async (params: {
@@ -168,11 +170,24 @@ export const fetchSchools = createAsyncThunk(
     order?: string
     search?: string
   }) => {
-    console.log('API_URL for schools:', API_URL)
     const response = await axios.get(`${API_URL}/schools`, { params, withCredentials: true })
     return {
       items: response.data.data,
       total: response.data.payload.pagination.total,
+    }
+  },
+  {
+    condition: (params, { getState }) => {
+      const requestKey = JSON.stringify(params)
+      const { admin } = getState() as { admin: { loading: boolean } }
+      
+      // Prevent duplicate requests if already loading with same params
+      if (admin.loading && lastFetchRequest === requestKey) {
+        return false
+      }
+      
+      lastFetchRequest = requestKey
+      return true
     }
   }
 )
@@ -189,6 +204,19 @@ export const fetchSchool = createAsyncThunk(
       const errorMessage = error.response?.data?.message || 'Failed to fetch school'
       toast.error(errorMessage, 'Error')
       throw new Error(errorMessage)
+    }
+  },
+  {
+    condition: (id, { getState }) => {
+      const { admin } = getState() as { admin: { loading: boolean; currentSchool?: School } }
+      // Prevent duplicate requests if already loading or if we already have this school
+      if (admin.loading) {
+        return false
+      }
+      if (admin.currentSchool?.school_id === id) {
+        return false
+      }
+      return true
     }
   }
 )
