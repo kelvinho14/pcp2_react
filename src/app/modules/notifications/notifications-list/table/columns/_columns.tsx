@@ -44,7 +44,7 @@ export const notificationsColumns: ReadonlyArray<Column<Notification>> = [
         switch (type) {
           case 1: return 'Assignment'
           case 2: return 'Video'
-          case 3: return 'Reminder'
+          case 3: return 'Exercise Submission'
           case 4: return 'System'
           case 5: return 'Message'
           default: return 'Notification'

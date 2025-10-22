@@ -80,10 +80,10 @@ export const fetchNotifications = createAsyncThunk(
               url_path: data?.video_id ? `/videos/${data.video_id}` : undefined
             }
             case 3: return { 
-              icon: 'clock', 
-              state: 'warning' as const,
-              title: 'Reminder',
-              url_path: undefined
+              icon: 'check-circle', 
+              state: 'success' as const,
+              title: 'New exercise submission!',
+              url_path: data?.assign_key ? `/exercises/progress/${data.assign_key}` : undefined
             }
             case 4: return { 
               icon: 'setting-2', 
