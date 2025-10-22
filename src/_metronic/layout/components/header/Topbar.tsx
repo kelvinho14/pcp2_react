@@ -105,7 +105,10 @@ const Topbar: FC = () => {
           data-kt-menu-placement='top-start'
           title='User profile'
         >
-          <img src={toAbsoluteUrl('media/avatars/300-1.jpg')} alt='avatar' />
+          <img 
+            src={currentUser?.avatar_url || toAbsoluteUrl('media/avatars/blank.png')} 
+            alt='avatar' 
+          />
         </div>
         {/* end::Menu wrapper */}
         <HeaderUserMenu />

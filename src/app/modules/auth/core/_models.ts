@@ -62,6 +62,7 @@ export interface UserModel {
   school_id?: string
   school_subject_ids?: string[]
   schools?: School[]
+  avatar_url?: string
   role: {
     role_id: string
     name: string

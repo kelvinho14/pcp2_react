@@ -75,7 +75,7 @@ const userSettingsSchema = Yup.object().shape({
 
 const UserSettingsPage: FC = () => {
   const dispatch = useDispatch<AppDispatch>()
-  const {currentUser} = useAuth()
+  const {currentUser, setCurrentUser} = useAuth()
   
   // Redux state
   const { userSettings, userSettingsLoading, userSettingsError } = useSelector((state: RootState) => state.users)
@@ -338,6 +338,11 @@ const UserSettingsPage: FC = () => {
             // Update Redux state directly since backend already updated user preferences
             dispatch(updateUserSettingsLocal({ avatar_url: avatarUrl }))
             
+            // Update currentUser context with new avatar URL
+            if (currentUser) {
+              setCurrentUser({ ...currentUser, avatar_url: avatarUrl })
+            }
+            
             toast.success('Avatar uploaded successfully!', 'Success')
           }
         }, 'image/png')
@@ -459,7 +464,12 @@ const UserSettingsPage: FC = () => {
       
       // Update Redux state to remove avatar
       dispatch(updateUserSettingsLocal({ avatar_url: null }))
-      
+
+      // Update currentUser context to remove avatar
+      if (currentUser) {
+        setCurrentUser({ ...currentUser, avatar_url: undefined })
+      }
+
       toast.success('Avatar removed successfully!', 'Success')
     } catch (error: any) {
       console.error('Avatar removal error:', error)
