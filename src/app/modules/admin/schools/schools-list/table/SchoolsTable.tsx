@@ -16,8 +16,6 @@ type Props = {
 
 const SchoolsTable = ({ search }: Props) => {
   const dispatch = useDispatch<AppDispatch>()
-  const dispatchRef = useRef(dispatch)
-  dispatchRef.current = dispatch
   
   const schools = useSelector((state: RootState) => state.admin.schools)
   const isLoading = useSelector((state: RootState) => state.admin.loading)
@@ -29,24 +27,16 @@ const SchoolsTable = ({ search }: Props) => {
 
   // Memoize the fetch function to prevent unnecessary re-renders
   const fetchSchoolsData = useCallback(() => {
-    console.log('🔄 Fetching schools data with params:', {
+    const params = {
       page,
       items_per_page: itemsPerPage,
       sort: sort?.id,
       order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
       search: search || undefined,
-    })
+    }
     
-    dispatchRef.current(
-      fetchSchools({
-        page,
-        items_per_page: itemsPerPage,
-        sort: sort?.id,
-        order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
-        search: search || undefined,
-      })
-    )
-  }, [page, sort, search, itemsPerPage])
+    dispatch(fetchSchools(params))
+  }, [dispatch, page, sort, search, itemsPerPage])
 
   useEffect(() => {
     fetchSchoolsData()
@@ -90,14 +80,6 @@ const SchoolsTable = ({ search }: Props) => {
     setPage(newPage)
   }, [])
 
-  // Debug logging
-  console.log('📊 Schools pagination debug:', {
-    totalSchools: schools.length,
-    currentPage: page,
-    itemsPerPage,
-    total,
-    totalPages: Math.ceil(total / itemsPerPage)
-  })
 
   return (
     <KTCardBody className='py-4'>
