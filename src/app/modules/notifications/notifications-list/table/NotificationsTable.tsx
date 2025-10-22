@@ -39,9 +39,7 @@ const NotificationsTable = () => {
     switch (type) {
       case 1: return 'Exercise'
       case 2: return 'Video'
-      case 3: return 'Reminder'
-      case 4: return 'System'
-      case 5: return 'Message'
+      case 3: return 'Exercise Submission'
       default: return 'Notification'
     }
   }
