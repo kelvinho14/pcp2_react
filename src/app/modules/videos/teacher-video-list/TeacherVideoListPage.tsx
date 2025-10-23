@@ -461,6 +461,7 @@ const TeacherVideoListPage: FC = () => {
     setEditingVideo(null)
     setFormData({
       source: 1,
+      title: '',
       tags: [],
       youtube_urls: [],
       vimeo_ids: [],
@@ -473,6 +474,7 @@ const TeacherVideoListPage: FC = () => {
     setEditingVideo(video)
     setFormData({
       source: video.source,
+      title: video.title,
       tags: video.tags?.map(tag => ({ tag_id: tag.tag_id })) || [],
       youtube_urls: video.source === 1 ? [`https://www.youtube.com/watch?v=${video.video_id_external}`] : [],
       vimeo_ids: video.source === 2 ? [video.video_id_external] : [],
@@ -1304,6 +1306,22 @@ const TeacherVideoListPage: FC = () => {
                     </div>
                   </div>
                 )}
+                
+                {/* Video Title */}
+                <div className='mb-4'>
+                  <label className='form-label fw-bold'>Video Title *</label>
+                  <input
+                    type='text'
+                    className='form-control'
+                    placeholder='Enter video title...'
+                    value={formData.title || ''}
+                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    required
+                  />
+                  <div className='form-text'>
+                    Custom title for this video
+                  </div>
+                </div>
                 
                 {editingVideo?.source === 1 && (
                   <div className='mb-4'>
