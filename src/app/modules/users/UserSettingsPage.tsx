@@ -3,13 +3,13 @@ import {useFormik} from 'formik'
 import * as Yup from 'yup'
 import {useDispatch, useSelector} from 'react-redux'
 import {AppDispatch, RootState} from '../../../store'
-import {KTCard, KTCardBody} from '../../../_metronic/helpers'
 import {useNavigate} from 'react-router-dom'
 import toast from '../../../_metronic/helpers/toast'
 import axios from 'axios'
 import {LANGUAGES, DEFAULT_LANGUAGE} from '../../constants/languages'
 import {TIMEZONES, TIMEZONE_GROUPS, DEFAULT_TIMEZONE} from '../../constants/timezones'
 import {THEMES, DEFAULT_THEME} from '../../constants/themes'
+import {ROLES, isTeachingStaff} from '../../constants/roles'
 import {useAuth} from '../auth/core/Auth'
 import {getHeadersWithSchoolSubject} from '../../../_metronic/helpers/axios'
 import {fetchUserSettings, updateUserSettings, updateUserSettingsLocal} from '../../../store/user/userSlice'
@@ -71,6 +71,7 @@ const userSettingsSchema = Yup.object().shape({
   theme: Yup.number()
     .required('Theme is required')
     .oneOf([1, 2, 3], 'Please select a valid theme'),
+  exercise_submission_notifications: Yup.boolean(),
 })
 
 const UserSettingsPage: FC = () => {
@@ -84,6 +85,7 @@ const UserSettingsPage: FC = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [showPasswordFields, setShowPasswordFields] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarCacheKey, setAvatarCacheKey] = useState<number>(Date.now())
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -164,6 +166,7 @@ const UserSettingsPage: FC = () => {
           preferred_language: result.preferred_language || DEFAULT_LANGUAGE,
           timezone: result.timezone || DEFAULT_TIMEZONE,
           theme: parseInt(result.theme) || DEFAULT_THEME,
+          exercise_submission_notifications: Boolean(result.exercise_submission_notifications),
         })
       }
     } catch (error) {
@@ -513,15 +516,17 @@ const UserSettingsPage: FC = () => {
   }
 
   const formik = useFormik({
+    enableReinitialize: true,
     initialValues: {
       name: currentUser?.name || '',
       email: currentUser?.email || '',
       current_password: '',
       new_password: '',
       confirm_password: '',
-                  preferred_language: DEFAULT_LANGUAGE,
-            timezone: DEFAULT_TIMEZONE,
-      theme: DEFAULT_THEME,
+      preferred_language: userSettings?.preferred_language || DEFAULT_LANGUAGE,
+      timezone: userSettings?.timezone || DEFAULT_TIMEZONE,
+      theme: userSettings?.theme || DEFAULT_THEME,
+      exercise_submission_notifications: Boolean(userSettings?.exercise_submission_notifications),
     },
     validationSchema: userSettingsSchema,
     onSubmit: async (values, {setSubmitting, setFieldError}) => {
@@ -544,9 +549,11 @@ const UserSettingsPage: FC = () => {
         const payload: any = {
           preferred_language: values.preferred_language,
           timezone: values.timezone,
-          theme: values.theme
+          theme: values.theme,
+          exercise_submission_notifications: Boolean(values.exercise_submission_notifications)
         }
         
+
         // Add password fields if provided
         if (values.current_password) {
           payload.current_password = values.current_password
@@ -571,6 +578,11 @@ const UserSettingsPage: FC = () => {
         formik.setFieldValue('confirm_password', '')
         setAvatarFile(null)
         
+        // Hide password fields after successful password change
+        if (values.current_password || values.new_password) {
+          setShowPasswordFields(false)
+        }
+        
         // Refresh user settings to get updated data
         await dispatch(fetchUserSettings())
       } catch (error: unknown) {
@@ -585,6 +597,8 @@ const UserSettingsPage: FC = () => {
 
   // Set the ref after formik is created
   formikRef.current = formik
+
+  // Remove the manual setValues since enableReinitialize will handle it
 
   const languages = LANGUAGES
   const timezones = TIMEZONES
@@ -601,95 +615,361 @@ const UserSettingsPage: FC = () => {
   }
 
   return (
-    <KTCard>
-      <KTCardBody className='py-4'>
-        <form onSubmit={formik.handleSubmit} className='form'>
-          {/* Error Display */}
-          {userSettingsError && (
-            <div className='alert alert-danger mb-6'>
-              <i className='fas fa-exclamation-triangle me-2'></i>
-              {userSettingsError}
-            </div>
-          )}
-          
-          {/* Avatar Section */}
-          <div className='row mb-6'>
-            <label className='col-lg-4 col-form-label fw-semibold fs-6'>
-              Profile Picture
-            </label>
-            <div className='col-lg-8'>
-              <div className='d-flex align-items-center'>
-                {/* Avatar Preview */}
-                <div className='me-5'>
-                  <div 
-                    className='position-relative d-inline-block'
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                  >
-                    <div className='symbol symbol-100px symbol-circle symbol-fixed position-relative'>
-                      <img 
-                        src={getAvatarUrlWithCacheBust(avatarPreview || userSettings?.avatar_url)} 
-                        alt='Avatar' 
-                        className='symbol-label'
-                        style={{objectFit: 'cover'}}
-                      />
-                      
-                      {/* Drag & Drop Overlay */}
-                      <div className='position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50 rounded-circle opacity-0 hover-opacity-100 transition-opacity'
-                        style={{transition: 'opacity 0.2s ease'}}
-                        onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                        onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
-                      >
-                        <div className='text-center text-white'>
-                          <i className='fas fa-cloud-upload-alt fs-2x mb-2'></i>
-                          <div className='fw-bold'>Drop image here</div>
-                          <div className='fs-7'>or click to browse</div>
+    <form onSubmit={formik.handleSubmit} className='form'>
+      {/* Error Display */}
+      {userSettingsError && (
+        <div className='alert alert-danger mb-6'>
+          <i className='fas fa-exclamation-triangle me-2'></i>
+          {userSettingsError}
+        </div>
+      )}
+      
+      {/* Two Column Layout */}
+      <div className='row'>
+            {/* Left Column - Profile Information */}
+            <div className='col-lg-4'>
+              <div className='card card-flush mb-6 mb-lg-0'>
+                <div className='card-body text-center'>
+                  {/* Profile Picture */}
+                  <div className='mb-7'>
+                    <div 
+                      className='position-relative d-inline-block'
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                    >
+                      <div className='symbol symbol-150px symbol-circle symbol-fixed position-relative mb-4'>
+                        <img 
+                          src={getAvatarUrlWithCacheBust(avatarPreview || userSettings?.avatar_url)} 
+                          alt='Avatar' 
+                          className='symbol-label'
+                          style={{objectFit: 'cover'}}
+                        />
+                        
+                        {/* Drag & Drop Overlay */}
+                        <div className='position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50 rounded-circle opacity-0 hover-opacity-100 transition-opacity'
+                          style={{transition: 'opacity 0.2s ease'}}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+                        >
+                          <div className='text-center text-white'>
+                            <i className='fas fa-cloud-upload-alt fs-2x mb-2'></i>
+                            <div className='fw-bold'>Drop image</div>
+                            <div className='fs-7'>or click below</div>
+                          </div>
                         </div>
                       </div>
                     </div>
+
+                    {/* Upload Controls */}
+                    <div className='d-flex flex-column gap-2 align-items-center'>
+                      <label className='btn btn-primary btn-sm cursor-pointer mb-0'>
+                        <i className='fas fa-upload me-2'></i>
+                        Choose File
+                        <input
+                          type='file'
+                          name='avatar'
+                          accept='image/*'
+                          onChange={handleAvatarChange}
+                          className='d-none'
+                        />
+                      </label>
+
+                      {avatarPreview && (
+                        <button
+                          type='button'
+                          className='btn btn-light-danger btn-sm'
+                          onClick={removeAvatar}
+                        >
+                          <i className='fas fa-trash me-2'></i>
+                          Remove
+                        </button>
+                      )}
+
+                      <div className='form-text text-center'>
+                        <small>PNG, JPG, JPEG, GIF. Max: 5MB</small>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Name and Email */}
+                  <div className='mb-7'>
+                    <div className='fw-bold fs-3 text-gray-800 mb-1'>
+                      {formik.values.name || 'Not provided'}
+                    </div>
+                    <div className='text-gray-600 fs-6'>
+                      {formik.values.email || 'Not provided'}
+                    </div>
+                  </div>
+
+                  <div className='separator my-6'></div>
+
+                  {/* Change Password Section */}
+                  <div className='text-start'>
+                    <button
+                      type='button'
+                      className='btn btn-light-primary btn-sm w-100'
+                      onClick={() => {
+                        if (showPasswordFields) {
+                          // Clear password fields when canceling
+                          formik.setFieldValue('current_password', '')
+                          formik.setFieldValue('new_password', '')
+                          formik.setFieldValue('confirm_password', '')
+                          formik.setFieldTouched('current_password', false)
+                          formik.setFieldTouched('new_password', false)
+                          formik.setFieldTouched('confirm_password', false)
+                        }
+                        setShowPasswordFields(!showPasswordFields)
+                      }}
+                    >
+                      <i className={`fas fa-${showPasswordFields ? 'times' : 'key'} me-2`}></i>
+                      {showPasswordFields ? 'Cancel' : 'Change Password'}
+                    </button>
+
+                    {showPasswordFields && (
+                      <>
+                        <div className='mb-5 mt-5'>
+                          <label className='form-label fw-semibold fs-6 mb-2'>Current Password</label>
+                          <div className='input-group'>
+                            <input
+                              type={showCurrentPassword ? 'text' : 'password'}
+                              className={`form-control form-control-solid ${
+                                formik.touched.current_password && formik.errors.current_password ? 'is-invalid' : ''
+                              }`}
+                              placeholder='Enter current password'
+                              {...formik.getFieldProps('current_password')}
+                            />
+                            <button
+                              type='button'
+                              className='btn btn-icon btn-light'
+                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                              title={showCurrentPassword ? 'Hide password' : 'Show password'}
+                            >
+                              <i className={`fas fa-${showCurrentPassword ? 'eye-slash' : 'eye'}`}></i>
+                            </button>
+                          </div>
+                          {formik.touched.current_password && formik.errors.current_password && (
+                            <div className='text-danger mt-2'><small>{formik.errors.current_password}</small></div>
+                          )}
+                        </div>
+
+                        <div className='mb-5'>
+                          <label className='form-label fw-semibold fs-6 mb-2'>New Password</label>
+                          <div className='input-group mb-2'>
+                            <input
+                              type={showNewPassword ? 'text' : 'password'}
+                              className={`form-control form-control-solid ${
+                                formik.touched.new_password && formik.errors.new_password ? 'is-invalid' : ''
+                              }`}
+                              placeholder='Enter new password'
+                              {...formik.getFieldProps('new_password')}
+                            />
+                            <button
+                              type='button'
+                              className='btn btn-icon btn-light'
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                              title={showNewPassword ? 'Hide password' : 'Show password'}
+                            >
+                              <i className={`fas fa-${showNewPassword ? 'eye-slash' : 'eye'}`}></i>
+                            </button>
+                          </div>
+                          <button
+                            type='button'
+                            className='btn btn-secondary btn-sm w-100 mb-2'
+                            onClick={generatePassword}
+                          >
+                            <i className='fas fa-key me-2'></i>Generate Strong Password
+                          </button>
+                          {formik.touched.new_password && formik.errors.new_password && (
+                            <div className='text-danger mt-2'><small>{formik.errors.new_password}</small></div>
+                          )}
+                          {formik.values.new_password && (
+                            <div className='mt-2'>
+                              <div className='d-flex align-items-center justify-content-between mb-1'>
+                                <span className='fw-semibold fs-7'>Strength:</span>
+                                <span className={`badge badge-${getPasswordStrength(formik.values.new_password).color}`}>
+                                  {getPasswordStrength(formik.values.new_password).label}
+                                </span>
+                              </div>
+                              <div className='progress' style={{height: '8px'}}>
+                                <div 
+                                  className={`progress-bar bg-${getPasswordStrength(formik.values.new_password).color}`}
+                                  style={{width: `${(getPasswordStrength(formik.values.new_password).score / 5) * 100}%`}}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className='mb-5'>
+                          <label className='form-label fw-semibold fs-6 mb-2'>Confirm New Password</label>
+                          <div className='input-group'>
+                            <input
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              className={`form-control form-control-solid ${
+                                formik.touched.confirm_password && formik.errors.confirm_password ? 'is-invalid' : ''
+                              }`}
+                              placeholder='Confirm new password'
+                              {...formik.getFieldProps('confirm_password')}
+                            />
+                            <button
+                              type='button'
+                              className='btn btn-icon btn-light'
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                            >
+                              <i className={`fas fa-${showConfirmPassword ? 'eye-slash' : 'eye'}`}></i>
+                            </button>
+                          </div>
+                          {formik.touched.confirm_password && formik.errors.confirm_password && (
+                            <div className='text-danger mt-2'><small>{formik.errors.confirm_password}</small></div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
+              </div>
+            </div>
 
-                {/* Upload Controls */}
-                <div className='d-flex flex-column gap-3'>
-                  <div className='d-flex gap-2'>
-                    <label className='btn btn-primary btn-sm cursor-pointer mb-0'>
-                      <i className='fas fa-upload me-2'></i>
-                      Choose File
-                      <input
-                        type='file'
-                        name='avatar'
-                        accept='image/*'
-                        onChange={handleAvatarChange}
-                        className='d-none'
-                      />
+            {/* Right Column - Settings */}
+            <div className='col-lg-8'>
+              <div className='card card-flush'>
+                <div className='card-body'>
+                  {/* Preferences Section */}
+                  <h4 className='fw-bold mb-6'>Preferences</h4>
+
+                  <div className='row mb-6'>
+                    <label className='col-lg-4 col-form-label required fw-semibold fs-6'>
+                      Preferred Language
                     </label>
+                    <div className='col-lg-8'>
+                      <select
+                        className={`form-select form-select-solid ${
+                          formik.touched.preferred_language && formik.errors.preferred_language ? 'is-invalid' : ''
+                        }`}
+                        {...formik.getFieldProps('preferred_language')}
+                      >
+                        <option value=''>Select preferred language</option>
+                        {languages.map((language) => (
+                          <option key={language.value} value={language.value}>
+                            {language.label}
+                          </option>
+                        ))}
+                      </select>
+                      {formik.touched.preferred_language && formik.errors.preferred_language && (
+                        <div className='invalid-feedback'>{formik.errors.preferred_language}</div>
+                      )}
+                    </div>
                   </div>
 
-                  {avatarPreview && (
-                    <div className='d-flex gap-2'>
-                      <button
-                        type='button'
-                        className='btn btn-light-danger btn-sm'
-                        onClick={removeAvatar}
+                  <div className='row mb-6'>
+                    <label className='col-lg-4 col-form-label required fw-semibold fs-6'>
+                      Timezone
+                    </label>
+                    <div className='col-lg-8'>
+                      <select
+                        className={`form-select form-select-solid ${
+                          formik.touched.timezone && formik.errors.timezone ? 'is-invalid' : ''
+                        }`}
+                        {...formik.getFieldProps('timezone')}
                       >
-                        <i className='fas fa-trash me-2'></i>
-                        Remove
-                      </button>
+                        <option value=''>Select timezone</option>
+                        {TIMEZONE_GROUPS.map((group) => (
+                          <optgroup key={group.offset} label={group.label}>
+                            {group.timezones.map((timezone) => (
+                              <option key={timezone.value} value={timezone.value}>
+                                {timezone.label}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                      {formik.touched.timezone && formik.errors.timezone && (
+                        <div className='invalid-feedback'>{formik.errors.timezone}</div>
+                      )}
                     </div>
+                  </div>
+
+                  <div className='row mb-6'>
+                    <label className='col-lg-4 col-form-label required fw-semibold fs-6'>
+                      Theme
+                    </label>
+                    <div className='col-lg-8'>
+                      <select
+                        className={`form-select form-select-solid ${
+                          formik.touched.theme && formik.errors.theme ? 'is-invalid' : ''
+                        }`}
+                        {...formik.getFieldProps('theme')}
+                      >
+                        {themes.map((theme) => (
+                          <option key={theme.value} value={theme.value}>
+                            {theme.label}
+                          </option>
+                        ))}
+                      </select>
+                      {formik.touched.theme && formik.errors.theme && (
+                        <div className='invalid-feedback'>{formik.errors.theme}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Notification Settings Section - Only for Teachers */}
+                  {isTeachingStaff(currentUser?.role?.role_type) && (
+                    <>
+                      <div className='separator my-10'></div>
+                      <h4 className='fw-bold mb-6'>Notification Settings</h4>
+
+                      <div className='row mb-6'>
+                        <label className='col-lg-4 col-form-label fw-semibold fs-6'>
+                          Student Exercise Submission
+                        </label>
+                        <div className='col-lg-8'>
+                          <div className='form-check form-switch form-check-custom form-check-solid'>
+                            <input
+                              className='form-check-input'
+                              type='checkbox'
+                              id='exercise_submission_notifications'
+                              checked={Boolean(formik.values.exercise_submission_notifications)}
+                              onChange={(e) => {
+                                formik.setFieldValue('exercise_submission_notifications', e.target.checked)
+                              }}
+                              name='exercise_submission_notifications'
+                            />
+                            <label className='form-check-label fw-semibold text-gray-400 ms-3' htmlFor='exercise_submission_notifications'>
+                              Receive notifications when students submit exercises
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </>
                   )}
 
-                  <div className='form-text'>
-                    <i className='fas fa-info-circle me-1'></i>
-                    Drag & drop an image or click "Choose File". Supported: PNG, JPG, JPEG, GIF. Max: 5MB.
+                  <div className='separator my-10'></div>
+
+                  {/* Submit Button */}
+                  <div className='d-flex justify-content-end'>
+                    <button
+                      type='submit'
+                      className='btn btn-primary'
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <span className='spinner-border spinner-border-sm me-2' role='status' aria-hidden='true'></span>
+                          Updating...
+                        </>
+                      ) : (
+                        'Update Settings'
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Image Cropper Modal */}
-          {showCropper && originalImage && (
+      {/* Image Cropper Modal */}
+      {showCropper && originalImage && (
             <div className='modal fade show d-block' style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
               <div className='modal-dialog modal-lg modal-dialog-centered'>
                 <div className='modal-content'>
@@ -781,265 +1061,8 @@ const UserSettingsPage: FC = () => {
                 </div>
               </div>
             </div>
-          )}
-
-          <div className='separator my-10'></div>
-
-          {/* Basic Information */}
-          <div className='row mb-6'>
-            <label className='col-lg-4 col-form-label fw-semibold fs-6'>
-              Name
-            </label>
-            <div className='col-lg-8'>
-              <input
-                type='text'
-                className='form-control form-control-lg form-control-solid'
-                placeholder='Enter full name'
-                name='name'
-                value={formik.values.name}
-                readOnly
-                disabled
-              />
-
-            </div>
-          </div>
-
-          <div className='row mb-6'>
-            <label className='col-lg-4 col-form-label fw-semibold fs-6'>
-              Email
-            </label>
-            <div className='col-lg-8'>
-              <input
-                type='email'
-                className='form-control form-control-lg form-control-solid'
-                placeholder='Enter email address'
-                name='email'
-                value={formik.values.email}
-                readOnly
-                disabled
-              />
-
-            </div>
-          </div>
-
-          <div className='separator my-10'></div>
-
-          {/* Password Change Section */}
-          <h4 className='fw-bold mb-6'>Change Password</h4>
-          
-          <div className='row mb-6'>
-            <label className='col-lg-4 col-form-label fw-semibold fs-6'>
-              Current Password
-            </label>
-            <div className='col-lg-8'>
-              <div className='input-group'>
-                <input
-                  type={showCurrentPassword ? 'text' : 'password'}
-                  className={`form-control form-control-lg form-control-solid ${
-                    formik.touched.current_password && formik.errors.current_password ? 'is-invalid' : ''
-                  }`}
-                  placeholder='Enter current password'
-                  {...formik.getFieldProps('current_password')}
-                />
-                <button
-                  type='button'
-                  className='btn btn-outline-secondary'
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  title={showCurrentPassword ? 'Hide password' : 'Show password'}
-                >
-                  <i className={`fas fa-${showCurrentPassword ? 'eye-slash' : 'eye'}`}></i>
-                </button>
-              </div>
-              {formik.touched.current_password && formik.errors.current_password && (
-                <div className='invalid-feedback'>{formik.errors.current_password}</div>
-              )}
-            </div>
-          </div>
-
-          <div className='row mb-6'>
-            <label className='col-lg-4 col-form-label fw-semibold fs-6'>
-              New Password
-            </label>
-            <div className='col-lg-8'>
-              <div className='input-group'>
-                <input
-                  type={showNewPassword ? 'text' : 'password'}
-                  className={`form-control form-control-lg form-control-solid ${
-                    formik.touched.new_password && formik.errors.new_password ? 'is-invalid' : ''
-                  }`}
-                  placeholder='Enter new password'
-                  {...formik.getFieldProps('new_password')}
-                />
-                <button
-                  type='button'
-                  className='btn btn-outline-secondary'
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  title={showNewPassword ? 'Hide password' : 'Show password'}
-                >
-                  <i className={`fas fa-${showNewPassword ? 'eye-slash' : 'eye'}`}></i>
-                </button>
-                <button
-                  type='button'
-                  className='btn btn-secondary'
-                  onClick={generatePassword}
-                >
-                  Generate
-                </button>
-              </div>
-              {formik.touched.new_password && formik.errors.new_password && (
-                <div className='invalid-feedback'>{formik.errors.new_password}</div>
-              )}
-              {formik.values.new_password && (
-                <div className='mt-2'>
-                  <div className='d-flex align-items-center mb-1'>
-                    <span className='fw-semibold me-2'>Password Strength:</span>
-                    <span className={`badge badge-${getPasswordStrength(formik.values.new_password).color}`}>
-                      {getPasswordStrength(formik.values.new_password).label}
-                    </span>
-                  </div>
-                  <div className='progress' style={{height: '12px', width: '200px'}}>
-                    <div 
-                      className={`progress-bar bg-${getPasswordStrength(formik.values.new_password).color}`}
-                      style={{width: `${(getPasswordStrength(formik.values.new_password).score / 5) * 100}%`}}
-                    ></div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className='row mb-6'>
-            <label className='col-lg-4 col-form-label fw-semibold fs-6'>
-              Confirm New Password
-            </label>
-            <div className='col-lg-8'>
-              <div className='input-group'>
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  className={`form-control form-control-lg form-control-solid ${
-                    formik.touched.confirm_password && formik.errors.confirm_password ? 'is-invalid' : ''
-                  }`}
-                  placeholder='Confirm new password'
-                  {...formik.getFieldProps('confirm_password')}
-                />
-                <button
-                  type='button'
-                  className='btn btn-outline-secondary'
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  title={showConfirmPassword ? 'Hide password' : 'Show password'}
-                >
-                  <i className={`fas fa-${showConfirmPassword ? 'eye-slash' : 'eye'}`}></i>
-                </button>
-              </div>
-              {formik.touched.confirm_password && formik.errors.confirm_password && (
-                <div className='invalid-feedback'>{formik.errors.confirm_password}</div>
-              )}
-            </div>
-          </div>
-
-          <div className='separator my-10'></div>
-
-          {/* Preferences Section */}
-          <h4 className='fw-bold mb-6'>Preferences</h4>
-
-          <div className='row mb-6'>
-            <label className='col-lg-4 col-form-label required fw-semibold fs-6'>
-              Preferred Language
-            </label>
-            <div className='col-lg-8'>
-              <select
-                className={`form-select form-select-lg form-select-solid ${
-                  formik.touched.preferred_language && formik.errors.preferred_language ? 'is-invalid' : ''
-                }`}
-                {...formik.getFieldProps('preferred_language')}
-              >
-                <option value=''>Select preferred language</option>
-                {languages.map((language) => (
-                  <option key={language.value} value={language.value}>
-                    {language.label}
-                  </option>
-                ))}
-              </select>
-              {formik.touched.preferred_language && formik.errors.preferred_language && (
-                <div className='invalid-feedback'>{formik.errors.preferred_language}</div>
-              )}
-            </div>
-          </div>
-
-          <div className='row mb-6'>
-            <label className='col-lg-4 col-form-label required fw-semibold fs-6'>
-              Timezone
-            </label>
-            <div className='col-lg-8'>
-                          <select
-              className={`form-select form-select-lg form-select-solid ${
-                formik.touched.timezone && formik.errors.timezone ? 'is-invalid' : ''
-              }`}
-              {...formik.getFieldProps('timezone')}
-            >
-              <option value=''>Select timezone</option>
-              {TIMEZONE_GROUPS.map((group) => (
-                <optgroup key={group.offset} label={group.label}>
-                  {group.timezones.map((timezone) => (
-                    <option key={timezone.value} value={timezone.value}>
-                      {timezone.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-              {formik.touched.timezone && formik.errors.timezone && (
-                <div className='invalid-feedback'>{formik.errors.timezone}</div>
-              )}
-            </div>
-          </div>
-
-          <div className='row mb-6'>
-            <label className='col-lg-4 col-form-label required fw-semibold fs-6'>
-              Theme
-            </label>
-            <div className='col-lg-8'>
-              <select
-                className={`form-select form-select-lg form-select-solid ${
-                  formik.touched.theme && formik.errors.theme ? 'is-invalid' : ''
-                }`}
-                {...formik.getFieldProps('theme')}
-              >
-                <option value=''>Select theme</option>
-                {themes.map((theme) => (
-                  <option key={theme.value} value={theme.value}>
-                    {theme.label}
-                  </option>
-                ))}
-              </select>
-              {formik.touched.theme && formik.errors.theme && (
-                <div className='invalid-feedback'>{formik.errors.theme}</div>
-              )}
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <div className='row'>
-            <div className='col-lg-8 offset-lg-4'>
-              <button
-                type='submit'
-                className='btn btn-primary'
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className='spinner-border spinner-border-sm me-2' role='status' aria-hidden='true'></span>
-                    Updating...
-                  </>
-                ) : (
-                  'Update Settings'
-                )}
-              </button>
-            </div>
-          </div>
-        </form>
-      </KTCardBody>
-    </KTCard>
+      )}
+    </form>
   )
 }
 
