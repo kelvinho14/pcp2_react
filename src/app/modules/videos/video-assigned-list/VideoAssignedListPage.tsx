@@ -244,118 +244,135 @@ const AssignedVideosFilters: FC<AssignedVideosFiltersProps> = ({ onClearFilters,
   }, [filters])
 
   return (
-    <div className='card mb-5'>
-      <div className='card-header'>
-        <h3 className='card-title'>Filters</h3>
+    <div className='d-flex align-items-center gap-3 flex-wrap'>
+      {/* Search */}
+      <div className='d-flex align-items-center gap-2'>
+        <label className='form-label mb-0 text-white-50' style={{ fontSize: '0.875rem' }}>
+          Search:
+        </label>
+        <div style={{ width: '200px' }}>
+          <input
+            type='text'
+            className='form-control form-control-sm'
+            placeholder='Search videos, students...'
+            value={localFilters.search || ''}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
+          />
+        </div>
       </div>
-      <div className='card-body'>
-        <div className='row g-3'>
-          <div className='col-md-3'>
-            <label className='form-label'>Search</label>
-            <input
-              type='text'
-              className='form-control'
-              placeholder='Search videos, students...'
-              value={localFilters.search || ''}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-            />
-          </div>
 
-          <div className='col-md-3'>
-            <label className='form-label'>Assigned To</label>
-            <Select
-              options={studentOptions}
-              isMulti
-              onChange={handleStudentSelection}
-              placeholder="Select students to filter..."
-              isLoading={usersLoading}
-              isClearable
-              isSearchable
-              value={studentOptions.filter(option => 
-                selectedStudents.includes(option.value)
-              )}
-              noOptionsMessage={() => "No students found"}
-              loadingMessage={() => "Loading students..."}
-            />
-            {selectedStudents.length > 0 && (
-              <div className="mt-1">
-                <small className="text-muted">
-                  {selectedStudents.length} student(s) selected
-                </small>
-              </div>
+      {/* Assigned To */}
+      <div className='d-flex align-items-center gap-2'>
+        <label className='form-label mb-0 text-white-50' style={{ fontSize: '0.875rem' }}>
+          Assigned To:
+        </label>
+        <div style={{ width: '200px' }}>
+          <Select
+            options={studentOptions}
+            isMulti
+            onChange={handleStudentSelection}
+            placeholder="Select students..."
+            isLoading={usersLoading}
+            isClearable
+            isSearchable
+            value={studentOptions.filter(option => 
+              selectedStudents.includes(option.value)
             )}
-          </div>
+            noOptionsMessage={() => "No students found"}
+            loadingMessage={() => "Loading students..."}
+            styles={{
+              option: (provided, state) => ({
+                ...provided,
+                color: state.isSelected ? 'white' : '#000000',
+                backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f8f9fa' : 'white',
+              }),
+              menu: (provided) => ({
+                ...provided,
+                backgroundColor: 'white',
+              }),
+            }}
+          />
+        </div>
+      </div>
 
+      {/* Date Filters */}
+      <div className='d-flex align-items-center gap-2'>
+        <label className='form-label mb-0 text-white-50' style={{ fontSize: '0.875rem' }}>
+          Assigned Date:
+        </label>
+        <div style={{ width: '120px' }}>
+          <DatePicker
+            selected={assignedDateFrom}
+            onChange={(date) => handleDateChange('assigned_date_from', date)}
+            placeholderText="From"
+            isClearable={true}
+            maxDate={assignedDateTo || new Date()}
+            className='form-control form-control-sm'
+          />
         </div>
-        
-        <div className='row g-3 mb-3'>
-          <div className='col-md-3'>
-            <label className='form-label'>Assigned Date From</label>
-            <DatePicker
-              selected={assignedDateFrom}
-              onChange={(date) => handleDateChange('assigned_date_from', date)}
-              placeholderText="Select start date"
-              isClearable={true}
-              maxDate={assignedDateTo || new Date()}
-            />
-          </div>
-          <div className='col-md-3'>
-            <label className='form-label'>Assigned Date To</label>
-            <DatePicker
-              selected={assignedDateTo}
-              onChange={(date) => handleDateChange('assigned_date_to', date)}
-              placeholderText="Select end date"
-              isClearable={true}
-              minDate={assignedDateFrom || undefined}
-              maxDate={new Date()}
-            />
-          </div>
+        <div style={{ width: '120px' }}>
+          <DatePicker
+            selected={assignedDateTo}
+            onChange={(date) => handleDateChange('assigned_date_to', date)}
+            placeholderText="To"
+            isClearable={true}
+            minDate={assignedDateFrom || undefined}
+            maxDate={new Date()}
+            className='form-control form-control-sm'
+          />
+        </div>
+      </div>
 
-          <div className='col-md-3'>
-            <label className='form-label'>Due Date From</label>
-            <DatePicker
-              selected={dueDateFrom}
-              onChange={(date) => handleDateChange('due_date_from', date)}
-              placeholderText="Select start date"
-              isClearable={true}
-              maxDate={dueDateTo || undefined}
-            />
-          </div>
-          <div className='col-md-3'>
-            <label className='form-label'>Due Date To</label>
-            <DatePicker
-              selected={dueDateTo}
-              onChange={(date) => handleDateChange('due_date_to', date)}
-              placeholderText="Select end date"
-              isClearable={true}
-              minDate={dueDateFrom || undefined}
-            />
-          </div>
+      <div className='d-flex align-items-center gap-2'>
+        <label className='form-label mb-0 text-white-50' style={{ fontSize: '0.875rem' }}>
+          Due Date:
+        </label>
+        <div style={{ width: '120px' }}>
+          <DatePicker
+            selected={dueDateFrom}
+            onChange={(date) => handleDateChange('due_date_from', date)}
+            placeholderText="From"
+            isClearable={true}
+            maxDate={dueDateTo || undefined}
+            className='form-control form-control-sm'
+          />
         </div>
-        <div className='d-flex justify-content-end mt-3'>
-          <button
-            type='button'
-            className='btn btn-secondary me-2'
-            onClick={onClearFilters}
-          >
-            Clear Filters
-          </button>
-          <button
-            type='button'
-            className='btn btn-primary'
-            onClick={handleApplyFilters}
-            disabled={loadingFilters}
-          >
-            {loadingFilters ? (
-              <>
-                <span className='spinner-border spinner-border-sm me-2' role='status'></span>
-                Applying...
-              </>
-            ) : (
-              'Apply Filters'
-            )}
-          </button>
+        <div style={{ width: '120px' }}>
+          <DatePicker
+            selected={dueDateTo}
+            onChange={(date) => handleDateChange('due_date_to', date)}
+            placeholderText="To"
+            isClearable={true}
+            minDate={dueDateFrom || undefined}
+            className='form-control form-control-sm'
+          />
         </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className='d-flex align-items-center gap-2'>
+        <button
+          type='button'
+          className='btn btn-sm btn-outline-light'
+          onClick={onClearFilters}
+        >
+          Clear
+        </button>
+        <button
+          type='button'
+          className='btn btn-sm btn-light-primary'
+          onClick={handleApplyFilters}
+          disabled={loadingFilters}
+        >
+          {loadingFilters ? (
+            <>
+              <span className='spinner-border spinner-border-sm me-1' role='status'></span>
+              Apply
+            </>
+          ) : (
+            'Apply'
+          )}
+        </button>
       </div>
     </div>
   )
@@ -753,26 +770,30 @@ const VideoAssignedListPage: FC = () => {
       </PageTitle>
 
       {/* Welcome Section */}
-      <div className='assigned-videos-welcome-section'>
-        <div className='assigned-videos-welcome-content'>
+      <div className='welcome-section'>
+        <div className='welcome-content'>
           <div className='welcome-text'>
-            <h2 className='welcome-title'>Welcome to Your Assigned Videos Hub! 🎬</h2>
+            <h2 className='fw-bold mb-2'>Welcome to Your Assigned Videos Hub! 🎬</h2>
             <p className='welcome-subtitle'>Monitor video assignments, track student progress, and manage video packages</p>
           </div>
           <div className='welcome-actions'>
             <button 
-              className='btn btn-light-primary me-3 btn-sm'
+              className='btn btn-light-dark btn-sm'
               onClick={() => setShowFilters(!showFilters)}
             >
-              <i className='fas fa-filter me-1'></i>
-              {showFilters ? 'Hide Filters' : 'Filter'}
+              <i className={`fas fa-chevron-${showFilters ? 'up' : 'down'} me-2`}></i>
+              Filters
             </button>
           </div>
         </div>
+        
+        {/* Filters */}
+        {showFilters && (
+          <div className='custom-filter-section mt-3 d-flex justify-content-end'>
+            <AssignedVideosFilters onClearFilters={handleClearFilters} clearTrigger={clearTrigger} />
+          </div>
+        )}
       </div>
-
-      {/* Filters */}
-      {showFilters && <AssignedVideosFilters onClearFilters={handleClearFilters} clearTrigger={clearTrigger} />}
 
       {/* Summary Cards */}
       <div className='row g-5 g-xl-8 mb-5'>
