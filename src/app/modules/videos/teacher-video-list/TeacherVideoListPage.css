@@ -7,6 +7,22 @@
   color: white;
 }
 
+/* Custom Filter Section in Welcome Bar */
+.welcome-section .custom-filter-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.welcome-section .custom-filter-section .form-label {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-weight: 500;
+}
+
+.welcome-section .custom-filter-section .text-white-50 {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
 .welcome-section .welcome-content {
   display: flex;
   justify-content: space-between;
@@ -107,7 +123,7 @@
   position: absolute;
   top: 8px;
   left: 8px;
-  z-index: 2;
+  z-index: 1;
 }
 
 .video-card .card-body {
@@ -262,13 +278,22 @@
   margin-bottom: 1.5rem;
 }
 
-/* Tag filter dropdown z-index */
+/* Tag filter dropdown z-index - Ensure highest priority */
 .react-select__menu {
-  z-index: 9999 !important;
+  z-index: 99999 !important;
 }
 
 .react-select__menu-portal {
-  z-index: 9999 !important;
+  z-index: 99999 !important;
+}
+
+/* Specific styling for dropdowns in the welcome section */
+.welcome-section .react-select__menu {
+  z-index: 99999 !important;
+}
+
+.welcome-section .react-select__menu-portal {
+  z-index: 99999 !important;
 } 
 
 /* Fix z-index for groups and students dropdowns in assignment modal */
