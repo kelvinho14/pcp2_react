@@ -33,6 +33,7 @@ type UserSettings = {
   preferred_language?: string
   timezone?: string
   theme?: string
+  exercise_submission_notifications?: boolean
 }
 
 export const fetchUsers = createAsyncThunk(
