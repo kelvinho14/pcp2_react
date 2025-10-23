@@ -1,4 +1,8 @@
 // Exercise Attempt Page Styles
+.cursor-pointer {
+  cursor: pointer;
+}
+
 .exercise-attempt-page {
   .exercise-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -43,12 +47,18 @@
 
   .question-content {
     .question-header {
-      border-bottom: 1px solid #e9ecef;
-      padding-bottom: 1rem;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-left: 4px solid #3699ff;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       
-      h4 {
-        font-weight: 600;
-        color: #495057;
+      .question-text {
+        font-weight: 400;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: #212529;
       }
       
       .badge {
@@ -92,12 +102,14 @@
     }
 
     .answer-section {
+      margin-top: 2rem;
+      
       .mc-options {
         .options-list {
           .option-item {
             border: 1px solid #e9ecef;
             border-radius: 8px;
-            padding: 1rem;
+            padding: 0.75rem;
             transition: all 0.3s ease;
             
             &:hover {
@@ -105,11 +117,12 @@
               background-color: #f8f9fa;
             }
             
-            .form-check {
+            label {
               margin: 0;
               
               .form-check-input {
-                margin-top: 0.25rem;
+                margin: 0;
+                margin-top: 0;
                 
                 &:checked {
                   background-color: #3699ff;
@@ -117,43 +130,40 @@
                 }
               }
               
-              .form-check-label {
-                width: 100%;
-                cursor: pointer;
-                margin: 0;
+              .option-letter {
+                font-weight: 700;
+                color: #3699ff;
+                min-width: 30px;
+                display: inline-block;
+              }
+              
+              .option-content {
+                line-height: 1.5;
                 
-                .option-letter {
-                  font-weight: 700;
-                  color: #3699ff;
-                  min-width: 30px;
-                  display: inline-block;
+                // Style for rich text content in options
+                h1, h2, h3, h4, h5, h6 {
+                  color: #495057;
+                  margin-bottom: 0.5rem;
                 }
                 
-                .option-content {
-                  flex: 1;
-                  line-height: 1.5;
+                p {
+                  margin-bottom: 0.5rem;
                   
-                  // Style for rich text content in options
-                  h1, h2, h3, h4, h5, h6 {
-                    color: #495057;
-                    margin-bottom: 0.5rem;
+                  &:last-child {
+                    margin-bottom: 0;
                   }
-                  
-                  p {
-                    margin-bottom: 0.5rem;
-                  }
-                  
-                  ul, ol {
-                    margin-bottom: 0.5rem;
-                    padding-left: 1rem;
-                  }
-                  
-                  img {
-                    max-width: 100%;
-                    height: auto;
-                    border-radius: 4px;
-                    margin: 0.5rem 0;
-                  }
+                }
+                
+                ul, ol {
+                  margin-bottom: 0.5rem;
+                  padding-left: 1rem;
+                }
+                
+                img {
+                  max-width: 100%;
+                  height: auto;
+                  border-radius: 4px;
+                  margin: 0.5rem 0;
                 }
               }
             }
@@ -241,12 +251,13 @@
         .mc-options {
           .options-list {
             .option-item {
-              .form-check {
-                .form-check-label {
-                  .d-flex {
-                    flex-direction: column;
-                    gap: 0.5rem;
-                  }
+              label {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 0.5rem;
+                
+                .option-letter {
+                  margin-left: 0 !important;
                 }
               }
             }
