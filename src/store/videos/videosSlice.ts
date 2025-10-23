@@ -47,6 +47,7 @@ export interface YouTubeMetadata {
 
 export interface VideoFormData {
   source: 1 | 2
+  title?: string
   tags?: VideoTag[]
   youtube_urls?: string[]
   vimeo_ids?: string[]
