@@ -700,8 +700,8 @@ const ExerciseAttemptPage: FC = () => {
                       {currentQuestion.type === 'mc' ? 'Multiple Choice' : 'Long Question'}
                     </span>
                   </div>
-                  <div>
-                    <h4 className='mb-2'>{renderQuestionContent(currentQuestion.question_content)}</h4>
+                  <div className='question-text'>
+                    {renderQuestionContent(currentQuestion.question_content)}
                   </div>
                 </div>
 
@@ -713,9 +713,9 @@ const ExerciseAttemptPage: FC = () => {
                       <div className='options-list'>
                         {currentQuestion.options?.map((option) => (
                           <div key={option.option_letter} className='option-item mb-3'>
-                            <div className='form-check'>
+                            <label className='d-flex align-items-center w-100 cursor-pointer' htmlFor={`option-${option.option_letter}`}>
                               <input
-                                className='form-check-input'
+                                className='form-check-input flex-shrink-0'
                                 type='radio'
                                 name={`mc-${currentQuestion.question_id}`}
                                 id={`option-${option.option_letter}`}
@@ -723,16 +723,12 @@ const ExerciseAttemptPage: FC = () => {
                                 checked={currentAnswer?.mc_answer === option.option_letter}
                                 onChange={() => handleMCAnswer(option.option_letter)}
                               />
-                              <label className='form-check-label' htmlFor={`option-${option.option_letter}`}>
-                                <div className='d-flex align-items-start'>
-                                  <span className='option-letter me-3'>{option.option_letter}.</span>
-                                  <div 
-                                    className='option-content'
-                                    dangerouslySetInnerHTML={{__html: option.option_text}}
-                                  />
-                                </div>
-                              </label>
-                            </div>
+                              <span className='option-letter flex-shrink-0 ms-2 me-3'>{option.option_letter}.</span>
+                              <div 
+                                className='option-content flex-grow-1'
+                                dangerouslySetInnerHTML={{__html: option.option_text}}
+                              />
+                            </label>
                           </div>
                         ))}
                         {currentAnswer?.mc_answer && (
