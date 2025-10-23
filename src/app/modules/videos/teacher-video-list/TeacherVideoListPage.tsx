@@ -830,28 +830,121 @@ const TeacherVideoListPage: FC = () => {
               }
             </p>
           </div>
-          {isTeachingStaff(currentUser?.role?.role_type) && (
-            <div className='welcome-actions'>
-              <button 
-                className='btn btn-light-primary me-3'
-                onClick={() => {
-                  resetModal()
-                  setShowModal(true)
-                }}
+          <div className='welcome-actions'>
+            {isTeachingStaff(currentUser?.role?.role_type) && (
+              <>
+                <button 
+                  className='btn btn-light-primary me-3'
+                  onClick={() => {
+                    resetModal()
+                    setShowModal(true)
+                  }}
+                >
+                  <i className='fas fa-plus me-1'></i>
+                  Add Video
+                </button>
+                <button 
+                  className='btn btn-light-success me-3'
+                  onClick={handleBulkAssignModalOpen}
+                >
+                  <i className='fas fa-user-plus me-1'></i>
+                  Assign Videos
+                </button>
+              </>
+            )}
+            
+            {/* Tag Filter */}
+            <div className='d-flex align-items-center gap-2'>
+              <button
+                type='button'
+                className='btn btn-light-dark btn-sm'
+                onClick={() => setShowTagFilter(!showTagFilter)}
               >
-                <i className='fas fa-plus me-1'></i>
-                Add Video
-              </button>
-              <button 
-                className='btn btn-light-success'
-                onClick={handleBulkAssignModalOpen}
-              >
-                <i className='fas fa-user-plus me-1'></i>
-                Assign Videos
+                <i className={`fas fa-chevron-${showTagFilter ? 'up' : 'down'} me-2`}></i>
+                Filters
               </button>
             </div>
-          )}
+          </div>
         </div>
+        
+        {/* Custom Dropdown Filters */}
+        {showTagFilter && (
+          <div className='custom-filter-section mt-3 d-flex justify-content-end'>
+            <div className='d-flex align-items-center gap-3 flex-wrap'>
+              {/* Custom Dropdowns */}
+              {customDropdowns.map((dropdown) => (
+                <div key={dropdown.dropdown_id} className='d-flex align-items-center gap-2'>
+                  <label htmlFor={`custom-${dropdown.dropdown_id}`} className='form-label mb-0 text-white-50' style={{ fontSize: '0.875rem' }}>
+                    {dropdown.name}:
+                  </label>
+                  <div style={{ width: '180px' }}>
+                    <Select
+                      id={`custom-${dropdown.dropdown_id}`}
+                      options={dropdown.options.map((option) => ({
+                        value: option.option_value,
+                        label: option.display_text
+                      }))}
+                      isMulti
+                      onChange={(selectedOptions) => handleCustomDropdownChange(dropdown.dropdown_id, selectedOptions)}
+                      placeholder='Select...'
+                      isLoading={customDropdownsLoading}
+                      isClearable
+                      isSearchable
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                      styles={{
+                        option: (provided, state) => ({
+                          ...provided,
+                          color: state.isSelected ? 'white' : '#000000',
+                          backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f8f9fa' : 'white',
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          backgroundColor: 'white',
+                          zIndex: 99999,
+                        }),
+                        menuPortal: (provided) => ({
+                          ...provided,
+                          zIndex: 99999,
+                        }),
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              <div className='d-flex align-items-center gap-2'>
+                <span className='text-white-50' style={{ fontSize: '0.875rem' }}>Logic:</span>
+                <div className='btn-group btn-group-sm' role='group'>
+                  <input
+                    type='radio'
+                    className='btn-check'
+                    name='videoTagLogic'
+                    id='videoTagLogicAnd'
+                    value='and'
+                    checked={selectedLogic === 'and'}
+                    onChange={() => handleLogicChange('and')}
+                  />
+                  <label className={clsx('btn btn-sm', selectedLogic === 'and' ? 'btn-light-primary' : 'btn-outline-light')} htmlFor='videoTagLogicAnd'>
+                    AND
+                  </label>
+                  <input
+                    type='radio'
+                    className='btn-check'
+                    name='videoTagLogic'
+                    id='videoTagLogicOr'
+                    value='or'
+                    checked={selectedLogic === 'or'}
+                    onChange={() => handleLogicChange('or')}
+                  />
+                  <label className={clsx('btn btn-sm', selectedLogic === 'or' ? 'btn-light-primary' : 'btn-outline-light')} htmlFor='videoTagLogicOr'>
+                    OR
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       
       <div className='card'>
@@ -901,94 +994,9 @@ const TeacherVideoListPage: FC = () => {
                 </>
               )}
 
-              {/* Custom Dropdown Filter Toggle - Only for teaching staff */}
-              {isTeachingStaff(currentUser?.role?.role_type) && (
-                <div className='me-3'>
-                  <button
-                    type='button'
-                    className='btn btn-light-dark btn-sm'
-                    onClick={() => setShowTagFilter(!showTagFilter)}
-                  >
-                    <i className={`fas fa-chevron-${showTagFilter ? 'up' : 'down'} me-2`}></i>
-                    More Filters
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
-
-        {/* Custom Dropdown Filters */}
-        {showTagFilter && (
-          <div className='custom-filter-section tag-filter-section mt-3 d-flex justify-content-end'>
-            <div className='d-flex align-items-center gap-3 flex-wrap'>
-              {/* Custom Dropdowns */}
-              {customDropdowns.map((dropdown) => (
-                <div key={dropdown.dropdown_id} className='d-flex align-items-center gap-2'>
-                    <label htmlFor={`custom-${dropdown.dropdown_id}`} className='form-label mb-0 text-gray-800 fw-semibold' style={{ fontSize: '0.875rem' }}>
-                      {dropdown.name}:
-                    </label>
-                  <div style={{ width: '180px' }}>
-                    <Select
-                      id={`custom-${dropdown.dropdown_id}`}
-                      options={dropdown.options.map((option) => ({
-                        value: option.option_value,
-                        label: option.display_text
-                      }))}
-                      isMulti
-                      onChange={(selectedOptions) => handleCustomDropdownChange(dropdown.dropdown_id, selectedOptions)}
-                      placeholder='Select...'
-                      isLoading={customDropdownsLoading}
-                      isClearable
-                      isSearchable
-                      styles={{
-                        option: (provided, state) => ({
-                          ...provided,
-                          color: state.isSelected ? 'white' : '#000000',
-                          backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f8f9fa' : 'white',
-                        }),
-                        menu: (provided) => ({
-                          ...provided,
-                          backgroundColor: 'white',
-                        }),
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-              
-              <div className='d-flex align-items-center gap-2'>
-                <span className='text-gray-800 fw-semibold' style={{ fontSize: '0.875rem' }}>Logic:</span>
-                <div className='btn-group btn-group-sm' role='group'>
-                  <input
-                    type='radio'
-                    className='btn-check'
-                    name='videoTagLogic'
-                    id='videoTagLogicAnd'
-                    value='and'
-                    checked={selectedLogic === 'and'}
-                    onChange={() => handleLogicChange('and')}
-                  />
-                  <label className={clsx('btn btn-sm', selectedLogic === 'and' ? 'btn-light-primary' : 'btn-outline-light')} htmlFor='videoTagLogicAnd'>
-                    AND
-                  </label>
-                  <input
-                    type='radio'
-                    className='btn-check'
-                    name='videoTagLogic'
-                    id='videoTagLogicOr'
-                    value='or'
-                    checked={selectedLogic === 'or'}
-                    onChange={() => handleLogicChange('or')}
-                  />
-                  <label className={clsx('btn btn-sm', selectedLogic === 'or' ? 'btn-light-primary' : 'btn-outline-light')} htmlFor='videoTagLogicOr'>
-                    OR
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className='card-body py-4'>
           {loading ? (
