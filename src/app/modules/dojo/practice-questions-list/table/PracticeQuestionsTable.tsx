@@ -45,7 +45,7 @@ const PracticeQuestionsTable: FC<Props> = ({questions, isLoading, onSortChange, 
       <div className='table-responsive'>
         <table
           id='kt_table_practice_questions'
-          className='table align-middle table-row-dashed fs-6 gy-5 dataTable no-footer'
+          className='table align-middle table-row-dashed table-row-gray-300 fs-6 gy-5 dataTable no-footer'
           {...getTableProps()}
         >
           <thead>

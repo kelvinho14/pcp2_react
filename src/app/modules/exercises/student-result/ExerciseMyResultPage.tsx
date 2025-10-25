@@ -312,7 +312,7 @@ const ExerciseMyResultPage: FC = () => {
         </div>
         <div className='card-body py-3'>
             <div className='table-responsive' style={{maxHeight: '800px', overflowY: 'auto'}}>
-              <table className='table align-middle gs-0 gy-4'>
+              <table className='table align-middle table-row-dashed table-row-gray-300 gs-0 gy-5'>
                 <thead style={{position: 'sticky', top: 0, zIndex: 10}}>
                   <tr className='fw-bold text-muted bg-light'>
                     <th className='ps-4 min-w-20px rounded-start'>#</th>

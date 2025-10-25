@@ -373,10 +373,10 @@ const MCFormPage: FC = () => {
 
             {/* Question Content */}
             <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-2 col-form-label fw-semibold fs-6'>
                 Question
               </label>
-              <div className='col-lg-9'>
+              <div className='col-lg-10'>
                 <div style={{ opacity: isAssigned ? 0.6 : 1, pointerEvents: isAssigned ? 'none' : 'auto' }}>
                   <AIEditorWithButton
                     field='question'
@@ -408,10 +408,10 @@ const MCFormPage: FC = () => {
 
             {/* Answer Content */}
             <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-2 col-form-label fw-semibold fs-6'>
                 Answer
               </label>
-              <div className='col-lg-9'>
+              <div className='col-lg-10'>
                 <div style={{ opacity: isAssigned ? 0.6 : 1, pointerEvents: isAssigned ? 'none' : 'auto' }}>
                   <AIEditorWithButton
                     field='answer'
@@ -443,10 +443,10 @@ const MCFormPage: FC = () => {
 
             {/* Multiple Choice Options */}
             <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-2 col-form-label fw-semibold fs-6'>
                 Options
               </label>
-              <div className='col-lg-9'>
+              <div className='col-lg-10'>
                 <div className='d-flex flex-column gap-4'>
                   {formik.values.options.map((option, index) => (
                     <div key={index} className='border rounded p-4'>
@@ -508,10 +508,10 @@ const MCFormPage: FC = () => {
 
              {/* Tags */}
              <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-2 col-form-label fw-semibold fs-6'>
                 Tags with Scores
               </label>
-              <div className='col-lg-9'>
+              <div className='col-lg-10'>
                 <div style={{ opacity: isAssigned ? 0.6 : 1, pointerEvents: isAssigned ? 'none' : 'auto' }}>
                   <TagWithScore
                     options={tags}
@@ -525,10 +525,10 @@ const MCFormPage: FC = () => {
 
             {/* Teacher Remark */}
             <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-2 col-form-label fw-semibold fs-6'>
                 Teacher Remark
               </label>
-              <div className='col-lg-9'>
+              <div className='col-lg-10'>
                 <textarea
                   className={clsx(
                     'form-control form-control-lg form-control-solid',

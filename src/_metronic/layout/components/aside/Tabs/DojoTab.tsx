@@ -34,8 +34,8 @@ const intl = useIntl()
               fontIcon='fa-solid fa-xmark'
               textAlign='end'
           />
-          <AsideMenuItem to='/dojo/weak-spots' title='Weak Spots' fontIcon='fa-solid fa-question-circle me-2'/>
-          <AsideMenuItem to='/dojo/practice' title='Practice' fontIcon='fa-solid fa-dumbbell me-2'/>
+          <AsideMenuItem to='/dojo/weak-spots' title='Weak Spots' fontIcon='fa-solid fa-face-rolling-eyes me-2'/>
+          <AsideMenuItem to='/dojo/practice' title='Practice' fontIcon='fa-solid fa-bullseye me-2'/>
         </div>
       </div>
     </div>

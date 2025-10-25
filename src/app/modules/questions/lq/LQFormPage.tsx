@@ -437,10 +437,10 @@ const LQFormPage: FC = () => {
 
             {/* Question Content */}
             <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-2 col-form-label fw-semibold fs-6'>
                 Question
               </label>
-              <div className='col-lg-9'>
+              <div className='col-lg-10'>
                 <div style={{ opacity: isAssigned ? 0.6 : 1, pointerEvents: isAssigned ? 'none' : 'auto' }}>
                   <AIEditorWithButton
                     field='question'
@@ -472,10 +472,10 @@ const LQFormPage: FC = () => {
 
             {/* Answer Content */}
             <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-2 col-form-label fw-semibold fs-6'>
                 Answer
               </label>
-              <div className='col-lg-9'>
+              <div className='col-lg-10'>
                 <div style={{ opacity: isAssigned ? 0.6 : 1, pointerEvents: isAssigned ? 'none' : 'auto' }}>
                   <AIEditorWithButton
                     field='answer'
@@ -507,10 +507,10 @@ const LQFormPage: FC = () => {
 
             {/* Rubric Content */}
             <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-2 col-form-label fw-semibold fs-6'>
                 Rubric
               </label>
-              <div className='col-lg-9'>
+              <div className='col-lg-10'>
                 {/* Should Contain Section */}
                 <div className='mb-4'>
                   <label className='form-label fw-semibold fs-6 mb-2'>
@@ -622,10 +622,10 @@ const LQFormPage: FC = () => {
 
 {/* Tags */}
 <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-2 col-form-label fw-semibold fs-6'>
                 Tags with Scores
               </label>
-              <div className='col-lg-9'>
+              <div className='col-lg-10'>
                 <div style={{ opacity: isAssigned ? 0.6 : 1, pointerEvents: isAssigned ? 'none' : 'auto' }}>
                   <TagWithScore
                     options={tags}
@@ -639,10 +639,10 @@ const LQFormPage: FC = () => {
 
             {/* Teacher Remark */}
             <div className='row mb-6'>
-              <label className='col-lg-3 col-form-label fw-semibold fs-6'>
+              <label className='col-lg-2 col-form-label fw-semibold fs-6'>
                 Teacher Remark
               </label>
-              <div className='col-lg-9'>
+              <div className='col-lg-10'>
                 <textarea
                   className={clsx(
                     'form-control form-control-lg form-control-solid',
@@ -666,7 +666,7 @@ const LQFormPage: FC = () => {
             
             {/* Form Actions */}
             <div className='row mb-6'>
-              <div className='col-lg-9 offset-lg-3'>
+              <div className='col-lg-10 offset-lg-3'>
                 <div className='d-flex gap-3'>
                   {isEditMode ? (
                     <>
