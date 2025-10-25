@@ -35,7 +35,7 @@ const StudentExerciseTab = () => {
               fontIcon='fa-solid fa-xmark'
               textAlign='end'
             />
-          <AsideMenuItem to='/exercises/dashboard' title='Exercises Dashboard' hasBullet={true} />
+          <AsideMenuItem to='/exercises/dashboard' title='Exercises' hasBullet={true} />
         </div>
       </div>
     </div>
