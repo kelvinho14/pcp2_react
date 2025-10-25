@@ -14,6 +14,7 @@ export interface PracticeQuestionItem {
   teacher_remark: string | null
   is_ai_generated: boolean
   source_question_id?: string
+  teacher_verification_status?: number
   ai_generation_metadata?: {
     difficulty?: string
   }
@@ -76,7 +77,7 @@ export const fetchPracticeQuestions = createAsyncThunk(
     try {
       const params: any = {
         page: page || 1,
-        items_per_page: 12,
+        items_per_page: 10,
         is_ai_generated: 1,
         visibility: QUESTION_VISIBILITY.PRIVATE,
       }

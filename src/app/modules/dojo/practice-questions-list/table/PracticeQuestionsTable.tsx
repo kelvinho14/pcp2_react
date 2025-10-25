@@ -15,11 +15,12 @@ type Props = {
   itemsPerPage: number
   onPageChange: (page: number) => void
   onQuestionClick?: (questionId: string) => void
+  showAnswer?: boolean
 }
 
-const PracticeQuestionsTable: FC<Props> = ({questions, isLoading, onSortChange, currentSort, page, total, itemsPerPage, onPageChange, onQuestionClick}) => {
+const PracticeQuestionsTable: FC<Props> = ({questions, isLoading, onSortChange, currentSort, page, total, itemsPerPage, onPageChange, onQuestionClick, showAnswer = false}) => {
   const data = useMemo(() => questions, [questions])
-  const columns = useMemo(() => createPracticeQuestionsColumns() as Column<PracticeQuestionItem>[], [])
+  const columns = useMemo(() => createPracticeQuestionsColumns(showAnswer) as Column<PracticeQuestionItem>[], [showAnswer])
 
   const {getTableProps, getTableBodyProps, headers, rows, prepareRow} = useTable(
     {
