@@ -23,6 +23,17 @@ export interface IncorrectQuestionItem {
   student_answer?: string
 }
 
+export interface Exercise {
+  exercise_id: string
+  assignment_id: string
+  title: string
+}
+
+export interface Tag {
+  tag_id: string
+  name: string
+}
+
 export interface Pagination {
   page: number
   first_page_url: string
@@ -43,6 +54,8 @@ export interface Pagination {
 
 interface IncorrectQuestionsState {
   questions: IncorrectQuestionItem[]
+  exercises: Exercise[]
+  tags: Tag[]
   pagination: Pagination | null
   loading: boolean
   error: string | null
@@ -50,6 +63,8 @@ interface IncorrectQuestionsState {
 
 const initialState: IncorrectQuestionsState = {
   questions: [],
+  exercises: [],
+  tags: [],
   pagination: null,
   loading: false,
   error: null,
@@ -58,7 +73,15 @@ const initialState: IncorrectQuestionsState = {
 // Async thunks
 export const fetchIncorrectQuestions = createAsyncThunk(
   'incorrectQuestions/fetchIncorrectQuestions',
-  async ({ page, sort, order, search }: { page?: number; sort?: string; order?: 'asc' | 'desc'; search?: string }) => {
+  async ({ page, sort, order, search, assignment_ids, tag_ids, logic }: { 
+    page?: number; 
+    sort?: string; 
+    order?: 'asc' | 'desc'; 
+    search?: string; 
+    assignment_ids?: string[];
+    tag_ids?: string[];
+    logic?: 'and' | 'or';
+  }) => {
     try {
       const params: any = {
         page: page || 1,
@@ -67,16 +90,31 @@ export const fetchIncorrectQuestions = createAsyncThunk(
       if (sort) params.sort = sort
       if (order) params.order = order
       if (search) params.search = search
+      if (logic) params.logic = logic
       
       const headers = getHeadersWithSchoolSubject(`${API_URL}/exercises/student-exercises/incorrect-questions`)
-      const response = await axios.get(
-        `${API_URL}/exercises/student-exercises/incorrect-questions`,
-        {
-          params,
-          headers,
-          withCredentials: true,
-        }
-      )
+      
+      // Build URL with multiple assignment_ids and tag_ids
+      let url = `${API_URL}/exercises/student-exercises/incorrect-questions`
+      const queryParams: string[] = []
+      
+      if (assignment_ids && assignment_ids.length > 0) {
+        queryParams.push(...assignment_ids.map(id => `assignment_ids=${id}`))
+      }
+      
+      if (tag_ids && tag_ids.length > 0) {
+        queryParams.push(...tag_ids.map(id => `tag_ids=${id}`))
+      }
+      
+      if (queryParams.length > 0) {
+        url = `${url}?${queryParams.join('&')}`
+      }
+      
+      const response = await axios.get(url, {
+        params,
+        headers,
+        withCredentials: true,
+      })
       return response.data
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Failed to load incorrect questions'
@@ -107,6 +145,8 @@ const incorrectQuestionsSlice = createSlice({
       .addCase(fetchIncorrectQuestions.fulfilled, (state, action) => {
         state.loading = false
         state.questions = action.payload.items
+        state.exercises = action.payload.exercises || []
+        state.tags = action.payload.tags || []
         state.pagination = action.payload.pagination
       })
       .addCase(fetchIncorrectQuestions.rejected, (state, action) => {
