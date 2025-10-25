@@ -89,7 +89,7 @@ const TeacherVideoListPage: FC = () => {
   const [platformFilter, setPlatformFilter] = useState<'youtube' | 'vimeo' | ''>('')
   const [statusFilter, setStatusFilter] = useState<1 | 2 | ''>('') // 1 = private, 2 = public
   const [selectedLogic, setSelectedLogic] = useState<'and' | 'or'>('and')
-  const [showTagFilter, setShowTagFilter] = useState(true) // Show filters by default for all users
+  const [showTagFilter, setShowTagFilter] = useState(false) // Collapse filters by default
   const [selectedCustomDropdowns, setSelectedCustomDropdowns] = useState<Record<string, string[]>>({})
 
   // State for modal

@@ -17,6 +17,8 @@ import {transformQuestionsForBackend} from '../../questions/components/questionT
 import {QUESTION_VISIBILITY} from '../../../constants/questionVisibility'
 import {TEACHER_VERIFICATION_STATUS} from '../../../constants/teacherVerificationStatus'
 import {ConfirmationDialog} from '../../../../_metronic/helpers/ConfirmationDialog'
+import Select from 'react-select'
+import clsx from 'clsx'
 
 const incorrectQuestionsBreadcrumbs: Array<PageLink> = [
   {
@@ -42,7 +44,7 @@ const incorrectQuestionsBreadcrumbs: Array<PageLink> = [
 const IncorrectQuestionsListPage = () => {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
-  const {questions, pagination, loading} = useSelector((state: RootState) => state.incorrectQuestions)
+  const {questions, exercises, tags, pagination, loading} = useSelector((state: RootState) => state.incorrectQuestions)
   const {generatedQuestions, generatingSimilarQuestions, creatingMultipleQuestions, creating} = useSelector((state: RootState) => state.questions)
   const [currentPage, setCurrentPage] = useState(1)
   const [sort, setSort] = useState<{ id: string; desc: boolean } | null>({ id: 'answered_at', desc: true })
@@ -55,6 +57,10 @@ const IncorrectQuestionsListPage = () => {
   const [showPracticePrompt, setShowPracticePrompt] = useState(false)
   const [questionsCreatedCount, setQuestionsCreatedCount] = useState(0)
   const [showAnswer, setShowAnswer] = useState(false)
+  const [selectedExercises, setSelectedExercises] = useState<string[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedLogic, setSelectedLogic] = useState<'and' | 'or'>('and')
+  const [showFilters, setShowFilters] = useState(false)
   const itemsPerPage = 12
 
   const loadQuestions = useCallback(() => {
@@ -63,8 +69,11 @@ const IncorrectQuestionsListPage = () => {
       sort: sort?.id,
       order: sort ? (sort.desc ? 'desc' : 'asc') : undefined,
       search: search || undefined,
+      assignment_ids: selectedExercises.length > 0 ? selectedExercises : undefined,
+      tag_ids: selectedTags.length > 0 ? selectedTags : undefined,
+      logic: selectedLogic,
     }))
-  }, [dispatch, currentPage, sort, search])
+  }, [dispatch, currentPage, sort, search, selectedExercises, selectedTags, selectedLogic])
 
   useEffect(() => {
     loadQuestions()
@@ -211,6 +220,35 @@ const IncorrectQuestionsListPage = () => {
     navigate('/dojo/practice')
   }
 
+  const handleExerciseSelection = (selectedOptions: any) => {
+    const optionValues = selectedOptions ? selectedOptions.map((option: any) => option.value) : []
+    setSelectedExercises(optionValues)
+    setCurrentPage(1) // Reset to first page when filter changes
+  }
+
+  const handleTagSelection = (selectedOptions: any) => {
+    const optionValues = selectedOptions ? selectedOptions.map((option: any) => option.value) : []
+    setSelectedTags(optionValues)
+    setCurrentPage(1) // Reset to first page when filter changes
+  }
+
+  const handleLogicChange = (logic: 'and' | 'or') => {
+    setSelectedLogic(logic)
+    setCurrentPage(1) // Reset to first page when logic changes
+  }
+
+  // Format exercises for dropdown
+  const exerciseOptions = exercises.map((exercise) => ({
+    value: exercise.assignment_id,
+    label: exercise.title
+  }))
+
+  // Format tags for dropdown
+  const tagOptions = tags.map((tag) => ({
+    value: tag.tag_id,
+    label: tag.name
+  }))
+
   return (
     <>
       <PageTitle breadcrumbs={incorrectQuestionsBreadcrumbs}>Weak Spots</PageTitle>
@@ -250,9 +288,143 @@ const IncorrectQuestionsListPage = () => {
                   {pagination.total} {pagination.total === 1 ? 'Question' : 'Questions'}
                 </span>
               )}
+
+              {/* Filters Toggle Button */}
+              {(exercises.length > 0 || tags.length > 0) && (
+                <button
+                  type='button'
+                  className='btn btn-light-dark btn-sm'
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <i className={`fas fa-chevron-${showFilters ? 'up' : 'down'} me-2`}></i>
+                  Filters
+                </button>
+              )}
             </div>
           </div>
         </div>
+        
+        {/* Filters Section */}
+        {showFilters && (exercises.length > 0 || tags.length > 0) && (
+          <div className='custom-filter-section mt-3 d-flex justify-content-end'>
+            <div className='d-flex align-items-center gap-3 flex-wrap'>
+              {/* Exercise Filter */}
+              {exercises.length > 0 && (
+                <div className='d-flex align-items-center gap-2'>
+                  <label className='form-label mb-0 text-white-50' style={{ fontSize: '0.875rem' }}>
+                    Filter by Exercise:
+                  </label>
+                  <div style={{ width: '280px' }}>
+                    <Select
+                      options={exerciseOptions}
+                      isMulti
+                      onChange={handleExerciseSelection}
+                      placeholder="Select exercises..."
+                      isClearable
+                      isSearchable
+                      value={exerciseOptions.filter(option => 
+                        selectedExercises.includes(option.value)
+                      )}
+                      noOptionsMessage={() => "No exercises found"}
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                      styles={{
+                        option: (provided, state) => ({
+                          ...provided,
+                          color: state.isSelected ? 'white' : '#000000',
+                          backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f8f9fa' : 'white',
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          backgroundColor: 'white',
+                          zIndex: 99999,
+                        }),
+                        menuPortal: (provided) => ({
+                          ...provided,
+                          zIndex: 99999,
+                        }),
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Tags Filter */}
+              {tags.length > 0 && (
+                <div className='d-flex align-items-center gap-2'>
+                  <label className='form-label mb-0 text-white-50' style={{ fontSize: '0.875rem' }}>
+                    Filter by Tag:
+                  </label>
+                  <div style={{ width: '280px' }}>
+                    <Select
+                      options={tagOptions}
+                      isMulti
+                      onChange={handleTagSelection}
+                      placeholder="Select tags..."
+                      isClearable
+                      isSearchable
+                      value={tagOptions.filter(option => 
+                        selectedTags.includes(option.value)
+                      )}
+                      noOptionsMessage={() => "No tags found"}
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                      styles={{
+                        option: (provided, state) => ({
+                          ...provided,
+                          color: state.isSelected ? 'white' : '#000000',
+                          backgroundColor: state.isSelected ? '#667eea' : state.isFocused ? '#f8f9fa' : 'white',
+                        }),
+                        menu: (provided) => ({
+                          ...provided,
+                          backgroundColor: 'white',
+                          zIndex: 99999,
+                        }),
+                        menuPortal: (provided) => ({
+                          ...provided,
+                          zIndex: 99999,
+                        }),
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Logic Toggle - Show when both exercises and tags filters are available */}
+              {exercises.length > 0 && tags.length > 0 && (
+                <div className='d-flex align-items-center gap-2'>
+                  <span className='text-white-50' style={{ fontSize: '0.875rem' }}>Logic:</span>
+                  <div className='btn-group btn-group-sm' role='group'>
+                    <input
+                      type='radio'
+                      className='btn-check'
+                      name='dojoFilterLogic'
+                      id='dojoFilterLogicAnd'
+                      value='and'
+                      checked={selectedLogic === 'and'}
+                      onChange={() => handleLogicChange('and')}
+                    />
+                    <label className={clsx('btn btn-sm', selectedLogic === 'and' ? 'btn-light-primary' : 'btn-outline-light')} htmlFor='dojoFilterLogicAnd'>
+                      AND
+                    </label>
+                    <input
+                      type='radio'
+                      className='btn-check'
+                      name='dojoFilterLogic'
+                      id='dojoFilterLogicOr'
+                      value='or'
+                      checked={selectedLogic === 'or'}
+                      onChange={() => handleLogicChange('or')}
+                    />
+                    <label className={clsx('btn btn-sm', selectedLogic === 'or' ? 'btn-light-primary' : 'btn-outline-light')} htmlFor='dojoFilterLogicOr'>
+                      OR
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <KTCard>
