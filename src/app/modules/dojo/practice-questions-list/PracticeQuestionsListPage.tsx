@@ -38,7 +38,8 @@ const PracticeQuestionsListPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [sort, setSort] = useState<{ id: string; desc: boolean } | null>(null)
   const [search, setSearch] = useState('')
-  const itemsPerPage = 12
+  const [showAnswer, setShowAnswer] = useState(false)
+  const itemsPerPage = 10
 
   // Get source_question_id from URL params
   const sourceQuestionId = searchParams.get('source_id')
@@ -99,14 +100,30 @@ const PracticeQuestionsListPage = () => {
             </p>
           </div>
           <div className='welcome-actions'>
-            {pagination && (
-              <div className='d-flex align-items-center gap-2'>
+            <div className='d-flex align-items-center gap-3 bg-light-primary rounded px-4 py-3'>
+              {/* Show Answer Toggle */}
+              <div className='form-check form-switch'>
+                <input
+                  className='form-check-input'
+                  type='checkbox'
+                  id='showAnswerToggle'
+                  checked={showAnswer}
+                  onChange={(e) => setShowAnswer(e.target.checked)}
+                  style={{cursor: 'pointer'}}
+                />
+                <label className='form-check-label fw-bold text-dark' htmlFor='showAnswerToggle' style={{cursor: 'pointer'}}>
+                  Show Answer
+                </label>
+              </div>
+              
+              {/* Question Count Badge */}
+              {pagination && (
                 <span className='badge badge-light-primary fs-6'>
                   <i className='fas fa-brain me-1'></i>
                   {pagination.total} {pagination.total === 1 ? 'Question' : 'Questions'}
                 </span>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -121,9 +138,10 @@ const PracticeQuestionsListPage = () => {
           onSortChange={handleSortChange}
           currentSort={sort}
           page={currentPage}
-          total={filteredQuestions.length}
+          total={pagination?.total || 0}
           itemsPerPage={itemsPerPage}
           onPageChange={handlePageChange}
+          showAnswer={showAnswer}
         />
       </KTCard>
     </>
