@@ -8,7 +8,7 @@ type Props = {
 
 const QuestionCell: FC<Props> = ({question, showAnswer}) => {
   return (
-    <div className='d-flex flex-column' style={{maxWidth: '800px'}}>
+    <div className='d-flex flex-column'>
       <div 
         className='text-dark fw-bold mb-3 fs-6 question-content'
         dangerouslySetInnerHTML={{__html: question.question_content}}
