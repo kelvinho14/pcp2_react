@@ -367,6 +367,13 @@ const questionsSlice = createSlice({
     clearGeneratedQuestions: (state) => {
       state.generatedQuestions = []
     },
+    updateGeneratedQuestions: (state, action) => {
+      state.generatedQuestions = action.payload
+    },
+    removeGeneratedQuestion: (state, action) => {
+      const indexToRemove = action.payload
+      state.generatedQuestions = state.generatedQuestions.filter((_, idx) => idx !== indexToRemove)
+    },
   },
   extraReducers: (builder) => {
     // Create question
@@ -507,7 +514,7 @@ const questionsSlice = createSlice({
       .addCase(createMultipleQuestions.fulfilled, (state, action) => {
         state.creatingMultipleQuestions = false
         state.questions.push(...action.payload) // Add created questions to the list
-        state.generatedQuestions = [] // Clear generated questions
+        // Don't auto-clear generatedQuestions - let components decide when to clear
         state.success = 'Questions created successfully'
       })
       .addCase(createMultipleQuestions.rejected, (state, action) => {
@@ -539,7 +546,9 @@ export const {
   clearSuccess, 
   clearMessages, 
   clearCurrentQuestion,
-  clearGeneratedQuestions
+  clearGeneratedQuestions,
+  updateGeneratedQuestions,
+  removeGeneratedQuestion
 } = questionsSlice.actions
 
 export default questionsSlice.reducer 

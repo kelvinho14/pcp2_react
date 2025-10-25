@@ -11,10 +11,12 @@ import {IncorrectQuestionItem} from '../../../../store/dojo/incorrectQuestionsSl
 import {IncorrectQuestionsSearchComponent} from './components/IncorrectQuestionsSearchComponent'
 import AIGenerateSimilarModal from '../../questions/components/AIGenerateSimilarModal'
 import DojoGeneratedQuestionsModal from './components/DojoGeneratedQuestionsModal'
-import {generateSimilarQuestions, createMultipleQuestions, clearGeneratedQuestions} from '../../../../store/questions/questionsSlice'
+import {generateSimilarQuestions, createMultipleQuestions, clearGeneratedQuestions, updateGeneratedQuestions, removeGeneratedQuestion} from '../../../../store/questions/questionsSlice'
 import {toast} from '../../../../_metronic/helpers/toast'
 import {transformQuestionsForBackend} from '../../questions/components/questionTransformers'
 import {QUESTION_VISIBILITY} from '../../../constants/questionVisibility'
+import {TEACHER_VERIFICATION_STATUS} from '../../../constants/teacherVerificationStatus'
+import {ConfirmationDialog} from '../../../../_metronic/helpers/ConfirmationDialog'
 
 const incorrectQuestionsBreadcrumbs: Array<PageLink> = [
   {
@@ -47,8 +49,11 @@ const IncorrectQuestionsListPage = () => {
   const [search, setSearch] = useState('')
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null)
   const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'medium' | 'hard' | 'challenging'>('medium')
+  const [selectedQuestionType, setSelectedQuestionType] = useState<'mc' | 'lq'>('mc')
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false)
   const [showGeneratedQuestionsModal, setShowGeneratedQuestionsModal] = useState(false)
+  const [showPracticePrompt, setShowPracticePrompt] = useState(false)
+  const [questionsCreatedCount, setQuestionsCreatedCount] = useState(0)
   const [showAnswer, setShowAnswer] = useState(false)
   const itemsPerPage = 12
 
@@ -96,8 +101,9 @@ const IncorrectQuestionsListPage = () => {
   const handleAIGenerateSimilar = async (selectedQuestionType: 'mc' | 'lq', difficulty: 'easy' | 'medium' | 'hard' | 'challenging', count: number) => {
     if (!selectedQuestionId) return
     
-    // Store the difficulty for metadata
+    // Store the difficulty and question type for metadata and regeneration
     setSelectedDifficulty(difficulty)
+    setSelectedQuestionType(selectedQuestionType)
     
     try {
       await dispatch(generateSimilarQuestions({ 
@@ -113,27 +119,80 @@ const IncorrectQuestionsListPage = () => {
     }
   }
 
-  const handleAcceptGeneratedQuestions = async (questions: any[]) => {
+  const handleAcceptGeneratedQuestions = async (questions: any[], questionVerificationMap: Map<number, number>, shouldCloseModal?: boolean, questionIndex?: number) => {
     try {
       const questionData = transformQuestionsForBackend(questions)
       
-      // Add AI generation metadata and visibility to each question
-      const questionsWithMetadata = questionData.map((q: any) => ({
-        ...q,
-        is_ai_generated: true,
-        source_question_id: selectedQuestionId,
-        ai_generation_metadata: {
-          difficulty: selectedDifficulty,
-        },
-        visibility: QUESTION_VISIBILITY.PRIVATE, // Set to PRIVATE for Dojo-generated questions
-      }))
+      // Add AI generation metadata, verification status, and visibility to each question
+      // The verification map contains the original indices, so we can use them directly
+      const questionsWithMetadata = Array.from(questionVerificationMap.entries()).map(([originalIndex, verificationStatus]) => {
+        // Find the question data that corresponds to this original index
+        // Since the questions array passed here only contains accepted questions in order,
+        // we need to match by the original generatedQuestions array
+        const questionIndex = Array.from(questionVerificationMap.keys()).indexOf(originalIndex)
+        const q = questionData[questionIndex]
+        
+        return {
+          ...q,
+          is_ai_generated: true,
+          source_question_id: selectedQuestionId,
+          teacher_verification_status: verificationStatus,
+          ai_generation_metadata: {
+            difficulty: selectedDifficulty,
+          },
+          visibility: QUESTION_VISIBILITY.PRIVATE, // Set to PRIVATE for Dojo-generated questions
+        }
+      })
       
       await dispatch(createMultipleQuestions(questionsWithMetadata)).unwrap()
-      toast.success(`${questions.length} questions created successfully!`, 'Success')
-      setShowGeneratedQuestionsModal(false)
-      dispatch(clearGeneratedQuestions())
+      
+      // Count how many questions need verification
+      const verificationCount = Array.from(questionVerificationMap.values()).filter(
+        status => status === TEACHER_VERIFICATION_STATUS.PENDING_VERIFICATION
+      ).length
+      
+      const verificationMsg = verificationCount > 0
+        ? ` (${verificationCount} marked for teacher verification)` 
+        : ''
+      toast.success(`${questions.length} ${questions.length === 1 ? 'question' : 'questions'} created successfully${verificationMsg}!`, 'Success')
+      
+      // Only close modal and clear Redux if shouldCloseModal is true
+      // Don't modify Redux array when accepting individual questions - let modal handle hiding via local state
+      if (shouldCloseModal) {
+        setShowGeneratedQuestionsModal(false)
+        dispatch(clearGeneratedQuestions())
+        
+        // Show practice prompt modal
+        setQuestionsCreatedCount(questions.length)
+        setShowPracticePrompt(true)
+      }
+      
       // Refresh the Weak Spots list
       loadQuestions()
+    } catch (error) {
+      // Error toast is handled by the thunk
+    }
+  }
+
+  const handleRegenerateQuestion = async (index: number) => {
+    if (!selectedQuestionId) return
+    
+    try {
+      // Generate a single new question with the same parameters
+      const result = await dispatch(generateSimilarQuestions({ 
+        questionIds: [selectedQuestionId], 
+        questionType: selectedQuestionType,
+        difficulty: selectedDifficulty,
+        count: 1
+      })).unwrap()
+      
+      // Replace the question at the specified index with the newly generated one
+      if (result && result.length > 0) {
+        const updatedQuestions = [...generatedQuestions]
+        updatedQuestions[index] = result[0]
+        dispatch(updateGeneratedQuestions(updatedQuestions))
+        toast.success('Question regenerated successfully!', 'Success')
+      }
     } catch (error) {
       // Error toast is handled by the thunk
     }
@@ -147,6 +206,10 @@ const IncorrectQuestionsListPage = () => {
   const handleGeneratedCountClick = useCallback((questionId: string) => {
     navigate(`/dojo/practice?source_id=${questionId}`)
   }, [navigate])
+
+  const handleGoToPractice = () => {
+    navigate('/dojo/practice')
+  }
 
   return (
     <>
@@ -225,8 +288,22 @@ const IncorrectQuestionsListPage = () => {
         show={showGeneratedQuestionsModal}
         onHide={handleDismissGeneratedQuestions}
         onAccept={handleAcceptGeneratedQuestions}
+        onRegenerate={handleRegenerateQuestion}
         questions={generatedQuestions}
         isLoading={generatingSimilarQuestions || creatingMultipleQuestions || creating}
+      />
+
+      {/* Go to Practice Page Confirmation */}
+      <ConfirmationDialog
+        show={showPracticePrompt}
+        onHide={() => setShowPracticePrompt(false)}
+        onConfirm={handleGoToPractice}
+        title="Questions ready"
+        message={` Would you like to go to the Practice page to try them now?`}
+        confirmText="Go to Practice"
+        cancelText="Stay Here"
+        variant="success"
+        confirmButtonVariant="primary"
       />
     </>
   )

@@ -5,11 +5,11 @@ import {PracticeQuestionWithOptionsCell} from './PracticeQuestionWithOptionsCell
 import {QuestionTypeCell} from './QuestionTypeCell.tsx'
 import {AttemptTimeCell} from './AttemptTimeCell.tsx'
 
-export const createPracticeQuestionsColumns = (onQuestionClick?: (questionId: string) => void): ReadonlyArray<Column<PracticeQuestionItem>> => [
+export const createPracticeQuestionsColumns = (showAnswer?: boolean): ReadonlyArray<Column<PracticeQuestionItem>> => [
   {
     Header: 'Question & Answers',
     accessor: 'question_content',
-    Cell: ({row}) => <PracticeQuestionWithOptionsCell question={row.original} />,
+    Cell: ({row}) => <PracticeQuestionWithOptionsCell question={row.original} showAnswer={showAnswer} />,
   },
   {
     Header: 'Type',
